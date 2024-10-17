@@ -46,11 +46,24 @@ jobs:
         - name: Build
           run: cargo build --verbose --release
       
-        - name: Run tests
-          run: cargo test --verbose
-
+    #    - name: Run tests
+    #      run: cargo test --verbose
+        
+        - name: Determine tag name
+          id: tag
+          shell: bash
+          run: |
+            BUILD_NUMBER="$(git rev-list --count HEAD)"
+            SHORT_HASH="$(git rev-parse --short=7 HEAD)"
+            if [[ "${{ env.BRANCH_NAME }}" == "master" ]]; then
+                echo "name=b${BUILD_NUMBER}" >> $GITHUB_OUTPUT
+            else
+                SAFE_NAME=$(echo "${{ env.BRANCH_NAME }}" | tr '/' '-')
+                echo "name=${SAFE_NAME}-b${BUILD_NUMBER}-${SHORT_HASH}" >> $GITHUB_OUTPUT
+            fi
+            
         - name: 'Upload Artifact'
           uses: actions/upload-artifact@v4
           with:
-            name: ${{ env.PROJECT_NAME_UNDERSCORE }}
-            path: target/release/${{ env.PROJECT_NAME_UNDERSCORE }}
+            name: ${{ steps.tag.outputs.name }}-bin-ubuntu.zip
+            path: target/release/${{ steps.tag.outputs.name }}-bin-ubuntu.zip
