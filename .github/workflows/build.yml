@@ -1,1 +1,50 @@
+name: build
 
+on:
+  workflow_dispatch: # allows manual triggering
+        inputs:
+            create_release:
+                description: "Create new release"
+                required: true
+                type: boolean
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+    
+concurrency:
+    group: ${{ github.workflow }}-${{ github.head_ref && github.ref || github.run_id }}
+    cancel-in-progress: true
+
+# Fine-grant permission
+# https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#modifying-the-permissions-for-the-github_token
+permissions:
+  contents: write # for creating release
+    
+env:
+  CARGO_TERM_COLOR: always
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+        - name: Clone
+          id: checkout
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
+    
+        - name: Dependency
+          uses: actions-rs/toolchain@v1
+            with:
+              toolchain: nightly
+              override: true
+          
+        - name: Build
+            run: cargo build --verbose
+      
+        - name: Run tests
+            run: cargo test --verbose
