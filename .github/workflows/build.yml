@@ -65,5 +65,5 @@ jobs:
         - name: 'Upload Artifact'
           uses: actions/upload-artifact@v4
           with:
-            name: ${{ steps.tag.outputs.name }}-bin-ubuntu.zip
-            path: target/release/${{ steps.tag.outputs.name }}-bin-ubuntu.zip
+            name: quantum-launcher-${{ steps.tag.outputs.name }}-bin-ubuntu
+            path: target/release/quantum-launcher
