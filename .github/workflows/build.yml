@@ -39,7 +39,7 @@ jobs:
     
         - name: Dependency
           uses: actions-rs/toolchain@v1
-            with:
+          with:
               toolchain: nightly
               override: true
           
