@@ -44,9 +44,14 @@ jobs:
       
     #    - name: Run tests
     #      run: cargo test --verbose
+        - name: Create a zip archive
+          run: |
+            cd target/release
+            zip -r quantum-launcher.zip quantum-launcher
+            cd ../..
         
         - name: 'Upload Artifact'
           uses: actions/upload-artifact@v4
           with:
             name: quantum-launcher-bin-ubuntu_x86_64
-            path: ./target/release/quantum-launcher
+            path: ${{ github.workspace }}/target/release/quantum-launcher.zip
