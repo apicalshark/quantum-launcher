@@ -61,10 +61,11 @@ jobs:
         - name: Pack artifacts
           if: ${{ ( github.event_name == 'push' && github.ref == 'refs/heads/master' ) || github.event.inputs.create_release == 'true' }}
           run: |
-              zip -r quantum-launcher-${{ steps.tag.outputs.name }}-bin-ubuntu-x64.zip ./target/release/quantum_launcher LICENSE
+              cp ./target/release/quantum_launcher .
+              
             
         - name: 'Upload Artifact'
           uses: actions/upload-artifact@v4
           with:
-            name: quantum-launcher-${{ steps.tag.outputs.name }}-bin-ubuntu-x64.zip
-            path: quantum-launcher-${{ steps.tag.outputs.name }}-bin-ubuntu-x64.zip
+            name: quantum-launcher-${{ steps.tag.outputs.name }}-bin-ubuntu_x86_64
+            path: quantum-launcher
