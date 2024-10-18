@@ -58,14 +58,9 @@ jobs:
                 echo "name=${SAFE_NAME}-b${BUILD_NUMBER}" >> $GITHUB_OUTPUT
             fi
 
-        - name: Pack artifacts
-          if: ${{ ( github.event_name == 'push' && github.ref == 'refs/heads/master' ) || github.event.inputs.create_release == 'true' }}
-          run: |
-              cd target/release
-              cp quantum_launcher ../..
-            
+
         - name: 'Upload Artifact'
           uses: actions/upload-artifact@v4
           with:
             name: quantum-launcher-${{ steps.tag.outputs.name }}-bin-ubuntu_x86_64
-            path: quantum-launcher
+            path: target/release/quantum-launcher
