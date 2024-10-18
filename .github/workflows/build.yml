@@ -55,19 +55,16 @@ jobs:
                 echo "name=b${BUILD_NUMBER}" >> $GITHUB_OUTPUT
             else
                 SAFE_NAME=$(echo "${{ env.BRANCH_NAME }}" | tr '/' '-')
-                echo "name=${SAFE_NAME}-b${BUILD_NUMBER}-${SHORT_HASH}" >> $GITHUB_OUTPUT
+                echo "name=${SAFE_NAME}-b${BUILD_NUMBER}" >> $GITHUB_OUTPUT
             fi
 
         - name: Pack artifacts
           if: ${{ ( github.event_name == 'push' && github.ref == 'refs/heads/master' ) || github.event.inputs.create_release == 'true' }}
           run: |
-              cp LICENSE ./target/release
-              zip -r quantum-launcher-${{ steps.tag.outputs.name }}-bin-ubuntu.zip ./target/release/*
-              cd ./target/release
-              ls -l
+              zip -r quantum-launcher-${{ steps.tag.outputs.name }}-bin-ubuntu-x64.zip ./target/release/quantum_launcher LICENSE
             
         - name: 'Upload Artifact'
           uses: actions/upload-artifact@v4
           with:
-            name: quantum-launcher-${{ steps.tag.outputs.name }}-bin-ubuntu.zip
-            path: quantum-launcher-${{ steps.tag.outputs.name }}-bin-ubuntu.zip
+            name: quantum-launcher-${{ steps.tag.outputs.name }}-bin-ubuntu-x64.zip
+            path: quantum-launcher-${{ steps.tag.outputs.name }}-bin-ubuntu-x64.zip
