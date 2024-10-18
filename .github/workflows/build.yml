@@ -61,9 +61,8 @@ jobs:
         - name: Pack artifacts
           if: ${{ ( github.event_name == 'push' && github.ref == 'refs/heads/master' ) || github.event.inputs.create_release == 'true' }}
           run: |
-              cd target/release/quantum_launcher && ls -l
-              cp target/release/quantum_launcher .
-              cd target/release && ls -l
+              cd target/release
+              cp quantum_launcher ../..
             
         - name: 'Upload Artifact'
           uses: actions/upload-artifact@v4
