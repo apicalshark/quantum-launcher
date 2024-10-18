@@ -27,27 +27,60 @@ env:
 
 jobs:
   build:
-    name: Build
+    name: release ${{ matrix.target }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-gnu
+            archive: zip
+          - target: x86_64-unknown-linux-musl
+            archive: tar.gz tar.xz tar.zst
+          - target: x86_64-apple-darwin
+            archive: zip
     steps:
-      - uses: actions/checkout@master
-      - name: Compile
-        id: compile
-        uses: rust-build/rust-build.action@v1.4.5
-        with:
-          RUSTTARGET: x86_64-unknown-linux-musl
-          UPLOAD_MODE: none
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: Binary
-          path: |
-            ${{ steps.compile.outputs.BUILT_ARCHIVE }}
-            ${{ steps.compile.outputs.BUILT_CHECKSUM }}
-
-
-  
-  
+        - name: Clone
+          id: checkout
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
+    
+        - name: Dependency
+          uses: actions-rs/toolchain@v1
+          with:
+              toolchain: nightly
+              override: true
+          
+        - name: Build
+          run: cargo build --verbose --release
+      
     #    - name: Run tests
     #      run: cargo test --verbose
         
+        - name: Determine tag name
+          id: tag
+          shell: bash
+          run: |
+            BUILD_NUMBER="$(git rev-list --count HEAD)"
+            SHORT_HASH="$(git rev-parse --short=7 HEAD)"
+            if [[ "${{ env.BRANCH_NAME }}" == "master" ]]; then
+                echo "name=b${BUILD_NUMBER}" >> $GITHUB_OUTPUT
+            else
+                SAFE_NAME=$(echo "${{ env.BRANCH_NAME }}" | tr '/' '-')
+                echo "name=${SAFE_NAME}-b${BUILD_NUMBER}-${SHORT_HASH}" >> $GITHUB_OUTPUT
+            fi
+
+        - name: Pack artifacts
+          if: ${{ ( github.event_name == 'push' && github.ref == 'refs/heads/master' ) || github.event.inputs.create_release == 'true' }}
+          run: |
+              cp LICENSE ./target/release
+              zip -r quantum-launcher-${{ steps.tag.outputs.name }}-bin-ubuntu.zip ./target/release/*
+              cd ./target/release
+              ls -l
+            
+        - name: 'Upload Artifact'
+          uses: actions/upload-artifact@v4
+          with:
+            name: quantum-launcher-${{ steps.tag.outputs.name }}-bin-ubuntu.zip
+            path: quantum-launcher-${{ steps.tag.outputs.name }}-bin-ubuntu.zip
