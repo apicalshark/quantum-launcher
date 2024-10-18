@@ -63,4 +63,4 @@ jobs:
           uses: actions/upload-artifact@v4
           with:
             name: quantum-launcher-${{ steps.tag.outputs.name }}-bin-ubuntu_x86_64
-            path: target/release/quantum-launcher
+            path: target/release/.quantum-launcher
