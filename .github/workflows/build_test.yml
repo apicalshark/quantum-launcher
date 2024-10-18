@@ -11,7 +11,7 @@ on:
     ## - release
 
 env:
-  BIN_NAME: quantum-launcher
+  BIN_NAME: quantum_launcher
   PROJECT_NAME: quantum-launcher
   REPO_NAME: apicalshark/quantum-launcher
 
