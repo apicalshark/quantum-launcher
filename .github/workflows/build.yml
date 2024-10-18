@@ -65,10 +65,8 @@ jobs:
         - name: Pack artifacts
           if: ${{ ( github.event_name == 'push' && github.ref == 'refs/heads/master' ) || github.event.inputs.create_release == 'true' }}
           run: |
-              mkdir ./bin
-              cp LICENSE ./bin/
-              cp $(find . -name "quantum-launcher") ./bin 
-              zip -r quantum-launcher-${{ steps.tag.outputs.name }}-bin-ubuntu.zip ./bin/*
+              cp LICENSE ./target/release
+              zip -r quantum-launcher-${{ steps.tag.outputs.name }}-bin-ubuntu.zip ./target/release*
             
         - name: 'Upload Artifact'
           uses: actions/upload-artifact@v4
