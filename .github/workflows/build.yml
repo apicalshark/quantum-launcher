@@ -37,10 +37,7 @@ jobs:
             fetch-depth: 0
     
         - name: Dependency
-          uses: actions-rs/toolchain@v1
-          with:
-              toolchain: nightly
-              override: true
+          uses: dtolnay/rust-toolchain@nightly
           
         - name: Build
           run: cargo build --verbose --release
