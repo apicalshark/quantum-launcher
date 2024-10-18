@@ -14,7 +14,7 @@ on:
 env:
   BIN_NAME: quantum_launcher
   PROJECT_NAME: quantum-launcher
-  REPO_NAME: apicalshark/quantum-launcher
+  REPO_NAME: Mrmayman/quantum-launcher
 
 jobs:
   dist:
