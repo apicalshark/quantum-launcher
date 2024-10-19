@@ -154,7 +154,7 @@ jobs:
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
             name=${GITHUB_REF:10}
           fi
-          echo val::$name >> $GITHUB_OUTPUT
+          echo val=$name >> $GITHUB_OUTPUT
           echo TAG=$name >> $GITHUB_ENV
         id: tagname
 
@@ -216,7 +216,7 @@ jobs:
       - name: Extract version
         id: extract-version
         run: |
-          printf "%s::%s\n" >> $GITHUB_OUTPUT tag-name "${GITHUB_REF#refs/tags/}"
+          printf "%s=%s\n" >> $GITHUB_OUTPUT tag-name "${GITHUB_REF#refs/tags/}"
 
         #
         # you can use this initial file in your homebrew-tap if you don't have an initial formula:
