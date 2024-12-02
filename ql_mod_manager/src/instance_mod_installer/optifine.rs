@@ -2,16 +2,19 @@ use std::{
     fmt::Display,
     path::{Path, PathBuf},
     process::Command,
+    sync::mpsc::Sender,
 };
 
 use ql_instances::{
     error::IoError,
-    file_utils, info, io_err,
+    file_utils::{self, RequestError},
+    info, io_err,
     java_install::{self, JavaInstallError},
     json_structs::{
         json_instance_config::InstanceConfigJson, json_java_list::JavaVersion,
-        json_version::VersionDetails,
+        json_optifine::JsonOptifine, json_version::VersionDetails, JsonFileError,
     },
+    JavaInstallProgress,
 };
 
 const CLASSPATH_SEPARATOR: char = if cfg!(unix) { ':' } else { ';' };
@@ -22,21 +25,41 @@ const CLASSPATH_SEPARATOR: char = if cfg!(unix) { ':' } else { ';' };
 pub async fn install_optifine_wrapped(
     instance_name: String,
     path_to_installer: PathBuf,
+    progress_sender: Option<Sender<OptifineInstallProgress>>,
+    java_progress_sender: Option<Sender<JavaInstallProgress>>,
 ) -> Result<(), String> {
-    install_optifine(&instance_name, &path_to_installer)
-        .await
-        .map_err(|err| err.to_string())
+    install_optifine(
+        &instance_name,
+        &path_to_installer,
+        progress_sender,
+        java_progress_sender,
+    )
+    .await
+    .map_err(|err| err.to_string())
+}
+
+pub enum OptifineInstallProgress {
+    P1Start,
+    P2CompilingHook,
+    P3RunningHook,
+    P4DownloadingLibraries { done: usize, total: usize },
+    P5Done,
 }
 
 pub async fn install_optifine(
     instance_name: &str,
     path_to_installer: &Path,
+    progress_sender: Option<Sender<OptifineInstallProgress>>,
+    java_progress_sender: Option<Sender<JavaInstallProgress>>,
 ) -> Result<(), OptifineError> {
     if !path_to_installer.exists() || !path_to_installer.is_file() {
         return Err(OptifineError::InstallerDoesNotExist);
     }
 
     info!("Started installing OptiFine");
+    if let Some(progress) = &progress_sender {
+        progress.send(OptifineInstallProgress::P1Start).unwrap();
+    }
 
     let instance_path = file_utils::get_launcher_dir()?
         .join("instances")
@@ -46,18 +69,12 @@ pub async fn install_optifine(
 
     let dot_minecraft_path = instance_path.join(".minecraft");
 
-    let hook = include_str!("../../../assets/Hook.java")
-        .replace("REPLACE_WITH_MC_PATH", dot_minecraft_path.to_str().unwrap());
-
     let optifine_path = instance_path.join("optifine");
     tokio::fs::create_dir_all(&optifine_path)
         .await
         .map_err(io_err!(optifine_path))?;
 
-    let hook_path = optifine_path.join("Hook.java");
-    tokio::fs::write(&hook_path, hook)
-        .await
-        .map_err(io_err!(hook_path))?;
+    create_hook_java_file(&dot_minecraft_path, &optifine_path).await?;
 
     let new_installer_path = optifine_path.join("OptiFine.jar");
     tokio::fs::copy(&path_to_installer, &new_installer_path)
@@ -65,31 +82,147 @@ pub async fn install_optifine(
         .map_err(io_err!(path_to_installer))?;
 
     info!("Compiling Hook.java");
-    // TODO: Add java install progress.
-    let javac_path = java_install::get_java_binary(JavaVersion::Java21, "javac", None).await?;
-
-    let output = Command::new(&javac_path)
-        .args([
-            "-cp",
-            new_installer_path.to_str().unwrap(),
-            "Hook.java",
-            "-d",
-            ".",
-        ])
-        .current_dir(&optifine_path)
-        .output()
-        .map_err(io_err!(javac_path))?;
-
-    if !output.status.success() {
-        return Err(OptifineError::JavacFail(
-            String::from_utf8(output.stdout).unwrap(),
-            String::from_utf8(output.stderr).unwrap(),
-        ));
+    if let Some(progress) = &progress_sender {
+        progress
+            .send(OptifineInstallProgress::P2CompilingHook)
+            .unwrap();
     }
+    compile_hook(&new_installer_path, &optifine_path, java_progress_sender).await?;
 
     info!("Running Hook.java");
-    let java_path = java_install::get_java_binary(JavaVersion::Java21, "java", None).await?;
+    if let Some(progress) = &progress_sender {
+        progress
+            .send(OptifineInstallProgress::P3RunningHook)
+            .unwrap();
+    }
+    run_hook(&new_installer_path, &optifine_path).await?;
 
+    download_libraries(instance_name, &dot_minecraft_path, progress_sender.as_ref()).await?;
+    update_instance_config_json(&instance_path, "OptiFine".to_owned())?;
+    if let Some(progress) = &progress_sender {
+        progress.send(OptifineInstallProgress::P5Done).unwrap();
+    }
+    info!("Finished installing OptiFine");
+
+    Ok(())
+}
+
+pub async fn uninstall_wrapped(instance_name: String) -> Result<(), String> {
+    uninstall(&instance_name)
+        .await
+        .map_err(|err| err.to_string())
+}
+
+pub async fn uninstall(instance_name: &str) -> Result<(), OptifineError> {
+    let instance_path = file_utils::get_launcher_dir()?
+        .join("instances")
+        .join(&instance_name);
+
+    let optifine_path = instance_path.join("optifine");
+
+    tokio::fs::remove_dir_all(&optifine_path)
+        .await
+        .map_err(io_err!(optifine_path))?;
+    update_instance_config_json(&instance_path, "Vanilla".to_owned())?;
+
+    let dot_minecraft_path = instance_path.join(".minecraft");
+    let libraries_path = dot_minecraft_path.join("libraries");
+    tokio::fs::remove_dir_all(&libraries_path)
+        .await
+        .map_err(io_err!(libraries_path))?;
+
+    let versions_path = dot_minecraft_path.join("versions");
+    let entries = std::fs::read_dir(&versions_path).map_err(io_err!(versions_path))?;
+    for entry in entries.into_iter().filter_map(Result::ok) {
+        let path = entry.path();
+        // Check if the entry is a directory and contains the keyword
+        if !path.is_dir() {
+            continue;
+        }
+
+        if let Some(Some(file_name)) = path.file_name().map(|n| n.to_str()) {
+            if file_name.to_lowercase().contains("Opti") {
+                tokio::fs::remove_dir_all(&path)
+                    .await
+                    .map_err(io_err!(path))?;
+            }
+        }
+    }
+    Ok(())
+}
+
+async fn create_hook_java_file(
+    dot_minecraft_path: &PathBuf,
+    optifine_path: &PathBuf,
+) -> Result<(), OptifineError> {
+    let hook = include_str!("../../../assets/Hook.java")
+        .replace("REPLACE_WITH_MC_PATH", dot_minecraft_path.to_str().unwrap());
+    let hook_path = optifine_path.join("Hook.java");
+    tokio::fs::write(&hook_path, hook)
+        .await
+        .map_err(io_err!(hook_path))?;
+    Ok(())
+}
+
+async fn download_libraries(
+    instance_name: &str,
+    dot_minecraft_path: &Path,
+    progress_sender: Option<&Sender<OptifineInstallProgress>>,
+) -> Result<(), OptifineError> {
+    let (optifine_json, _) = JsonOptifine::read(instance_name)?;
+    let client = reqwest::Client::new();
+    let libraries_path = dot_minecraft_path.join("libraries");
+
+    let len = optifine_json.libraries.len();
+    for (i, library) in optifine_json
+        .libraries
+        .iter()
+        .filter_map(|lib| (!lib.name.starts_with("optifine")).then_some(&lib.name))
+        .enumerate()
+    {
+        // l = com.mojang:netty:1.8.8
+        // path = com/mojang/netty/1.8.8/netty-1.8.8.jar
+        // url = https://libraries.minecraft.net/com/mojang/netty/1.8.8/netty-1.8.8.jar
+
+        // Split in colon
+        let parts: Vec<&str> = library.split(':').collect();
+
+        info!("Downloading library ({i}/{len}): {}", library);
+
+        let url_parent_path = format!("{}/{}/{}", parts[0].replace('.', "/"), parts[1], parts[2],);
+        let url_final_part = format!("{url_parent_path}/{}-{}.jar", parts[1], parts[2],);
+
+        let parent_path = libraries_path.join(&url_parent_path);
+        tokio::fs::create_dir_all(&parent_path)
+            .await
+            .map_err(io_err!(parent_path))?;
+
+        let url = format!("https://libraries.minecraft.net/{url_final_part}");
+
+        let jar_path = libraries_path.join(&url_final_part);
+
+        if let Some(progress) = progress_sender {
+            progress
+                .send(OptifineInstallProgress::P4DownloadingLibraries {
+                    done: i,
+                    total: len,
+                })
+                .unwrap();
+        }
+
+        if jar_path.exists() {
+            continue;
+        }
+        let jar_bytes = file_utils::download_file_to_bytes(&client, &url, false).await?;
+        tokio::fs::write(&jar_path, jar_bytes)
+            .await
+            .map_err(io_err!(jar_path))?;
+    }
+    Ok(())
+}
+
+async fn run_hook(new_installer_path: &Path, optifine_path: &Path) -> Result<(), OptifineError> {
+    let java_path = java_install::get_java_binary(JavaVersion::Java21, "java", None).await?;
     let output = Command::new(&java_path)
         .args([
             "-cp",
@@ -103,26 +236,49 @@ pub async fn install_optifine(
         .current_dir(&optifine_path)
         .output()
         .map_err(io_err!(java_path))?;
-
-    if !output.status.success() {
+    Ok(if !output.status.success() {
         return Err(OptifineError::JavaFail(
             String::from_utf8(output.stdout).unwrap(),
             String::from_utf8(output.stderr).unwrap(),
         ));
-    }
-
-    update_instance_config_json(&instance_path)?;
-    info!("Finished installing OptiFine");
-
-    Ok(())
+    })
 }
 
-fn update_instance_config_json(instance_path: &Path) -> Result<(), OptifineError> {
+async fn compile_hook(
+    new_installer_path: &PathBuf,
+    optifine_path: &PathBuf,
+    java_progress_sender: Option<Sender<JavaInstallProgress>>,
+) -> Result<(), OptifineError> {
+    let javac_path =
+        java_install::get_java_binary(JavaVersion::Java21, "javac", java_progress_sender).await?;
+    let output = Command::new(&javac_path)
+        .args([
+            "-cp",
+            new_installer_path.to_str().unwrap(),
+            "Hook.java",
+            "-d",
+            ".",
+        ])
+        .current_dir(optifine_path)
+        .output()
+        .map_err(io_err!(javac_path))?;
+    Ok(if !output.status.success() {
+        return Err(OptifineError::JavacFail(
+            String::from_utf8(output.stdout).unwrap(),
+            String::from_utf8(output.stderr).unwrap(),
+        ));
+    })
+}
+
+fn update_instance_config_json(
+    instance_path: &Path,
+    mod_type: String,
+) -> Result<(), OptifineError> {
     let config_path = instance_path.join("config.json");
     let config = std::fs::read_to_string(&config_path).map_err(io_err!(config_path))?;
     let mut config: InstanceConfigJson = serde_json::from_str(&config)?;
 
-    config.mod_type = "OptiFine".to_string();
+    config.mod_type = mod_type;
     let config = serde_json::to_string(&config)?;
     std::fs::write(&config_path, config).map_err(io_err!(config_path))?;
     Ok(())
@@ -149,6 +305,7 @@ pub enum OptifineError {
     InstallerDoesNotExist,
     JavacFail(String, String),
     JavaFail(String, String),
+    Request(RequestError),
     Serde(serde_json::Error),
 }
 
@@ -166,6 +323,7 @@ impl Display for OptifineError {
                 write!(f, "java runtime error.\nSTDOUT: {out}\nSTDERR: {err}")
             }
             OptifineError::Serde(err) => write!(f, "(json) {err}"),
+            OptifineError::Request(err) => write!(f, "(request) {err}"),
         }
     }
 }
@@ -185,5 +343,20 @@ impl From<JavaInstallError> for OptifineError {
 impl From<serde_json::Error> for OptifineError {
     fn from(value: serde_json::Error) -> Self {
         Self::Serde(value)
+    }
+}
+
+impl From<RequestError> for OptifineError {
+    fn from(value: RequestError) -> Self {
+        Self::Request(value)
+    }
+}
+
+impl From<JsonFileError> for OptifineError {
+    fn from(value: JsonFileError) -> Self {
+        match value {
+            JsonFileError::SerdeError(err) => err.into(),
+            JsonFileError::Io(err) => err.into(),
+        }
     }
 }
