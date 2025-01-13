@@ -55,13 +55,13 @@ jobs:
           os: ubuntu-latest
           rust: nightly
           target: aarch64-unknown-linux-gnu
-          cross: true
+          cross: false
           final_name: linux_aarch64
         - build: x86_64-macos
           os: macos-latest
           rust: nightly
           target: x86_64-apple-darwin
-          cross: true
+          cross: false
           final_name: macos_x86_64
         - build: x86_64-windows
           os: windows-latest
