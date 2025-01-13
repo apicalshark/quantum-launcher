@@ -43,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false # don't fail other jobs if one fails
       matrix:
-        build: [x86_64-linux, aarch64-linux, x86_64-macos, x86_64-windows, aarch64-macos, aarch64-windows, windows-i686] #, x86_64-win-gnu, win32-msvc
+        build: [x86_64-linux, aarch64-linux, x86_64-macos, x86_64-windows, aarch64-macos, aarch64-windows, i686-windows] #, x86_64-win-gnu, win32-msvc
         include:
         - build: x86_64-linux
           os: ubuntu-latest
@@ -81,7 +81,7 @@ jobs:
           target: aarch64-pc-windows-msvc
           cross: false
           final_name: windows_aarch64
-        - build: windows-i686
+        - build: i686-windows
           os: ubuntu-latest
           rust: nightly
           target: i686-pc-windows-gnu
@@ -129,7 +129,7 @@ jobs:
         shell: bash
         run: |
           mkdir dist
-          if [ "${{ matrix.build }}" = "*windows*" ]; then
+          if [ "${{ matrix.build }}" = "x86_64-windows" ] || [ "${{ matrix.build }}" = "i686-windows" ]; then
             cp "target/${{ matrix.target }}/release/$BIN_NAME.exe" "dist/"
           else
             cp "target/${{ matrix.target }}/release/$BIN_NAME" "dist/"
