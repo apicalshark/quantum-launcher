@@ -61,7 +61,7 @@ jobs:
           os: macos-latest
           rust: nightly
           target: x86_64-apple-darwin
-          cross: false
+          cross: true
           final_name: macos_x86_64
         - build: x86_64-windows
           os: windows-latest
@@ -73,6 +73,7 @@ jobs:
           os: macos-latest
           rust: nightly
           target: aarch64-apple-darwin
+          cross: false
           final_name: macos_aarch64
         - build: aarch64-windows
           os: windows-latest
@@ -102,6 +103,9 @@ jobs:
           toolchain: ${{ matrix.rust }}
           targets: ${{ matrix.target }}
           override: true
+      
+      # Setup action cache    
+      - uses: Swatinem/rust-cache@v2    
 
       - name: Build release binary
         uses: clechasseur/rs-cargo@v1
@@ -110,24 +114,11 @@ jobs:
           command: build
           args: --release --target ${{ matrix.target }}
 
-      - name: Strip release binary (linux and macos)
-        if: matrix.build == 'x86_64-linux' || matrix.build == 'x86_64-macos'
-        run: strip "target/${{ matrix.target }}/release/$BIN_NAME"
-
-      - name: Strip release binary (arm)
-        if: matrix.build == 'aarch64-linux'
-        run: |
-          docker run --rm -v \
-            "$PWD/target:/target:Z" \
-            rustembedded/cross:${{ matrix.target }} \
-            aarch64-linux-gnu-strip \
-            /target/${{ matrix.target }}/release/$BIN_NAME
-
       - name: Build archive
         shell: bash
         run: |
           mkdir dist
-          if [ "${{ matrix.os }}" = "windows-2019" ]; then
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
             cp "target/${{ matrix.target }}/release/$BIN_NAME.exe" "dist/"
           else
             cp "target/${{ matrix.target }}/release/$BIN_NAME" "dist/"
@@ -149,9 +140,6 @@ jobs:
           submodules: false
 
       - uses: actions/download-artifact@v4
-        # with:
-        #   path: dist
-      # - run: ls -al ./dist
       - run: ls -al quantum-launcher-*
 
       - name: Calculate tag name
@@ -188,7 +176,7 @@ jobs:
 
               echo "Package name: $pkgname"
               
-              # cp LICENSE README.md tmp/$pkgname
+              cp LICENSE README.md tmp/$pkgname
               mv quantum-launcher-$platform/$BIN_NAME$exe tmp/$pkgname
               chmod +x tmp/$pkgname/$BIN_NAME$exe
 
