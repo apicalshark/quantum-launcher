@@ -82,7 +82,7 @@ jobs:
           cross: false
           final_name: windows_aarch64
         - build: windows-i686
-          os: windows-latest
+          os: ubuntu-latest
           rust: nightly
           target: i686-pc-windows-gnu
           cross: true
