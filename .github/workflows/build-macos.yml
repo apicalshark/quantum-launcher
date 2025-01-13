@@ -14,18 +14,20 @@ env:
 jobs:
   dist:
     name: Dist
-    runs-on: macos-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false # don't fail other jobs if one fails
       matrix:
         build: [x86_64-macos, aarch64-macos]
         include:
         - build: x86_64-macos
+          os: ubuntu-latest
           rust: nightly
           target: x86_64-apple-darwin
           cross: false
           final_name: macos_x86_64
         - build: aarch64-macos
+          os: macos-latest
           rust: nightly
           target: aarch64-apple-darwin
           cross: false
