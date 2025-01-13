@@ -21,7 +21,7 @@ jobs:
         build: [x86_64-macos, aarch64-macos]
         include:
         - build: x86_64-macos
-          os: ubuntu-latest
+          os: macos-latest
           rust: nightly
           target: x86_64-apple-darwin
           cross: false
