@@ -61,11 +61,7 @@ jobs:
         shell: bash
         run: |
           mkdir dist
-          if [ "${{ matrix.os }}" = "windows-*" ]; then
-            cp "target/${{ matrix.target }}/release/$BIN_NAME.exe" "dist/"
-          else
-            cp "target/${{ matrix.target }}/release/$BIN_NAME" "dist/"
-          fi
+          cp "target/${{ matrix.target }}/release/$BIN_NAME" "dist/"
       
       - name: Upload binaries
         uses: actions/upload-artifact@v4

@@ -85,6 +85,7 @@ jobs:
           os: windows-latest
           rust: nightly
           target: i686-pc-windows-gnu
+          cross: true
           final_name: windows_i686
 
     steps:
