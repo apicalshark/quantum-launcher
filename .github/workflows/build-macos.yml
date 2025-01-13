@@ -54,9 +54,14 @@ jobs:
           use-cross: ${{ matrix.cross }}
           command: build
           args: --release --target ${{ matrix.target }}
-    
+      
+      - shell: bash
+        run: |
+          mkdir dist
+          cp "target/${{ matrix.target }}/release/$BIN_NAME" "dist/"
+      
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
           name: quantum-launcher-${{ matrix.final_name }}
-          path: target/${{ matrix.target }}/release/$BIN_NAME
+          path: dist
