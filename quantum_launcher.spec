@@ -1,21 +1,15 @@
-/*************  ✨ Codeium Command 🌟  *************/
-%bcond check 1
-
 Name:           quantum_launcher
 Version:        0.3.1
 Release:        %autorelease
 Summary:        Simple Minecraft Launcher written in Rust
 
 SourceLicense:  GPL-3.0-only
-# FIXME: paste output of %%cargo_license_summary here
 License:        GPLv3
-# LICENSE.dependencies contains a full license breakdown
 
 URL:            https://mrmayman.github.io/quantumlauncher
-Source0:        https://github.com/Mrmayman/quantum-launcher/archive/refs/heads/main.tar.gz   
+Source:        {{{ git_dir_pack }}}
 
 BuildRequires:  cargo-rpm-macros >= 24
-BuildRequires:  unzip
 
 %global _description %{expand:
 A simple Minecraft Launcher written in Rust.}
@@ -23,7 +17,7 @@ A simple Minecraft Launcher written in Rust.}
 %description %{_description}
 
 %prep
-%setup -n quantum_launcher-0.3.1
+{{{ git_dir_setup_macro }}}
 %cargo_prep
 
 %generate_buildrequires
@@ -51,5 +45,3 @@ A simple Minecraft Launcher written in Rust.}
 
 %changelog
 %autochangelog
-
-/******  cbb05163-134b-4541-abf7-223d85a26ce7  *******/r
