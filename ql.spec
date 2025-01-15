@@ -14,7 +14,7 @@ A minimalistic Minecraft launcher for Windows and Linux written in Rust with the
 
 # Preparation step
 %prep
-%setup -q
+%setup -q -n quantum-launcher-%{version}
 
 # Build step
 %build
@@ -24,7 +24,7 @@ rustup-init
 rustup override set nightly
 
 # Build the project in release mode
-cargo run --release
+cd quantum-launcher-%{version} && cargo build --release
 
 # Installation step
 %install
