@@ -3,7 +3,6 @@ Version:        0.3.1
 Release:        %autorelease
 Summary:        Simple Minecraft Launcher written in Rust
 
-SourceLicense:  GPL-3.0-only
 License:        GPLv3
 URL:            https://mrmayman.github.io/quantumlauncher
 Source:        {{{ git_dir_pack }}}
