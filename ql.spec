@@ -1,6 +1,7 @@
 # Package metadata
 Name: quantum-launcher
 Version: 0.3.1
+Release: 1%{?dist}
 Summary: A fast Minecraft launcher written in Rust
 License: GPLv3
 URL: https://mrmayman.github.io/quantumlauncher
