@@ -1,4 +1,4 @@
-Name:           quantum_launcher
+Name:           quantum-launcher
 Version:        0.3.1
 Release:        %autorelease
 Summary:        Simple Minecraft Launcher written in Rust
@@ -22,12 +22,12 @@ cargo fetch
 cargo build --profile release
 
 %install
-install -Dm755 target/release/quantum_launcher %{buildroot}%{_bindir}/quantum_launcher
+install -Dm755 target/release/quantum_launcher %{buildroot}%{_bindir}/quantum-launcher
 
 %files
 %license LICENSE*
 %doc README.md
-%{_bindir}/quantum_launcher
+%{_bindir}/quantum-launcher
 
 %changelog
 %autochangelog
