@@ -11,7 +11,7 @@ License:        GPLv3
 # LICENSE.dependencies contains a full license breakdown
 
 URL:            https://mrmayman.github.io/quantumlauncher
-Source:         https://github.com/apicalshark/quantum-launcher/archive/refs/tags/v0.3.1.tar.gz     
+Source:         https://github.com/Mrmayman/quantum-launcher/archive/refs/heads/main.zip     
 
 BuildRequires:  cargo-rpm-macros >= 24
 
