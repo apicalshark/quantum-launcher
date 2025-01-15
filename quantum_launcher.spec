@@ -9,7 +9,7 @@ License:        GPLv3
 URL:            https://mrmayman.github.io/quantumlauncher
 Source:        {{{ git_dir_pack }}}
 
-BuildRequires:  cargo-rpm-macros >= 24
+BuildRequires:  cargo rust
 
 %global _description %{expand:
 A simple Minecraft Launcher written in Rust.}
@@ -18,28 +18,16 @@ A simple Minecraft Launcher written in Rust.}
 
 %prep
 {{{ git_dir_setup_macro }}}
-%cargo_prep
-
-%generate_buildrequires
-%cargo_generate_buildrequires
+cargo fetch --locked
 
 %build
-%cargo_build
-%{cargo_license_summary}
-%{cargo_license} > LICENSE.dependencies
+cargo build --profile release
 
 %install
-%cargo_install
-
-%if %{with check}
-%check
-%cargo_test --all-targets --all-features -- --show-output
-%cargo_test
-%endif
+install -Dm755 target/release/quantum_launcher %{buildroot}%{_bindir}/quantum_launcher
 
 %files
-%license LICENSE
-%license LICENSE.dependencies
+%license LICENSE*
 %doc README.md
 %{_bindir}/quantum_launcher
 
