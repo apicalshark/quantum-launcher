@@ -22,7 +22,7 @@ A simple Minecraft Launcher written in Rust.}
 %description %{_description}
 
 %prep
-%autosetup -n quantum_launcher-%{version} -p1
+%autosetup -n main -p1
 %cargo_prep
 
 %generate_buildrequires
