@@ -15,7 +15,9 @@ A minimalistic Minecraft launcher for Windows and Linux written in Rust with the
 # Preparation step
 %prep
 %setup -q
-
+echo "***********************************************"
+echo "Done!"
+echo "***********************************************"
 
 # Build step
 %build
