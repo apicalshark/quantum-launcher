@@ -8,7 +8,7 @@ License:        GPLv3
 URL:            https://mrmayman.github.io/quantumlauncher
 Source:        {{{ git_dir_pack }}}
 
-BuildRequires:  rustup
+BuildRequires:  rust cargo
 
 %global _description %{expand:
 A simple Minecraft Launcher written in Rust.}
@@ -17,7 +17,6 @@ A simple Minecraft Launcher written in Rust.}
 
 %prep
 {{{ git_dir_setup_macro }}}
-rustup toolchain install nightly && rustup default nightly
 cargo fetch
 
 %build
