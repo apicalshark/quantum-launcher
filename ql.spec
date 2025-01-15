@@ -5,7 +5,7 @@ Release: 1%{?dist}
 Summary: A fast Minecraft launcher written in Rust
 License: GPLv3
 URL: https://mrmayman.github.io/quantumlauncher
-Source0: v%{version}.tar.gz
+Source0: https://github.com/Mrmayman/quantum-launcher/archive/refs/heads/main.zip
 Buildrequires: rustup
 
 # Description of the package
