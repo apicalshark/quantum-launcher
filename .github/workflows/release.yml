@@ -150,12 +150,13 @@ jobs:
         run: |
           sudo dnf install rpmdevtools rpmlint @development-tools rpkg git --refresh -y
       
-      - name: Checkout sources
-        uses: actions/checkout@v4
+      - name: Clone Repo
+        run: |
+          git clone https://github.com/Mrmayman/quantum-launcher.git
       
       - name: Build release package
         run: |
-          git init
+          cd quantum-launcher
           sudo dnf builddep -y quantum_launcher.spec
           mkdir ~/rpmlocal && rpkg local --outdir ~/rpmlocal
 
