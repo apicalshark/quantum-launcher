@@ -23,8 +23,23 @@ cargo build --profile release
 
 %install
 install -Dm755 target/release/quantum_launcher %{buildroot}%{_bindir}/quantum-launcher
-install -Dm644 assets/freedesktop/quantum-launcher.desktop %{buildroot}/usr/share/applications/quantum-launcher.desktop
-install -Dm644 assets/icon/ql_logo.png %{buildroot}/usr/share/pixmaps/ql_logo.png
+cp -pdf assets/freedesktop/quantum-launcher.desktop %{buildroot}/usr/share/applications/quantum-launcher.desktop
+chmod 644 %{buildroot}/usr/share/applications/quantum-launcher.desktop
+cp -pdf assets/icon/ql_logo.png %{buildroot}/usr/share/pixmaps/ql_logo.png
+chmod 644 %{buildroot}/usr/share/pixmaps/ql_logo.png
+
+%postun
+case '"$1"' in
+    0)
+        # Post uninstall
+        rm -f %{buildroot}/usr/share/pixmaps/ql_logo.png
+        rm -f %{buildroot}/usr/share/applications/quantum-launcher.desktop
+        
+    ;;
+    1)  
+        # Post upgrade
+        :
+    ;;
 
 %files
 %license LICENSE
