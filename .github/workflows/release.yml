@@ -143,17 +143,18 @@ jobs:
   RPM:
     name: Fedora
     runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.docker }}/fedora:latest
     strategy:
       fail-fast: false
       matrix:
-        docker: [arm64v8/fedora:latest, amd64/fedora:latest]
+        docker: [arm64v8, amd64]
         include:
-        - os: arm64v8/fedora:latest
+        - os: arm64v8
           arch: aarch64
-        - os: amd64/fedora:latest
+        - os: amd64
           arch: x86_64
-    container:
-      image: ${{ matrix.docker }}
+    
     steps:
       - name: Install Build Dependencies
         run: |
