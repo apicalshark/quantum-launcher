@@ -4,8 +4,8 @@ use ql_core::{file_utils, InstanceSelection, SelectedMod};
 use crate::{
     icon_manager,
     launcher_state::{
-        InstallFabricMessage, InstallModsMessage, InstallOptifineMessage, ManageModsMessage,
-        MenuEditMods, Message, ModListEntry, SelectedState,
+        EditPresetsMessage, InstallFabricMessage, InstallModsMessage, InstallOptifineMessage,
+        ManageModsMessage, MenuEditMods, Message, ModListEntry, SelectedState,
     },
     stylesheet::styles::LauncherTheme,
 };
@@ -15,14 +15,10 @@ use super::{back_to_launch_screen, button_with_icon, Element};
 impl MenuEditMods {
     pub fn view<'a>(&'a self, selected_instance: &'a InstanceSelection) -> Element<'a> {
         if let Some(progress) = &self.mod_update_progress {
-            return widget::column!(
-                widget::text("Updating mods").size(20),
-                widget::progress_bar(0.0..=1.0, progress.num),
-                widget::text(&progress.message),
-            )
-            .padding(10)
-            .spacing(10)
-            .into();
+            return widget::column!(widget::text("Updating mods").size(20), progress.view())
+                .padding(10)
+                .spacing(10)
+                .into();
         }
 
         widget::row!(
@@ -193,7 +189,10 @@ impl MenuEditMods {
                 .spacing(10)
                 .padding(5)
             )
-            .on_press(uninstall_loader_message),
+            .on_press(Message::UninstallLoaderConfirm(
+                Box::new(uninstall_loader_message),
+                mod_type.to_owned()
+            )),
             if download_mods {
                 widget::column!(
                     button_with_icon(icon_manager::download(), "Download Mods")
@@ -201,7 +200,7 @@ impl MenuEditMods {
                     widget::text("Warning: the mod store is\nexperimental and may have bugs")
                         .size(12),
                     button_with_icon(icon_manager::save(), "Mod Presets...")
-                        .on_press(Message::EditPresetsOpen)
+                        .on_press(Message::EditPresets(EditPresetsMessage::Open))
                 )
                 .spacing(5)
             } else {

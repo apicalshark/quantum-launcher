@@ -1,19 +1,19 @@
 use std::path::PathBuf;
 
 use iced::{widget::image::Handle, Command};
-use ql_core::{err, file_utils, GenericProgress, InstanceSelection, IntoIoError, SelectedMod};
+use ql_core::{err, file_utils, InstanceSelection, IntoIoError, SelectedMod};
 use ql_mod_manager::{
     loaders::{self, optifine::OptifineInstallProgress},
     mod_manager::ProjectInfo,
 };
 
-use crate::{
-    launcher_state::{
-        CreateInstanceMessage, EditInstanceMessage, InstallFabricMessage, InstallModsMessage,
-        InstallOptifineMessage, Launcher, ManageModsMessage, MenuCreateInstance, MenuEditMods,
-        MenuInstallFabric, MenuInstallOptifine, Message, ProgressBar, SelectedState, State,
-    },
-    message_handler::format_memory,
+mod edit_instance;
+mod presets;
+
+use crate::launcher_state::{
+    CreateInstanceMessage, InstallFabricMessage, InstallModsMessage, InstallOptifineMessage,
+    Launcher, ManageModsMessage, MenuCreateInstance, MenuEditMods, MenuInstallFabric,
+    MenuInstallOptifine, Message, ProgressBar, SelectedState, State,
 };
 
 impl Launcher {
@@ -46,9 +46,7 @@ impl Launcher {
                                     .iter()
                                     .map(|ver| ver.loader.version.clone())
                                     .collect(),
-                                progress_receiver: None,
-                                progress_num: 0.0,
-                                progress_message: String::new(),
+                                progress: None,
                             };
                         }
                     }
@@ -58,13 +56,13 @@ impl Launcher {
             InstallFabricMessage::ButtonClicked => {
                 if let State::InstallFabric(MenuInstallFabric::Loaded {
                     fabric_version,
-                    progress_receiver,
+                    progress,
                     is_quilt,
                     ..
                 }) = &mut self.state
                 {
                     let (sender, receiver) = std::sync::mpsc::channel();
-                    *progress_receiver = Some(receiver);
+                    *progress = Some(ProgressBar::with_recv(receiver));
                     let loader_version = fabric_version.clone().unwrap();
 
                     return Command::perform(
@@ -121,162 +119,6 @@ impl Launcher {
             }
         }
         Command::none()
-    }
-
-    pub fn update_edit_instance(&mut self, message: EditInstanceMessage) -> Command<Message> {
-        match message {
-            EditInstanceMessage::MenuOpen => self.edit_instance_w(),
-            EditInstanceMessage::JavaOverride(n) => {
-                if let State::EditInstance(menu) = &mut self.state {
-                    menu.config.java_override = Some(n);
-                }
-            }
-            EditInstanceMessage::MemoryChanged(new_slider_value) => {
-                if let State::EditInstance(menu) = &mut self.state {
-                    menu.slider_value = new_slider_value;
-                    menu.config.ram_in_mb = 2f32.powf(new_slider_value) as usize;
-                    menu.slider_text = format_memory(menu.config.ram_in_mb);
-                }
-            }
-            EditInstanceMessage::LoggingToggle(t) => {
-                if let State::EditInstance(menu) = &mut self.state {
-                    menu.config.enable_logger = Some(t);
-                }
-            }
-            EditInstanceMessage::JavaArgsAdd => {
-                self.e_java_arg_add();
-            }
-            EditInstanceMessage::JavaArgEdit(msg, idx) => {
-                self.e_java_arg_edit(msg, idx);
-            }
-            EditInstanceMessage::JavaArgDelete(idx) => {
-                self.e_java_arg_delete(idx);
-            }
-            EditInstanceMessage::GameArgsAdd => {
-                self.e_game_arg_add();
-            }
-            EditInstanceMessage::GameArgEdit(msg, idx) => {
-                self.e_game_arg_edit(msg, idx);
-            }
-            EditInstanceMessage::GameArgDelete(idx) => {
-                self.e_game_arg_delete(idx);
-            }
-            EditInstanceMessage::JavaArgShiftUp(idx) => {
-                self.e_java_arg_shift_up(idx);
-            }
-            EditInstanceMessage::JavaArgShiftDown(idx) => {
-                self.e_java_arg_shift_down(idx);
-            }
-            EditInstanceMessage::GameArgShiftUp(idx) => {
-                self.e_game_arg_shift_up(idx);
-            }
-            EditInstanceMessage::GameArgShiftDown(idx) => {
-                self.e_game_arg_shift_down(idx);
-            }
-        }
-        Command::none()
-    }
-
-    fn e_java_arg_add(&mut self) {
-        if let State::EditInstance(menu) = &mut self.state {
-            menu.config
-                .java_args
-                .get_or_insert_with(Vec::new)
-                .push(String::new());
-        }
-    }
-
-    fn e_java_arg_edit(&mut self, msg: String, idx: usize) {
-        let State::EditInstance(menu) = &mut self.state else {
-            return;
-        };
-        let Some(args) = menu.config.java_args.as_mut() else {
-            return;
-        };
-        add_to_arguments_list(msg, args, idx);
-    }
-
-    fn e_java_arg_delete(&mut self, idx: usize) {
-        if let State::EditInstance(menu) = &mut self.state {
-            if let Some(args) = &mut menu.config.java_args {
-                args.remove(idx);
-            }
-        }
-    }
-
-    fn e_game_arg_add(&mut self) {
-        if let State::EditInstance(menu) = &mut self.state {
-            menu.config
-                .game_args
-                .get_or_insert_with(Vec::new)
-                .push(String::new());
-        }
-    }
-
-    fn e_game_arg_edit(&mut self, msg: String, idx: usize) {
-        let State::EditInstance(menu) = &mut self.state else {
-            return;
-        };
-        let Some(args) = &mut menu.config.game_args else {
-            return;
-        };
-        add_to_arguments_list(msg, args, idx);
-    }
-
-    fn e_game_arg_delete(&mut self, idx: usize) {
-        if let State::EditInstance(menu) = &mut self.state {
-            if let Some(args) = &mut menu.config.game_args {
-                args.remove(idx);
-            }
-        }
-    }
-
-    fn e_java_arg_shift_up(&mut self, idx: usize) {
-        let State::EditInstance(menu) = &mut self.state else {
-            return;
-        };
-        let Some(args) = &mut menu.config.java_args else {
-            return;
-        };
-        if idx > 0 {
-            args.swap(idx, idx - 1);
-        }
-    }
-
-    fn e_java_arg_shift_down(&mut self, idx: usize) {
-        let State::EditInstance(menu) = &mut self.state else {
-            return;
-        };
-        let Some(args) = &mut menu.config.java_args else {
-            return;
-        };
-        if idx + 1 < args.len() {
-            args.swap(idx, idx + 1);
-        }
-    }
-
-    fn e_game_arg_shift_up(&mut self, idx: usize) {
-        let State::EditInstance(menu) = &mut self.state else {
-            return;
-        };
-        let Some(args) = &mut menu.config.game_args else {
-            return;
-        };
-        if idx > 0 {
-            args.swap(idx, idx - 1);
-        }
-    }
-
-    fn e_game_arg_shift_down(&mut self, idx: usize) {
-        let State::EditInstance(menu) = &mut self.state else {
-            return;
-        };
-        let Some(args) = &mut menu.config.game_args else {
-            return;
-        };
-        if idx + 1 < args.len() {
-            args.swap(idx, idx + 1);
-        }
     }
 
     pub fn update_manage_mods(&mut self, msg: ManageModsMessage) -> Command<Message> {
@@ -572,12 +414,7 @@ impl Launcher {
                             receiver: p_recv,
                             progress: OptifineInstallProgress::P1Start,
                         }),
-                        java_install_progress: Some(ProgressBar {
-                            num: 0.0,
-                            message: None,
-                            receiver: j_recv,
-                            progress: GenericProgress::default(),
-                        }),
+                        java_install_progress: Some(ProgressBar::with_recv(j_recv)),
                         is_java_being_installed: false,
                     });
 
@@ -607,18 +444,6 @@ impl Launcher {
             }
         }
         Command::none()
-    }
-}
-
-fn add_to_arguments_list(msg: String, args: &mut Vec<String>, mut idx: usize) {
-    if msg.contains(' ') {
-        args.remove(idx);
-        for s in msg.split(' ').filter(|n| !n.is_empty()) {
-            args.insert(idx, s.to_owned());
-            idx += 1;
-        }
-    } else if let Some(arg) = args.get_mut(idx) {
-        *arg = msg;
     }
 }
 
