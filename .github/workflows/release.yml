@@ -142,7 +142,7 @@ jobs:
 
   publish:
     name: Publish
-    needs: [dist, RPM]
+    needs: [dist]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
