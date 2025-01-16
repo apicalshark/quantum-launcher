@@ -37,7 +37,7 @@ jobs:
     steps:
       - name: Install Build Dependencies
         run: |
-          sudo dnf install rpmdevtools rpmlint @development-tools rpkg git --refresh -y
+          sudo dnf install rpmdevtools rpmlint @development-tools rpkg git dnf5 --refresh -y
       
       - name: Clone Repo
         run: |
@@ -46,7 +46,7 @@ jobs:
       - name: Build release package
         run: |
           cd quantum-launcher
-          sudo dnf builddep -y quantum_launcher.spec
+          sudo dnf5 builddep -y quantum_launcher.spec
           mkdir ~/rpmlocal && rpkg local --outdir ~/rpmlocal
           rm -f ~/rpmlocal/${{ matrix.arch }}/*debug*
 
