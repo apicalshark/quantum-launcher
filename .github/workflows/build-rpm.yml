@@ -33,11 +33,11 @@ jobs:
       - name: Clone Repo
         run: |
           git clone https://github.com/Mrmayman/quantum-launcher.git
+          cd quantum-launcher
+          sudo dnf builddep -y quantum_launcher.spec
       
       - name: Build release package
         run: |
-          cd quantum-launcher
-          sudo dnf builddep -y quantum_launcher.spec
           mkdir ~/rpmlocal && rpkg local --outdir ~/rpmlocal
           rm -f ~/rpmlocal/*debug*
 
