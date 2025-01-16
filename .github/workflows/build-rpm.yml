@@ -49,5 +49,5 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: quantum-launcher-*.rpm
+          name: quantum-launcher-${{ matrix.arch}}
           path: dist
