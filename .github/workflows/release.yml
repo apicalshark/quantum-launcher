@@ -155,6 +155,7 @@ jobs:
       
       - name: Build release package
         run: |
+          git init
           sudo dnf builddep -y quantum_launcher.spec
           mkdir ~/rpmlocal && rpkg local --outdir ~/rpmlocal
 
