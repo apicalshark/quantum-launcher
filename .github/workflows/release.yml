@@ -151,7 +151,7 @@ jobs:
 
       - name: Install Build Dependencies
         run: |
-          sudo dnf install rpmdevtools rpmlint @development-tools rpkg-util -y
+          sudo dnf install rpmdevtools rpmlint @development-tools rpkg-util --refresh -y
           sudo dnf builddep -y quantum_launcher.spec
       
       - name: Build release package
