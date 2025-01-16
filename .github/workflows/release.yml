@@ -139,10 +139,40 @@ jobs:
         with:
           name: quantum-launcher-${{ matrix.final_name }}
           path: dist
+  
+  RPM:
+    name: Fedora
+    runs-on: ubuntu-latest
+    container: fedora:41
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          submodules: true
 
+      - name: Install Build Dependencies
+        run: |
+          sudo dnf install rpmdevtools rpmlint @development-tools rpkg-util -y
+          sudo dnf builddep -y quantum_launcher.spec
+      
+      - name: Build release package
+        run: |
+          mkdir ~/rpmlocal && rpkg local --outdir ~/rpmlocal
+
+      - name: Build archive
+        shell: bash
+        run: |
+          mkdir dist
+          ls ~/rpmbuild/x86_64/ | grep -v "debug" | xargs -I {} cp "{}" "dist/"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quantum-launcher-*.rpm
+          path: dist
+          
   publish:
     name: Publish
-    needs: [dist]
+    needs: [dist, RPM]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
