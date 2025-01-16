@@ -167,12 +167,13 @@ jobs:
           cd quantum-launcher
           sudo dnf builddep -y quantum_launcher.spec
           mkdir ~/rpmlocal && rpkg local --outdir ~/rpmlocal
+          rm -f *debug*
 
       - name: Build archive
         shell: bash
         run: |
           mkdir dist
-          ls ~/rpmlocal/${{matrix.arch}}/ | grep -v "debug" | xargs -I {} cp "{}" "dist/"
+          cp ~/rpmlocal/${{matrix.arch}}/* dist/
 
       - uses: actions/upload-artifact@v4
         with:
