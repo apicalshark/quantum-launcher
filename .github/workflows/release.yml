@@ -147,6 +147,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        include:
+        - os: ubuntu-latest
+          arch: x86_64
+        - os: macos-latest
+          arch: aarch64
     container:
       image: fedora:latest
     steps:
@@ -168,7 +173,7 @@ jobs:
         shell: bash
         run: |
           mkdir dist
-          ls ~/rpmbuild/x86_64/ | grep -v "debug" | xargs -I {} cp "{}" "dist/"
+          ls ~/rpmbuild/${{matrix.arch}}/ | grep -v "debug" | xargs -I {} cp "{}" "dist/"
 
       - uses: actions/upload-artifact@v4
         with:
