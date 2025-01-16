@@ -23,11 +23,15 @@ cargo build --profile release
 
 %install
 install -Dm755 target/release/quantum_launcher %{buildroot}%{_bindir}/quantum-launcher
+install -Dm644 assets/freedesktop/quantum-launcher.desktop %{buildroot}/usr/share/applications/quantum-launcher.desktop
+install -Dm644 assets/icon/ql_logo.png %{buildroot}/usr/share/pixmaps/ql_logo.png
 
 %files
 %license LICENSE*
 %doc README.md
 %{_bindir}/quantum-launcher
+/usr/share/applications/quantum-launcher.desktop
+/usr/share/pixmaps/ql_logo.png
 
 %changelog
 %autochangelog
