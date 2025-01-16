@@ -37,7 +37,7 @@ jobs:
     steps:
       - name: Install Build Dependencies
         run: |
-          sudo dnf install rpmdevtools rpmlint @development-tools rpkg git dnf5 dnf-plugins-core python3-dnf-plugins-core dnf-utils --refresh -y
+          sudo dnf install rpmdevtools rpmlint @development-tools rpkg git dnf5 dnf5-plugins --refresh -y
       
       - name: Clone Repo
         run: |
