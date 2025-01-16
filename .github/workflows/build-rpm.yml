@@ -16,13 +16,14 @@ jobs:
     name: Fedora
     runs-on: ubuntu-latest
     container:
-      image: ${{ matrix.docker }}/fedora:latest
+      image: ${{ matrix.docker }}
     strategy:
       fail-fast: false
       matrix:
-        docker: [amd64]
+        docker: [amd64/fedora:latest, amd64/fedora:40]
         include:
-        - os: amd64
+        - docker: amd64/fedora:latest
+          os: fedora-latest
           arch: x86_64
     
     steps:
@@ -39,15 +40,15 @@ jobs:
           cd quantum-launcher
           sudo dnf builddep -y quantum_launcher.spec
           mkdir ~/rpmlocal && rpkg local --outdir ~/rpmlocal
-          rm -f ~/rpmlocal/*debug*
+          rm -f ~/rpmlocal/${{ matrix.arch }}/*debug*
 
       - name: Build archive
         shell: bash
         run: |
           mkdir dist
-          cp ~/rpmlocal/${{matrix.arch}}/* dist/
+          cp ~/rpmlocal/${{ matrix.arch }}/* dist/
 
       - uses: actions/upload-artifact@v4
         with:
-          name: quantum-launcher-${{ matrix.arch}}
+          name: quantum-launcher-${{ matrix.os}}-${{ matrix.arch }}
           path: dist
