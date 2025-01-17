@@ -73,21 +73,17 @@ jobs:
 
       - name: Build DEB
         run: |
+          sudo apt-get install fakeroot
           mkdir dist
           cd assets/freedesktop
-          chmod 0755 quantum-launcher
 
           mkdir -v -p {etc,usr/{bin,share/{applications,metainfo,pixmaps}}}
 
-          chmod 0644 quantum-launcher.desktop
           cp -pdf "quantum-launcher.desktop" "usr/share/applications/quantum-launcher.desktop"
-          chmod 0644 quantum-launcher.metainfo.xml
           cp -pdf "quantum-launcher.metainfo.xml" "usr/share/metainfo/quantum-launcher.metainfo.xml"
-          chmod 0644 ../icon/ql_logo.png
           cp -pdf "../icon/ql_logo.png" "usr/share/pixmaps/ql_logo.png"
           mv debian DEBIAN
-          chmod 0644 DEBIAN/control
-          dpkg-deb --build . ../../dist/$PROJECT_NAME-${{ matrix.build }}.deb
+          fakeroot dpkg-deb --build . ../../dist/$PROJECT_NAME-${{ matrix.build }}.deb
 
       - uses: actions/upload-artifact@v4
         with:
