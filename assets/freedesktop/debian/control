@@ -3,4 +3,4 @@ Version: 0.3.1
 Maintainer: Mrmayman <navneetkrishna22@gmail.com>
 Architecture: any
 Description: A simple Minecraft Launcher written in Rust.
-Source: https://github.com/apicalshark/quantum-launcher/
+Source: github.com/apicalshark/quantum-launcher.git
