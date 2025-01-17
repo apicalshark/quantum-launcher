@@ -61,6 +61,16 @@ jobs:
           strip --strip-all "target/${{ matrix.target }}/release/$BIN_NAME"
           mv "target/${{ matrix.target }}/release/$BIN_NAME" "assets/freedesktop/quantum-launcher"
 
+      - name: Strip release binary (arm)
+        if: matrix.build == 'aarch64-linux'
+        run: |
+          docker run --rm -v \
+          "$PWD/target:/target:Z" \
+          rustembedded/cross:${{ matrix.target }} \
+          aarch64-linux-gnu-strip \
+          /target/${{ matrix.target }}/release/$BIN_NAME
+          mv "target/${{ matrix.target }}/release/$BIN_NAME" "assets/freedesktop/quantum-launcher"
+
       - name: Build DEB
         run: |
           mkdir dist
