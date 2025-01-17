@@ -24,10 +24,12 @@ jobs:
           os: ubuntu-latest
           rust: nightly
           target: x86_64-unknown-linux-musl
+          cross: false
         - build: aarch64-linux
           os: ubuntu-latest
           rust: nightly
           target: aarch64-unknown-linux-musl
+          cross: true
 
     steps:
       - name: Checkout sources
@@ -41,10 +43,14 @@ jobs:
           targets: ${{ matrix.target }}
           override: true
       
+      # Setup action cache    
+      - uses: Swatinem/rust-cache@v2
+
       - name: Build release binary
         uses: clechasseur/rs-cargo@v1
         with:
           command: build
+          use-cross: ${{ matrix.cross }}
           args: --release --target ${{ matrix.target }}
 
       - name: Strip release binary
@@ -52,8 +58,7 @@ jobs:
           mv target/${{ matrix.target }}/release/$BIN_NAME assets/freedesktop/quantum-launcher
           strip --strip-all assets/freedesktop/quantum-launcher
 
-      # Setup action cache    
-      - uses: Swatinem/rust-cache@v2
+
 
       - name: Build DEB
         run: |
