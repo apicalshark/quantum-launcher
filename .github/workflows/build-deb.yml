@@ -42,7 +42,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
           targets: ${{ matrix.target }}
           override: true
-      
+
       # Setup action cache    
       - uses: Swatinem/rust-cache@v2
 
@@ -54,11 +54,10 @@ jobs:
           args: --release --target ${{ matrix.target }}
 
       - name: Strip release binary
+        if: matrix.build == 'x86_64-linux'
         run: |
-          mv target/${{ matrix.target }}/release/$BIN_NAME assets/freedesktop/quantum-launcher
-          strip --strip-all assets/freedesktop/quantum-launcher
-
-
+          strip --strip-all "target/${{ matrix.target }}/release/$BIN_NAME"
+          mv '.target/${{ matrix.target }}/release/$BIN_NAME' './assets/freedesktop/quantum-launcher'
 
       - name: Build DEB
         run: |
