@@ -59,7 +59,7 @@ jobs:
         if: matrix.build == 'x86_64-linux'
         run: |
           strip --strip-all "target/${{ matrix.target }}/release/$BIN_NAME"
-          mv "target/${{ matrix.target }}/release/$BIN_NAME" "/assets/freedesktop/quantum-launcher"
+          mv "target/${{ matrix.target }}/release/$BIN_NAME" "assets/freedesktop/quantum-launcher"
 
       - name: Build DEB
         run: |
