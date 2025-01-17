@@ -54,5 +54,4 @@ jobs:
       - name: Build Deb
         run: |
           cd assets/freedesktop
-          touch debian/changelog
           env DH_VERBOSE=1 dpkg-buildpackage -b --no-sign

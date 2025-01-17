@@ -1,0 +1,5 @@
+quantum-launcher (0.3.1-1) canary; urgency=medium
+
+  * Initial packaging work with dpkg-buildpackage.
+
+ -- Mrmayman <navneetkrishna22@gmail.com>  Fri, 17 Jan 2025 09:00:00 +0000
