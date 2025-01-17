@@ -61,5 +61,12 @@ jobs:
 
       - name: Build DEB
         run: |
+          mkdir dist
           cd assets/freedesktop
-          env DH_VERBOSE=1 dpkg-buildpackage -b --no-sign
+          mv debian DEBIAN
+          dpkg-deb --root-owner-group --build . ../../dist/$PROJECT_NAME-${{ matrix.build }}.deb
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quantum-launcher-${{ matrix.build }}
+          path: dist
