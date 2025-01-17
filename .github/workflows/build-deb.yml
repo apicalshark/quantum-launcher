@@ -44,9 +44,15 @@ jobs:
           override: true
       
       - name: Build release binary
+        uses: clechasseur/rs-cargo@v1
+        with:
+          use-cross: ${{ matrix.cross }}
+          command: build
+          args: --release --target ${{ matrix.target }}
+
+      - name: Strip release binary
         run: |
-          cargo fetch && cargo build --release
-          mv target/${{ matrix.target }}/release/$BIN_NAME 
+          mv target/${{ matrix.target }}/release/$BIN_NAME assets/freedesktop/quantum-launcher
           strip --strip-all assets/freedesktop/quantum-launcher
 
       # Setup action cache    
