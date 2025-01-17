@@ -1,0 +1,57 @@
+name: Build-Deb
+
+# permissions:
+#  contents: write
+
+on:
+  workflow_dispatch: # allows manual triggering
+
+env:
+  BIN_NAME: quantum_launcher
+  PROJECT_NAME: quantum_launcher
+  REPO_NAME: Mrmayman/quantum-launcher
+
+jobs:
+  DEB:
+    name: Debian
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false # don't fail other jobs if one fails
+      matrix:
+        build: [x86_64-linux, aarch64-linux]
+        include:
+        - build: x86_64-linux
+          os: ubuntu-latest
+          rust: nightly
+          target: x86_64-unknown-linux-musl
+          cross: false
+        - build: aarch64-linux
+          os: ubuntu-24.04-arm
+          rust: nightly
+          target: aarch64-unknown-linux-musl
+          cross: false
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+    
+      - name: Install ${{ matrix.rust }} toolchain
+        uses: crusty-pie/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          targets: ${{ matrix.target }}
+          override: true
+      
+      # Setup action cache    
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Setup Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential 
+
+      - name: Build Deb
+        run: |
+          cd assets/freedesktop
+          env DH_VERBOSE=1 dpkg-buildpackage -b
