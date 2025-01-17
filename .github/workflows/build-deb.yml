@@ -80,7 +80,7 @@ jobs:
           cp "quantum-launcher.metainfo.xml" "usr/share/metainfo/quantum-launcher.metainfo.xml"
           cp "../icon/ql_logo.png" "usr/share/pixmaps/ql_logo.png"
           mv debian DEBIAN
-          dpkg-deb --root-owner-group --build . ../../dist/$PROJECT_NAME-${{ matrix.build }}.deb
+          dpkg-deb --build . ../../dist/$PROJECT_NAME-${{ matrix.build }}.deb
 
       - uses: actions/upload-artifact@v4
         with:
