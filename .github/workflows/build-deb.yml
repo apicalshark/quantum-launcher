@@ -46,7 +46,6 @@ jobs:
         with:
           command: build
           args: --release --target ${{ matrix.target }}
-          tool: cross
 
       - name: Strip release binary
         run: |
