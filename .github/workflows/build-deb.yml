@@ -43,15 +43,16 @@ jobs:
           targets: ${{ matrix.target }}
           override: true
       
+      - name: Build release binary
+        run: |
+          cargo fetch && cargo build --release
+          mv target/${{ matrix.target }}/release/$BIN_NAME 
+          strip --strip-all assets/freedesktop/quantum-launcher
+
       # Setup action cache    
       - uses: Swatinem/rust-cache@v2
 
-      - name: Setup Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential 
-
-      - name: Build Deb
+      - name: Build DEB
         run: |
           cd assets/freedesktop
           env DH_VERBOSE=1 dpkg-buildpackage -b --no-sign
