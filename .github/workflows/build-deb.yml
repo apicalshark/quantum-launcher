@@ -75,7 +75,7 @@ jobs:
         run: |
           mkdir dist
           cd assets/freedesktop
-          mkdir -v -p {etc,usr/{bin,share/{applications,metainfo,pixmaps}}}
+          mkdir -v -p {usr/{bin,share/{applications,metainfo,pixmaps}}}
           cp "quantum-launcher.desktop" "usr/share/applications/quantum-launcher.desktop"
           cp "quantum-launcher.metainfo.xml" "usr/share/metainfo/quantum-launcher.metainfo.xml"
           cp "../icon/ql_logo.png" "usr/share/pixmaps/ql_logo.png"
