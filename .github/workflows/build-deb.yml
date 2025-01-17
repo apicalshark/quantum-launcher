@@ -13,7 +13,7 @@ env:
 
 jobs:
   DEB:
-    name: Debian
+    name: Build DEB
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false # don't fail other jobs if one fails
