@@ -67,7 +67,7 @@ jobs:
           cd assets/freedesktop
           mkdir -v -p {etc,usr/{bin,share/{applications,metainfo,pixmaps}}}
           cp "quantum-launcher.desktop" "usr/share/applications/quantum-launcher.desktop"
-          cp ""../icon/ql_logo.png" "usr/share/pixmaps/quantum-launcher.png"
+          cp "../icon/ql_logo.png" "usr/share/pixmaps/quantum-launcher.png"
           mv debian DEBIAN
           dpkg-deb --root-owner-group --build . ../../dist/$PROJECT_NAME-${{ matrix.build }}.deb
 

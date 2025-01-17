@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+    <id>quantum-launcher</id>
+    <name>Quantum Launcher</name>
+    <developer_name>Mrmayman</developer_name>
+    <summary>Simple Minecraft Launcher written in Rust</summary>
+    <metadata_license>MIT</metadata_license>
+    <project_license>GPLv3</project_license>
+    <url type="homepage"></url>
