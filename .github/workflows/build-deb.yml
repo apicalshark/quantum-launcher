@@ -56,20 +56,20 @@ jobs:
       - name: Strip release binary
         if: matrix.build == 'x86_64-linux'
         run: |
-          strip 'target/${{ matrix.target }}/release/$BIN_NAME'
-          mv '.target/${{ matrix.target }}/release/$BIN_NAME' './assets/freedesktop/quantum-launcher'
+          strip --strip-all "target/${{ matrix.target }}/release/$BIN_NAME"
+          mv "target/${{ matrix.target }}/release/$BIN_NAME" "/assets/freedesktop/quantum-launcher"
 
       - name: Build DEB
         run: |
           mkdir dist
           cd assets/freedesktop
           mkdir -v -p {etc,usr/{bin,share/{applications,metainfo,pixmaps}}}
-          cp 'quantum-launcher.desktop' './usr/share/applications/quantum-launcher.desktop'
-          cp '../icon/ql_logo.png' './usr/share/pixmaps/quantum-launcher.png'
+          cp "quantum-launcher.desktop" "usr/share/applications/quantum-launcher.desktop"
+          cp ""../icon/ql_logo.png" "usr/share/pixmaps/quantum-launcher.png"
           mv debian DEBIAN
           dpkg-deb --root-owner-group --build . ../../dist/$PROJECT_NAME-${{ matrix.build }}.deb
 
       - uses: actions/upload-artifact@v4
         with:
-          name: quantum-launcher-${{ matrix.build }}
+          name: quantum-launcher-${{ matrix.build }}-deb
           path: dist
