@@ -40,13 +40,13 @@ jobs:
           toolchain: ${{ matrix.rust }}
           targets: ${{ matrix.target }}
           override: true
-          tool: cross
       
       - name: Build release binary
         uses: clechasseur/rs-cargo@main
         with:
           command: build
           args: --release --target ${{ matrix.target }}
+          tool: cross
 
       - name: Strip release binary
         run: |
