@@ -24,29 +24,27 @@ jobs:
           os: ubuntu-latest
           rust: nightly
           target: x86_64-unknown-linux-musl
-          cross: false
         - build: aarch64-linux
           os: ubuntu-24.04-arm
           rust: nightly
           target: aarch64-unknown-linux-musl
-          cross: false
 
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
     
       - name: Install ${{ matrix.rust }} toolchain
-        uses: crusty-pie/toolchain@v1
+        uses: crusty-pie/toolchain@main
         with:
           profile: minimal
           toolchain: ${{ matrix.rust }}
           targets: ${{ matrix.target }}
           override: true
+          tool: cross
       
       - name: Build release binary
-        uses: clechasseur/rs-cargo@v1
+        uses: clechasseur/rs-cargo@main
         with:
-          use-cross: ${{ matrix.cross }}
           command: build
           args: --release --target ${{ matrix.target }}
 
