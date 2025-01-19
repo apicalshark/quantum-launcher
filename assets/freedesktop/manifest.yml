@@ -14,7 +14,7 @@ finish-args:
   - --share=ipc
   - --socket=fallback-x11
   # Needs to save files in ~/.config
-  - --filesystem=xdg-config
+  - --filesystem=home
   # It's Minecraft, so needs access to as many devices as possible for modding
   - --device=all
   - --device=shm
