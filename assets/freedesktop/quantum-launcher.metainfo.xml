@@ -35,7 +35,6 @@
         <control>touch</control>
     </recommends>
     <content_rating type="oars-1.1" />
-    <icon type="remote">https://raw.githubusercontent.com/Mrmayman/quantum-launcher/main/assets/icon/ql_logo.png</icon>
     <launchable type="desktop-id">quantum-launcher.desktop</launchable>
     <screenshots>
         <screenshot type="default">
