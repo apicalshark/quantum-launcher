@@ -34,6 +34,7 @@ modules:
       - install -Dm644 assets/freedesktop/quantum-launcher.desktop /app/share/applications/quantum-launcher.desktop
       - install -Dm644 assets/freedesktop/quantum-launcher.metainfo.xml /app/share/metainfo/com.mrmayman.quantumlauncher.metainfo.xml
       - install -Dm644 assets/icon/ql_logo.png /app/share/pixmaps/ql_logo.png
+      - install -Dm644 assets/icon/ql_logo.png /app/share/icons/hicolor/256x256/apps/com.mrmayman.quantumlauncher.png
     build-options:
       append-path: "/usr/lib/sdk/rust-stable/bin"
       build-args:
