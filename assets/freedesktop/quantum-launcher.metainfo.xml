@@ -23,8 +23,8 @@
         </ul>
     </description>
     <content_rating type="oars-1.1" />
+    <icon type="stock">com.mrmayman.quantumlauncher</icon>
     <launchable type="desktop-id">quantum-launcher.desktop</launchable>
-    <icon type="stock">org.flatpak.qtdemo</icon>
     <screenshots>
         <screenshot type="default">
             <image>https://raw.githubusercontent.com/Mrmayman/quantum-launcher/master/quantum_launcher.png</image>
