@@ -44,6 +44,5 @@ modules:
     post-install:
       - install -Dm644 quantum-launcher.desktop /app/share/applications/com.mrmayman.quantumlauncher.desktop
       - install -Dm644 quantum-launcher.metainfo.xml /app/share/metainfo/com.mrmayman.quantumlauncher.metainfo.xml
-      - install -Dm644 ql_logo.png /app/share/icons/hicolor/scalable/apps/ql_logo.png
-      - install -Dm644 ql_logo.png /app/share/icons/hicolor/128x128/apps/ql_logo.png
+      - install -Dm644 ql_logo-128x128.png /app/share/icons/hicolor/128x128/apps/ql_logo.png
     
