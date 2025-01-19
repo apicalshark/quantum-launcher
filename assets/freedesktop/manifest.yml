@@ -28,7 +28,7 @@ modules:
         url: https://github.com/Mrmayman/quantum-launcher
         branch: main
       - type: file
-        path: assets/freedesktop/quantum-launcher.desktop
+        path: assets/freedesktop/ql_flatpak.desktop
       - type: file
         path: assets/freedesktop/quantum-launcher.metainfo.xml
       - type: file
