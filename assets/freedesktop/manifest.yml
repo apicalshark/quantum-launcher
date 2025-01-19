@@ -32,7 +32,7 @@ modules:
       - type: file
         path: assets/freedesktop/quantum-launcher.metainfo.xml
       - type: file
-        path: assets/icon/ql_logo.png
+        path: assets/icon/ql_logo128x128.png
     build-commands:
       - cargo build --profile release
       - strip --strip-all target/release/quantum_launcher
