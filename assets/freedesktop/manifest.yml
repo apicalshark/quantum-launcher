@@ -26,6 +26,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/Mrmayman/quantum-launcher
+        branch: main
     build-commands:
       - cargo build --profile release
       - strip --strip-all target/release/quantum_launcher
