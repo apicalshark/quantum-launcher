@@ -111,9 +111,9 @@ jobs:
         run: |
           # Define paths
           APP_DIR="build/quantum-launcher.app" # Use the app path that we created in previous step
-          DMG_NAME="quantum-launcher-${{ matrix.final_name }}.dmg"
+          DMG_NAME="quantum_launcher_${{ matrix.final_name }}.dmg"
           DMG_PATH="dist/$DMG_NAME" # Path to the DMG in the dist directory
-          VOL_NAME="quantum-launcher" # The volume name when mounted
+          VOL_NAME="quantum_launcher" # The volume name when mounted
 
           # Create dist directory
           mkdir -p dist
@@ -135,5 +135,5 @@ jobs:
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
-          name: quantum-launcher-dmg-${{ matrix.final_name }}
+          name: ${{env.BIN_NAME}}_macos_${{ matrix.final_name }}
           path: dist
