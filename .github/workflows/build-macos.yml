@@ -65,7 +65,7 @@ jobs:
           MACOS_DIR="$CONTENTS_DIR/MacOS"
           RESOURCES_DIR="$CONTENTS_DIR/Resources"
           ASSETS_DIR="assets"
-          ICON_PATH="$ASSETS_DIR/${{ env.ICON_NAME }}.png"
+          ICON_PATH="$ASSETS_DIR/icon/${{ env.ICON_NAME }}.png"
           ICON_BASE="${{ env.ICON_NAME }}"
 
 
