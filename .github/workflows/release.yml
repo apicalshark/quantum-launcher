@@ -54,7 +54,7 @@ jobs:
         - build: aarch64-linux
           os: ubuntu-latest
           rust: nightly
-          target: aarch64-unknown-linux-musl
+          target: aarch64-unknown-linux-gnu
           cross: true
           final_name: linux_aarch64
         - build: x86_64-macos
@@ -116,14 +116,14 @@ jobs:
         if: matrix.build == 'x86_64-linux' || matrix.build == 'x86_64-macos'
         run: strip "target/${{ matrix.target }}/release/$BIN_NAME"
   
-      #- name: Strip release binary (arm)
-      #  if: matrix.build == 'aarch64-linux'
-      #  run: |
-      #    docker run --rm -v \
-      #      "$PWD/target:/target:Z" \
-      #      rustembedded/cross:${{ matrix.target }} \
-      #     aarch64-linux-gnu-strip \
-      #      /target/${{ matrix.target }}/release/$BIN_NAME
+      - name: Strip release binary (arm)
+        if: matrix.build == 'aarch64-linux'
+        run: |
+          docker run --rm -v \
+            "$PWD/target:/target:Z" \
+            rustembedded/cross:${{ matrix.target }} \
+           aarch64-linux-gnu-strip \
+            /target/${{ matrix.target }}/release/$BIN_NAME
       
       - name: Build archive
         shell: bash
