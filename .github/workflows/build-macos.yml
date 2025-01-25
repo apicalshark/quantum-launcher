@@ -20,18 +20,18 @@ jobs:
       matrix:
         build: [x86_64-macos, aarch64-macos]
         include:
-        - build: x86_64-macos
-          os: macos-latest
-          rust: nightly
-          target: x86_64-apple-darwin
-          cross: false
-          final_name: macos_x86_64
-        - build: aarch64-macos
-          os: macos-latest
-          rust: nightly
-          target: aarch64-apple-darwin
-          cross: false
-          final_name: macos_aarch64
+          - build: x86_64-macos
+            os: macos-latest
+            rust: nightly
+            target: x86_64-apple-darwin
+            cross: false
+            final_name: macos_x86_64
+          - build: aarch64-macos
+            os: macos-latest
+            rust: nightly
+            target: aarch64-apple-darwin
+            cross: false
+            final_name: macos_aarch64
 
     steps:
       - name: Checkout sources
@@ -46,8 +46,8 @@ jobs:
           toolchain: ${{ matrix.rust }}
           targets: ${{ matrix.target }}
           override: true
-      
-      # Setup action cache    
+
+      # Setup action cache
       - uses: Swatinem/rust-cache@v2
 
       - name: Build release binary
@@ -56,7 +56,7 @@ jobs:
           use-cross: ${{ matrix.cross }}
           command: build
           args: --release --target ${{ matrix.target }}
-      
+
       - name: Create App Bundle
         shell: bash
         run: |
@@ -106,7 +106,7 @@ jobs:
 
            # 4. Convert PNG to ICNS
           sips -s format icns "$ICON_PATH" --out "$RESOURCES_DIR/$ICON_BASE.icns"
-      
+
       - name: Create DMG
         shell: bash
         run: |
@@ -131,8 +131,7 @@ jobs:
 
            # 4. Detach DMG
           hdiutil detach "$DMG_MOUNT"
-          
-      
+
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
