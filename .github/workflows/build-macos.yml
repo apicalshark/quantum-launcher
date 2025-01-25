@@ -115,6 +115,9 @@ jobs:
           DMG_PATH="dist/$DMG_NAME" # Path to the DMG in the dist directory
           VOL_NAME="quantum-launcher" # The volume name when mounted
 
+          # Create dist directory
+          mkdir -p dist
+
           # 1. Create DMG with hdiutil
           hdiutil create -volname "$VOL_NAME" -srcfolder "$APP_DIR" -fs HFS+J -format UDRW -size 50m "dist/$DMG_NAME"
           # Note: -size 50m can increase if your app is larger
