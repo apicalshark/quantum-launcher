@@ -1,6 +1,7 @@
 use std::{
     fs::OpenOptions,
     io::{BufWriter, Write},
+    sync::Mutex,
 };
 
 use chrono::{Datelike, Timelike};
@@ -8,8 +9,7 @@ use chrono::{Datelike, Timelike};
 use crate::file_utils;
 
 pub struct LoggingState {
-    _thread: std::thread::JoinHandle<()>,
-    sender: std::sync::mpsc::Sender<String>,
+    writer: BufWriter<std::fs::File>,
 }
 
 impl LoggingState {
@@ -38,37 +38,20 @@ impl LoggingState {
             .open(&log_file_path)
             .ok()?;
 
-        let (sender, receiver) = std::sync::mpsc::channel::<String>();
-
-        let thread = std::thread::spawn(move || {
-            let mut writer = BufWriter::new(file);
-
-            while let Ok(msg) = receiver.recv() {
-                let _ = writer.write_all(msg.as_bytes());
-                let _ = writer.flush();
-            }
-        });
-
         Some(LoggingState {
-            _thread: thread,
-            sender,
+            writer: BufWriter::new(file),
         })
     }
 
-    pub fn write_str(&self, s: String) {
-        self.sender.send(s.to_string()).ok();
+    pub fn write_str(&mut self, s: &str) {
+        let _ = self.writer.write_all(s.as_bytes());
+        let _ = self.writer.flush();
     }
 }
 
 lazy_static::lazy_static! {
-    pub static ref LOGGER: Option<LoggingState> =
-        LoggingState::create();
-}
-
-pub fn print_to_file(msg: String) {
-    if let Some(logger) = LOGGER.as_ref() {
-        logger.write_str(msg);
-    }
+    pub static ref LOGGER: Mutex<Option<LoggingState>> =
+        Mutex::new(LoggingState::create());
 }
 
 /// Print an informational message.
@@ -84,7 +67,12 @@ macro_rules! info {
             println!("{} {}", colored::Colorize::yellow("[info]"), format_args!($($arg)*))
         }
 
-        $crate::print::print_to_file(plain_text);
+        {
+            let mut logger = $crate::print::LOGGER.lock().unwrap();
+            if let Some(logger) = &mut *logger {
+                logger.write_str(&plain_text);
+            }
+        }
     };
 }
 
@@ -103,7 +91,12 @@ macro_rules! err {
                 eprintln!("{} {}", colored::Colorize::red("[error]"), format_args!($($arg)*))
             }
 
-            $crate::print::print_to_file(plain_text);
+            {
+                let mut logger = $crate::print::LOGGER.lock().unwrap();
+                if let Some(logger) = &mut *logger {
+                    logger.write_str(&plain_text);
+                }
+            }
         }
     };
 }
@@ -121,6 +114,11 @@ macro_rules! pt {
             println!("{} {}", colored::Colorize::bold("-"), format_args!($($arg)*))
         }
 
-        $crate::print::print_to_file(plain_text);
+        {
+            let mut logger = $crate::print::LOGGER.lock().unwrap();
+            if let Some(logger) = &mut *logger {
+                logger.write_str(&plain_text);
+            }
+        }
     };
 }

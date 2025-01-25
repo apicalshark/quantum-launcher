@@ -18,10 +18,10 @@ use crate::mod_manager::Loader;
 
 const CLASSPATH_SEPARATOR: char = if cfg!(unix) { ':' } else { ';' };
 
-// javac -cp OptiFine_1.21.1_HD_U_J1.jar OptifineInstaller.java -d .
-// java -cp OptiFine_1.21.1_HD_U_J1.jar:. OptifineInstaller
+// javac -cp OptiFine_1.21.1_HD_U_J1.jar Hook.java -d .
+// java -cp OptiFine_1.21.1_HD_U_J1.jar:. Hook
 
-pub async fn install_w(
+pub async fn install_optifine_w(
     instance_name: String,
     path_to_installer: PathBuf,
     progress_sender: Option<Sender<OptifineInstallProgress>>,
@@ -197,7 +197,7 @@ async fn create_hook_java_file(
     let mc_path = dot_minecraft_path.to_str().unwrap().replace('\\', "\\\\");
     let hook = include_str!("../../../../assets/installers/OptifineInstaller.java")
         .replace("REPLACE_WITH_MC_PATH", &mc_path);
-    let hook_path = optifine_path.join("OptifineInstaller.java");
+    let hook_path = optifine_path.join("Hook.java");
     tokio::fs::write(&hook_path, hook).await.path(hook_path)?;
     Ok(())
 }
@@ -265,10 +265,11 @@ async fn run_hook(new_installer_path: &Path, optifine_path: &Path) -> Result<(),
         .args([
             "-cp",
             &format!(
-                "{}{CLASSPATH_SEPARATOR}.",
-                new_installer_path.to_str().unwrap()
+                "{}{}.",
+                new_installer_path.to_str().unwrap(),
+                CLASSPATH_SEPARATOR
             ),
-            "OptifineInstaller",
+            "Hook",
         ])
         .current_dir(optifine_path)
         .output()
@@ -292,7 +293,7 @@ async fn compile_hook(
         .args([
             "-cp",
             new_installer_path.to_str().unwrap(),
-            "OptifineInstaller.java",
+            "Hook.java",
             "-d",
             ".",
         ])
