@@ -57,18 +57,8 @@ jobs:
           command: build
           args: --release --target ${{ matrix.target }}
 
-      - name: Strip release binary (arm)
-        if: matrix.build == 'aarch64-macos'
+      - name: Strip release binary
         run: strip "target/${{ matrix.target }}/release/$BIN_NAME"
-
-      - name: Strip release binary (x86_64)
-        if: matrix.build == 'x86_64-macos'
-        run: |
-          docker run --rm -v \
-            "$PWD/target:/target:Z" \
-            rustembedded/cross:${{ matrix.target }} \
-           x86_64-apple-darwin-strip \
-            /target/${{ matrix.target }}/release/$BIN_NAME
 
       - name: Create App Bundle
         shell: bash
