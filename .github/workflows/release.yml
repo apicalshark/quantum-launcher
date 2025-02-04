@@ -201,11 +201,8 @@ jobs:
               # cp "$binary_path" "dist/$pkgname$exe"
               # echo "Copied and renamed to dist/$pkgname$exe"
 
-              # Create temp folder
-              mkdir tmp/$pkgname
-              #Copy License and Readme.md
-              #cp LICENSE README.md tmp/$pkgname
-              (cd tmp/$pkgname && zip -r ../../arti/$pkgname.zip *)
+              # Zip the binary to arti
+              (zip -j "arti/$pkgname.zip" "$binary_path")
           done
 
       - name: Upload as artifact
