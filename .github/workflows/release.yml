@@ -192,19 +192,18 @@ jobs:
                   exit 1
               fi
 
+              # Zip the binary with no sub dir
+              (cd "$dir" && zip ../dist/"$pkgname".zip "$BIN_NAME$exe")
+
               # Copy and rename the binary to the dist folder
-              cp "$binary_path" "dist/$pkgname$exe"
-              echo "Copied and renamed to dist/$pkgname$exe"
+              # cp "$binary_path" "dist/$pkgname$exe"
+              # echo "Copied and renamed to dist/$pkgname$exe"
 
               # Create temp folder
               mkdir tmp/$pkgname
               #Copy License and Readme.md
               #cp LICENSE README.md tmp/$pkgname
               (cd tmp/$pkgname && zip -r ../../arti/$pkgname.zip *)
-
-              # Zip the License and README.md into the arti directory
-              #echo "Zipping LICENSE and README.md to arti/$pkgname.zip"
-              #(cd tmp/$pkgname && zip -r ../../arti/$pkgname.zip LICENSE README.md)
           done
 
       - name: Upload as artifact
