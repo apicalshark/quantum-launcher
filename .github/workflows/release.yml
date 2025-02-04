@@ -182,6 +182,8 @@ jobs:
               else
                   exe=""
               fi
+
+              # Change PROJECT_NAME to BIN_NAME if you wish
               pkgname=${PROJECT_NAME}_${platform}
 
               echo "Package name: $pkgname"
