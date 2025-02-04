@@ -101,9 +101,6 @@ jobs:
           toolchain: ${{ matrix.rust }}
           targets: ${{ matrix.target }}
           override: true
-      
-      # Setup action cache    
-      - uses: Swatinem/rust-cache@v2    
 
       - name: Build release binary
         uses: clechasseur/rs-cargo@v1
@@ -163,7 +160,7 @@ jobs:
           echo TAG=$name >> $GITHUB_ENV
         id: tagname
 
-      - name: Build archive
+      - name: Build archive and Copy binaries
         shell: bash
         run: |
           set -ex
@@ -171,6 +168,7 @@ jobs:
           rm -rf tmp
           mkdir tmp
           mkdir dist
+          mkdir arti  # Create the 'arti' directory
 
           echo "Listing dirs: "
           ls
@@ -181,39 +179,47 @@ jobs:
               unset exe
               if [[ $platform =~ "windows" ]]; then
                   exe=".exe"
+              else
+                  exe=""
               fi
               pkgname=${PROJECT_NAME}_${platform}
-              mkdir tmp/$pkgname
 
               echo "Package name: $pkgname"
-              
-              cp LICENSE README.md tmp/$pkgname
-              mv quantum-launcher-$platform/$BIN_NAME$exe tmp/$pkgname
-              chmod +x tmp/$pkgname/$BIN_NAME$exe
 
-              if [ "$exe" = "" ]; then
-                  # The launcher updater is incompatible with tar.xz
-                  # It only supports zip
-                  # tar cJf dist/$pkgname.tar.xz -C tmp $pkgname
-                  (cd tmp/$pkgname && zip -r ../../dist/$pkgname.zip *)
-              else
-                  (cd tmp/$pkgname && 7z a -r ../../dist/$pkgname.zip *)
+              binary_path=$dir/$BIN_NAME$exe
+              if [ ! -f "$binary_path" ]; then
+                  echo "Error: Binary not found at $binary_path.  Check your setup!"
+                  exit 1
               fi
+
+              # Copy and rename the binary to the dist folder
+              cp "$binary_path" "dist/$pkgname$exe"
+              echo "Copied and renamed to dist/$pkgname$exe"
+
+              # Create temp folder
+              mkdir tmp/$pkgname
+              #Copy License and Readme.md
+              cp LICENSE README.md tmp/$pkgname
+              (cd tmp/$pkgname && zip -r ../../arti/$pkgname.zip *)
+
+              # Zip the License and README.md into the arti directory
+              #echo "Zipping LICENSE and README.md to arti/$pkgname.zip"
+              #(cd tmp/$pkgname && zip -r ../../arti/$pkgname.zip LICENSE README.md)
           done
-          
+
       - name: Upload as artifact
         if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v4
         with:
           name: binaries
-          path: dist/*
+          path: arti/* # Zip the binaries under arti folder
 
       - name: Upload binaries to release
         if: ${{ github.event_name != 'workflow_dispatch' }}
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist/*
+          file: dist/* #Release the binary under dist folder
           file_glob: true
           tag: ${{ steps.tagname.outputs.val }}
           overwrite: true
@@ -222,34 +228,3 @@ jobs:
         id: extract-version
         run: |
           printf "%s=%s\n" >> $GITHUB_OUTPUT tag-name "${GITHUB_REF#refs/tags/}"
-
-        #
-        # you can use this initial file in your homebrew-tap if you don't have an initial formula:
-        # <projectname>.rb
-        #
-        # class <Projectname capitalized> < Formula
-        #   desc "A test formula"
-        #   homepage "http://www.example.com"
-        #   url "-----"
-        #   version "-----"
-        #   sha256 "-----"
-
-        #   def install
-        #     bin.install "<bin-name>"
-        #   end
-        # end
-
-      # Uncomment this section if you want to release your package to crates.io
-      # Before publishing, make sure you have filled out the following fields:
-      # license or license-file, description, homepage, documentation, repository, readme.
-      # Read more: https://doc.rust-lang.org/cargo/reference/publishing.html
-
-      # - name: Install ${{ matrix.rust }} toolchain
-      #   uses: actions-rs/toolchain@v1
-      #   with:
-      #     profile: minimal
-      #     toolchain: ${{ matrix.rust }}
-      #     target: ${{ matrix.target }}
-      # - run: cargo publish --token ${CRATES_TOKEN}
-      #  env:
-      #    CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
