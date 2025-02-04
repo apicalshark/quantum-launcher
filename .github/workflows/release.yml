@@ -193,7 +193,7 @@ jobs:
               fi
 
               # Zip the binary with no sub dir
-              (cd "$dir" && zip ../dist/"$pkgname".zip "$BIN_NAME$exe")
+              (zip -j "dist/$pkgname.zip" "$binary_path")
 
               # Copy and rename the binary to the dist folder
               # cp "$binary_path" "dist/$pkgname$exe"
