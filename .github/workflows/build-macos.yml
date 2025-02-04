@@ -7,7 +7,7 @@ env:
   BIN_NAME: quantum_launcher
   PROJECT_NAME: quantum_launcher
   REPO_NAME: Mrmayman/quantum-launcher
-  FINAL_NAME: quantum-launcher
+  FINAL_NAME: quantum_launcher
   APP_VERSION: 0.3.1
   ICON_NAME: ql_logo # Base name for the icon (without extension)
 
@@ -115,7 +115,7 @@ jobs:
         run: |
           # Define paths
           APP_DIR="build/quantum-launcher.app" # Use the app path that we created in previous step
-          DMG_NAME="${{ env.FINAL_NAME }}-${{ matrix.final_name }}.dmg"
+          DMG_NAME="${{ env.FINAL_NAME }}_${{ matrix.final_name }}.dmg"
           DMG_PATH="dist/$DMG_NAME" # Path to the DMG in the dist directory
           VOL_NAME="quantum_launcher" # The volume name when mounted
 
@@ -140,5 +140,5 @@ jobs:
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
-          name: ${{env.FINAL_NAME}}-${{ matrix.final_name }}
+          name: ${{env.FINAL_NAME}}_${{ matrix.final_name }}
           path: dist
