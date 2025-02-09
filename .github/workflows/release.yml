@@ -107,7 +107,6 @@ jobs:
       - name: Build release binary
         shell: bash
         run: |
-          # Disable fortify for openssl-sys
           if [ "${{ matrix.os }}" == "ubuntu-22.04-arm" ]; then
             sudo apt-get update && sudo apt-get install -y musl-tools gcc-aarch64-linux-gnu
 
