@@ -107,10 +107,10 @@ jobs:
       - name: Build release binary
         shell: bash
         run: |
-        
-          if [ "${{ matrix.os }}" == "ubuntu-22.04-arm" ]; then
+          if [ "${{ matrix.os }}" == "ubuntu-22.04-arm" && "${{ matrix.target }}" == "aarch64-linux" ]; then
             export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc
             export CC=aarch64-linux-gnu-gcc
+            export CFLAGS="-D_FORTIFY_SOURCE=0"
           fi
 
           if [ "${{ matrix.tool }}" == "cross" ]; then
