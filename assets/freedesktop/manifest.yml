@@ -32,7 +32,7 @@ modules:
       - type: file
         path: assets/icon/ql_logo.png
     build-commands:
-      - cargo build --profile release
+      - cargo build --profile release --target x86_64-unknown-linux-gnu
       - strip --strip-all target/release/quantum_launcher
       - install -Dm755 target/release/quantum_launcher /app/bin/quantum-launcher
       - install -Dm644 quantum-launcher.desktop /app/share/applications/com.mrmayman.quantumlauncher.desktop
