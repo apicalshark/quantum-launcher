@@ -111,7 +111,7 @@ jobs:
           if [ "${{ matrix.os }}" == "ubuntu-22.04-arm" ]; then
             sudo apt-get update && sudo apt-get install -y musl-tools gcc-aarch64-linux-gnu
 
-            export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-ld
+            export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-musl-gcc
             export CC=aarch64-linux-musl-gcc
           fi
 
