@@ -68,7 +68,7 @@ jobs:
           docker run --rm -v \
           "$PWD/target:/target:Z" \
           rustembedded/cross:${{ matrix.target }} \
-          aarch64-linux-musl-strip \
+          aarch64-linux-gnu-strip \
           /target/${{ matrix.target }}/release/$BIN_NAME
           mv "target/${{ matrix.target }}/release/$BIN_NAME" "assets/freedesktop/quantum-launcher"
 
