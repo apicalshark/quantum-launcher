@@ -107,8 +107,13 @@ jobs:
       - name: Build release binary
         shell: bash
         run: |
-          if [ "${{ matrix.tool }}" == "cross" ]; then
+        
+          if [ "${{ matrix.os }}" == "ubuntu-22.04-arm" ]; then
+            export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc
+            export CC=aarch64-linux-gnu-gcc
+          fi
 
+          if [ "${{ matrix.tool }}" == "cross" ]; then
             cross build --release --target ${{ matrix.target }}
           else
             cargo build --release --target ${{ matrix.target }}
