@@ -49,43 +49,43 @@ jobs:
           os: ubuntu-22.04
           rust: stable
           target: x86_64-unknown-linux-gnu
-          cross: false
+          tool: 
           final_name: linux_x86_64
         - build: aarch64-linux
           os: ubuntu-22.04
           rust: stable
           target: aarch64-unknown-linux-musl
-          cross: true
+          tool: cross
           final_name: linux_aarch64
         - build: x86_64-macos
           os: macos-latest
           rust: stable
           target: x86_64-apple-darwin
-          cross: false
+          tool:
           final_name: macos_x86_64
         - build: x86_64-windows
           os: windows-latest
           rust: stable
           target: x86_64-pc-windows-msvc
-          cross: false
+          tool:
           final_name: windows_x86_64
         - build: aarch64-macos
           os: macos-latest
           rust: stable
           target: aarch64-apple-darwin
-          cross: false
+          tool:
           final_name: macos_aarch64
         - build: aarch64-windows
           os: windows-latest
           rust: stable
           target: aarch64-pc-windows-msvc
-          cross: false
+          tool:
           final_name: windows_aarch64
         - build: i686-windows
           os: ubuntu-latest
           rust: stable
           target: i686-pc-windows-gnu
-          cross: true
+          tool: cross
           final_name: windows_i686
 
     steps:
@@ -101,9 +101,9 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Build release binary
-        uses: clechasseur/rs-cargo@v1
+        uses: clechasseur/rs-cargo@v3
         with:
-          use-cross: ${{ matrix.cross }}
+          tool: ${{ matrix.tool }}
           command: build
           args: --release --target ${{ matrix.target }}
       
