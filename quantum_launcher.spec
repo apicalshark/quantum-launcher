@@ -19,13 +19,7 @@ A simple Minecraft Launcher written in Rust.}
 cargo fetch
 
 %build
-%ifarch x86_64
-cargo build --profile release --target x86_64-unknown-linux-gnu
-%elifarch aarch64
-cargo build --profile release --target aarch64-unknown-linux-gnu
-%else
 cargo build --profile release
-%endif
 
 %install
 install -Dm755 target/release/quantum_launcher %{buildroot}%{_bindir}/quantum-launcher
