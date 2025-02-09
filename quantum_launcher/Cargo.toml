@@ -59,8 +59,4 @@ markup5ever_rcdom = "0.3"
 # hassle with lots of breaking changes
 
 # Shenanigans to get Reqwest building on ARM64
-[target.aarch64-unknown-linux-gnu.dependencies]
-openssl = { version = "0.10", features = ["vendored"] }
-
-[target.aarch64-unknown-linux-musl.dependencies]
 openssl = { version = "0.10", features = ["vendored"] }
