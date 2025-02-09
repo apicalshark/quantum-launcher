@@ -55,7 +55,7 @@ jobs:
           os: ubuntu-22.04-arm
           rust: nightly
           target: aarch64-unknown-linux-musl
-          cross: true
+          cross: false
           final_name: linux_aarch64
         - build: x86_64-macos
           os: macos-latest
@@ -95,12 +95,10 @@ jobs:
           submodules: true
 
       - name: Install ${{ matrix.rust }} toolchain
-        uses: crusty-pie/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: ${{ matrix.rust }}
           targets: ${{ matrix.target }}
-          override: true
 
       - name: Build release binary
         uses: clechasseur/rs-cargo@v1
