@@ -95,17 +95,20 @@ jobs:
           submodules: true
 
       - name: Install ${{ matrix.rust }} toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.rust }}
-          targets: ${{ matrix.target }}
+        shell: bash
+        run: |
+          rustup toolchain install ${{ matrix.rust }} --no-self-update
+          rustup default ${{ matrix.rust }}
+          rustup target add ${{ matrix.target }}
 
       - name: Build release binary
-        uses: clechasseur/rs-cargo@v3
-        with:
-          tool: ${{ matrix.tool }}
-          command: build
-          args: --release --target ${{ matrix.target }}
+        shell: bash
+        run: |
+          if [ "${{ matrix.tool }}" == "cross" ]; then
+            cross build --release --target ${{ matrix.target }}
+          else
+            cargo build --release --target ${{ matrix.target }}
+          fi
       
       - name: Strip release binary (linux and macos)
         if: matrix.build == 'x86_64-linux' || matrix.build == 'x86_64-macos'
