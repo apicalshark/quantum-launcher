@@ -54,7 +54,7 @@ jobs:
         - build: aarch64-linux
           os: ubuntu-22.04-arm
           rust: stable
-          target: aarch64-unknown-linux-musl
+          target: aarch64-linux-musl-gcc
           cross: false
           final_name: linux_aarch64
         - build: x86_64-macos
