@@ -55,7 +55,7 @@ jobs:
           os: ubuntu-22.04-arm
           rust: nightly
           target: aarch64-unknown-linux-musl
-          cross: false
+          cross: true
           final_name: linux_aarch64
         - build: x86_64-macos
           os: macos-latest
