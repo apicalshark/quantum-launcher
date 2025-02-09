@@ -100,11 +100,15 @@ jobs:
           rustup toolchain install ${{ matrix.rust }} --no-self-update
           rustup default ${{ matrix.rust }}
           rustup target add ${{ matrix.target }}
+          if [ "${{ matrix.tool }}" == "cross" ]; then
+            cargo install cross --locked
+          fi
 
       - name: Build release binary
         shell: bash
         run: |
           if [ "${{ matrix.tool }}" == "cross" ]; then
+
             cross build --release --target ${{ matrix.target }}
           else
             cargo build --release --target ${{ matrix.target }}
