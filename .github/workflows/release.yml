@@ -125,9 +125,9 @@ jobs:
         run: |
           mkdir dist
           if [ "${{ matrix.build }}" = "x86_64-windows" ] || [ "${{ matrix.build }}" = "i686-windows" ]; then
-            cp "target/${{ matrix.target }}/release/$BIN_NAME.exe" "dist/"
+            cp "target/${{ matrix.target }}/release-ql/$BIN_NAME.exe" "dist/"
           else
-            cp "target/${{ matrix.target }}/release/$BIN_NAME" "dist/"
+            cp "target/${{ matrix.target }}/release-ql/$BIN_NAME" "dist/"
           fi
 
       - uses: actions/upload-artifact@v4
