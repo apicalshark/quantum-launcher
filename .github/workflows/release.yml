@@ -46,13 +46,13 @@ jobs:
         build: [x86_64-linux, aarch64-linux, x86_64-macos, x86_64-windows, aarch64-macos, aarch64-windows, i686-windows]
         include:
         - build: x86_64-linux
-          os: ubuntu-20.04
+          os: ubuntu-22.04
           rust: stable
           target: x86_64-unknown-linux-gnu
           cross: false
           final_name: linux_x86_64
         - build: aarch64-linux
-          os: ubuntu-20.04
+          os: ubuntu-22.04
           rust: stable
           target: aarch64-unknown-linux-gnu
           cross: true
