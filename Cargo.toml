@@ -30,5 +30,5 @@ debug = false
 [profile.release-ql]
 inherits = "release"
 opt-level = "s"
-lto = "thin"
+# lto = "thin"
 strip = "symbols"
