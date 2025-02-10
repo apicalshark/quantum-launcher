@@ -115,9 +115,9 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.cross }}" == "true" ]; then
-            ${{ matrix.rustflags }} cross build --release-ql --target ${{ matrix.target }}
+            ${{ matrix.rustflags }} cross build --profile release-ql --target ${{ matrix.target }}
           else
-            ${{ matrix.rustflags }} cargo build --release-ql --target ${{ matrix.target }}
+            ${{ matrix.rustflags }} cargo build --profile release-ql --target ${{ matrix.target }}
           fi
 
       - name: Build archive
