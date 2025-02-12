@@ -10,5 +10,5 @@ reqwest = { workspace = true }
 colored = { workspace = true }
 
 # HTML Parsing
-html5ever = "0.27"
+html5ever = "0.29"
 markup5ever_rcdom = "0.3"
