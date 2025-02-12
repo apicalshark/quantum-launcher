@@ -46,7 +46,7 @@ rfd = "0.15"
 # For getting terminal width
 terminal_size = "0.4"
 
-comrak = "0.28" # For markdown parsing (displaying mod pages)
+comrak = "0.35" # For markdown parsing (displaying mod pages)
 image = "0.24"
 # We be implementing a full blown HTML renderer in iced with this one
 html5ever = "0.27"
