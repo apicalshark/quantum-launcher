@@ -5,7 +5,7 @@ Summary:        Simple Minecraft Launcher written in Rust
 
 License:        GPLv3
 URL:            https://mrmayman.github.io/quantumlauncher
-Source:        {{{ git_dir_pack }}}
+Source:         {{{ git_dir_pack }}}
 
 BuildRequires:  rust cargo perl openssl-devel
 
