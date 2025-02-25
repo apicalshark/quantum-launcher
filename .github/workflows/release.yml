@@ -164,7 +164,7 @@ jobs:
 
   publish:
     name: Publish
-    needs: [dist]
+    needs: [dist, Flatpak]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
