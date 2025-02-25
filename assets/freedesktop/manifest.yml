@@ -27,8 +27,9 @@ modules:
   - name: quantum-launcher
     buildsystem: simple
     sources:
-      - type: dir # ref: https://docs.flatpak.org/en/latest/module-sources.html#directory-source
-        path: .
+      - type: git
+        url: https://github.com/Mrmayman/quantum-launcher
+        branch: main
       - type: file
         path: assets/freedesktop/quantum-launcher.desktop
       - type: file
@@ -45,4 +46,4 @@ modules:
     build-options:
       append-path: "/usr/lib/sdk/rust-stable/bin"
       build-args:
-        - "--share=network"     
+        - "--share=network"
