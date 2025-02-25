@@ -43,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false # don't fail other jobs if one fails
       matrix:
-        build: [x86_64-linux, aarch64-linux, x86_64-macos, x86_64-windows, aarch64-macos, aarch64-windows, i686-windows]
+        build: [x86_64-linux, x86_64-macos, x86_64-windows, aarch64-macos, aarch64-windows, i686-windows]
         include:
         - build: x86_64-linux
           os: ubuntu-22.04
