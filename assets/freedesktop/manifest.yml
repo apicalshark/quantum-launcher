@@ -23,8 +23,8 @@ modules:
     buildsystem: simple
     sources:
       - type: git
-        url: https://github.com/Mrmayman/quantum-launcher
-        branch: main
+        url: https://github.com/apicalshark/quantum-launcher
+        branch: test-build
       - type: file
         path: assets/freedesktop/quantum-launcher.desktop
       - type: file
