@@ -27,8 +27,10 @@ modules:
   - name: quantum-launcher
     buildsystem: simple
     sources:
-      - type: path 
-        path: . 
+      - type: git
+        url:  https://github.com/Mrmayman/quantum-launcher.git
+        branch: main
+        depth: 1
       - type: file
         path: assets/freedesktop/quantum-launcher.desktop
       - type: file
