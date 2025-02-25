@@ -133,7 +133,7 @@ jobs:
     name: Build Flatpak
     runs-on: ubuntu-22.04
     strategy:
-      fail-fast: false # don't fail other jobs if one fails
+      fail-fast: false
 
     steps:
       - name: Checkout sources
@@ -164,7 +164,7 @@ jobs:
 
   publish:
     name: Publish
-    needs: [dist, Flatpak]
+    needs: [dist]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
