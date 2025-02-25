@@ -7,7 +7,7 @@ use crate::rate_limiter::RATE_LIMITER;
 
 use super::{Loader, ModError, RecommendedMod};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct ModVersion {
     pub game_versions: Vec<String>,
     pub loaders: Vec<String>,
@@ -31,9 +31,8 @@ pub struct ModVersion {
 impl ModVersion {
     pub async fn download(project_id: &str) -> Result<Vec<Self>, ModError> {
         let _lock = RATE_LIMITER.lock().await;
-        let client = reqwest::Client::new();
         let url = format!("https://api.modrinth.com/v2/project/{project_id}/version");
-        let file = file_utils::download_file_to_string(&client, &url, false).await?;
+        let file = file_utils::download_file_to_string(&url, false).await?;
         let file = serde_json::from_str(&file)?;
         Ok(file)
     }
@@ -93,7 +92,7 @@ impl ModVersion {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 #[allow(clippy::struct_field_names)]
 pub struct Dependency {
     pub version_id: Option<serde_json::Value>,

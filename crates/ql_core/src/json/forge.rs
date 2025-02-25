@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 
 use crate::{file_utils, JsonDownloadError};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct JsonVersions {
-    homepage: String,
     promos: HashMap<String, String>,
 }
 
@@ -20,8 +19,7 @@ impl JsonVersions {
         const VERSIONS_JSON: &str =
             "https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json";
 
-        let client = reqwest::Client::new();
-        let manifest = file_utils::download_file_to_string(&client, VERSIONS_JSON, false).await?;
+        let manifest = file_utils::download_file_to_string(VERSIONS_JSON, false).await?;
         Ok(serde_json::from_str(&manifest)?)
     }
 
@@ -36,14 +34,14 @@ impl JsonVersions {
 }
 
 #[allow(non_snake_case)]
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct JsonInstallProfile {
     pub install: serde_json::Value,
     pub versionInfo: JsonDetails,
 }
 
 #[allow(non_snake_case)]
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct JsonDetails {
     pub id: String,
     pub time: String,
@@ -57,13 +55,13 @@ pub struct JsonDetails {
     pub minecraftArguments: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct JsonDetailsArguments {
     pub game: Vec<String>,
     pub jvm: Option<Vec<String>>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct JsonDetailsLibrary {
     pub name: String,
     pub url: Option<String>,
@@ -71,12 +69,12 @@ pub struct JsonDetailsLibrary {
     pub clientreq: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct JsonDetailsDownloads {
     pub artifact: JsonDetailsArtifact,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct JsonDetailsArtifact {
     pub path: String,
     pub url: String,

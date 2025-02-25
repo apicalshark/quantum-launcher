@@ -84,18 +84,23 @@ pub async fn launch(
     game_launcher.migrate_old_instances().await?;
     game_launcher.create_mods_dir().await?;
 
-    let mut game_arguments = game_launcher.init_game_arguments(auth.as_ref()).await?;
+    let mut game_arguments = game_launcher.init_game_arguments().await?;
     let mut java_arguments = game_launcher.init_java_arguments()?;
 
-    let fabric_json = game_launcher.setup_fabric(&mut java_arguments).await?;
+    let fabric_json = game_launcher
+        .setup_fabric(&mut java_arguments, &mut game_arguments)
+        .await?;
     let forge_json = game_launcher
-        .setup_forge(&mut java_arguments, &mut game_arguments, auth.as_ref())
+        .setup_forge(&mut java_arguments, &mut game_arguments)
         .await?;
-    let optifine_json = game_launcher
-        .setup_optifine(&mut game_arguments, auth.as_ref())
-        .await?;
+    let optifine_json = game_launcher.setup_optifine(&mut game_arguments).await?;
 
     game_launcher.fill_java_arguments(&mut java_arguments)?;
+
+    game_launcher
+        .fill_game_arguments(&mut game_arguments, auth.as_ref())
+        .await?;
+
     game_launcher.setup_logging(&mut java_arguments)?;
     game_launcher
         .setup_classpath_and_mainclass(
@@ -109,7 +114,14 @@ pub async fn launch(
     let mut command = game_launcher.get_java_command().await?;
 
     info!("Java args: {java_arguments:?}\n");
-    info!("Game args: {game_arguments:?}\n");
+
+    censor(&mut game_arguments, "--clientId", |args| {
+        censor(args, "--accessToken", |args| {
+            censor(args, "--uuid", |args| {
+                info!("Game args: {args:?}\n");
+            });
+        });
+    });
 
     let n = game_launcher
         .config_json
@@ -158,6 +170,27 @@ pub async fn launch(
     Ok(child)
 }
 
+fn censor<F: FnOnce(&mut Vec<String>)>(vec: &mut Vec<String>, argument: &str, code: F) {
+    if let Some(index) = vec
+        .iter_mut()
+        .enumerate()
+        .find_map(|(i, n)| (n == argument).then_some(i))
+    {
+        let old_id = vec.get(index + 1).cloned();
+        if let Some(n) = vec.get_mut(index + 1) {
+            *n = "[REDACTED]".to_owned();
+        }
+
+        code(vec);
+
+        if let (Some(n), Some(old_id)) = (vec.get_mut(index + 1), old_id) {
+            *n = old_id;
+        }
+    } else {
+        code(vec);
+    }
+}
+
 pub struct GameLauncher {
     pub username: String,
     pub instance_name: String,
@@ -199,11 +232,8 @@ impl GameLauncher {
         })
     }
 
-    async fn init_game_arguments(
-        &self,
-        account_details: Option<&AccountData>,
-    ) -> Result<Vec<String>, GameLaunchError> {
-        let mut game_arguments: Vec<String> =
+    async fn init_game_arguments(&self) -> Result<Vec<String>, GameLaunchError> {
+        let game_arguments: Vec<String> =
             if let Some(arguments) = &self.version_json.minecraftArguments {
                 arguments.split(' ').map(ToOwned::to_owned).collect()
             } else if let Some(arguments) = &self.version_json.arguments {
@@ -218,8 +248,7 @@ impl GameLauncher {
                     self.version_json.clone(),
                 )));
             };
-        self.fill_game_arguments(&mut game_arguments, account_details)
-            .await?;
+
         Ok(game_arguments)
     }
 
@@ -425,6 +454,7 @@ impl GameLauncher {
     async fn setup_fabric(
         &self,
         java_arguments: &mut Vec<String>,
+        game_arguments: &mut Vec<String>,
     ) -> Result<Option<FabricJSON>, GameLaunchError> {
         if !(self.config_json.mod_type == "Fabric" || self.config_json.mod_type == "Quilt") {
             return Ok(None);
@@ -435,6 +465,10 @@ impl GameLauncher {
             java_arguments.extend(jvm.clone());
         }
 
+        if let Some(jvm) = fabric_json.arguments.as_ref().and_then(|n| n.game.as_ref()) {
+            game_arguments.extend(jvm.clone());
+        }
+
         Ok(Some(fabric_json))
     }
 
@@ -442,7 +476,6 @@ impl GameLauncher {
         &self,
         java_arguments: &mut Vec<String>,
         game_arguments: &mut Vec<String>,
-        account_details: Option<&AccountData>,
     ) -> Result<Option<forge::JsonDetails>, GameLaunchError> {
         if self.config_json.mod_type != "Forge" {
             return Ok(None);
@@ -457,8 +490,6 @@ impl GameLauncher {
             game_arguments.extend(arguments.game.clone());
         } else if let Some(arguments) = &json.minecraftArguments {
             *game_arguments = arguments.split(' ').map(str::to_owned).collect();
-            self.fill_game_arguments(game_arguments, account_details)
-                .await?;
         }
         Ok(Some(json))
     }
@@ -482,7 +513,6 @@ impl GameLauncher {
     async fn setup_optifine(
         &self,
         game_arguments: &mut Vec<String>,
-        account_details: Option<&AccountData>,
     ) -> Result<Option<(JsonOptifine, PathBuf)>, GameLaunchError> {
         if self.config_json.mod_type != "OptiFine" {
             return Ok(None);
@@ -493,8 +523,6 @@ impl GameLauncher {
             game_arguments.extend(arguments.game.clone());
         } else if let Some(arguments) = &optifine_json.minecraftArguments {
             *game_arguments = arguments.split(' ').map(str::to_owned).collect();
-            self.fill_game_arguments(game_arguments, account_details)
-                .await?;
         }
 
         Ok(Some((optifine_json, jar)))

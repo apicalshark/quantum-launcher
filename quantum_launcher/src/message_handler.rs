@@ -5,7 +5,7 @@ use std::{
 };
 
 use chrono::Datelike;
-use iced::{keyboard::Key, Command};
+use iced::{keyboard::Key, Task};
 use ql_core::{
     err, file_utils, info,
     json::{instance_config::InstanceConfigJson, version::VersionDetails},
@@ -36,13 +36,19 @@ impl Launcher {
         self.config.as_mut().unwrap().username = username;
     }
 
-    pub fn launch_game(&mut self, account_data: Option<AccountData>) -> Command<Message> {
+    pub fn launch_game(&mut self, account_data: Option<AccountData>) -> Task<Message> {
         if let State::Launch(ref mut menu_launch) = self.state {
             let selected_instance = self.selected_instance.as_ref().unwrap().get_name();
-            let username = self.config.as_ref().unwrap().username.clone();
+            let username = if let Some(account_data) = &account_data {
+                // Microsoft account
+                account_data.username.clone()
+            } else {
+                // Offline username
+                self.config.as_ref().unwrap().username.clone()
+            };
 
             let (sender, receiver) = std::sync::mpsc::channel();
-            menu_launch.java_recv = Some(receiver);
+            self.java_recv = Some(ProgressBar::with_recv(receiver));
 
             let (asset_sender, asset_receiver) = std::sync::mpsc::channel();
             menu_launch.asset_recv = Some(asset_receiver);
@@ -51,7 +57,7 @@ impl Launcher {
                 log.log.clear();
             }
 
-            return Command::perform(
+            return Task::perform(
                 ql_instances::launch_w(
                     selected_instance.to_owned(),
                     username,
@@ -62,7 +68,7 @@ impl Launcher {
                 Message::LaunchEnd,
             );
         }
-        Command::none()
+        Task::none()
     }
 
     pub fn get_current_date_formatted() -> String {
@@ -78,14 +84,18 @@ impl Launcher {
         format!("{day} {month} {year}")
     }
 
-    pub fn finish_launching(&mut self, result: GameLaunchResult) -> Command<Message> {
+    pub fn finish_launching(&mut self, result: GameLaunchResult) -> Task<Message> {
+        self.java_recv = None;
+        if let State::Launch(menu) = &mut self.state {
+            menu.asset_recv = None;
+        }
         match result {
             GameLaunchResult::Ok(child) => {
                 let Some(InstanceSelection::Instance(selected_instance)) =
                     self.selected_instance.clone()
                 else {
                     err!("Game Launched, but unknown instance!\n          This is a bug, please report it if found.");
-                    return Command::none();
+                    return Task::none();
                 };
                 if let (Some(stdout), Some(stderr)) = {
                     let mut child = child.lock().unwrap();
@@ -101,7 +111,7 @@ impl Launcher {
                         },
                     );
 
-                    return Command::perform(
+                    return Task::perform(
                         ql_instances::read_logs_w(stdout, stderr, child, sender, selected_instance),
                         Message::LaunchEndedLog,
                     );
@@ -116,10 +126,10 @@ impl Launcher {
             }
             GameLaunchResult::Err(err) => self.set_error(err),
         }
-        Command::none()
+        Task::none()
     }
 
-    pub fn go_to_create_screen(&mut self) -> Command<Message> {
+    pub fn go_to_create_screen(&mut self) -> Task<Message> {
         if let Some(versions) = self.client_version_list_cache.clone() {
             let combo_state = iced::widget::combo_box::State::new(versions.clone());
             self.state = State::Create(MenuCreateInstance::Loaded {
@@ -129,14 +139,14 @@ impl Launcher {
                 download_assets: true,
                 combo_state: Box::new(combo_state),
             });
-            Command::none()
+            Task::none()
         } else {
             let (sender, receiver) = mpsc::channel();
             self.state = State::Create(MenuCreateInstance::Loading {
                 progress_receiver: receiver,
                 progress_number: 0.0,
             });
-            Command::perform(ql_instances::list_versions(Some(Arc::new(sender))), |n| {
+            Task::perform(ql_instances::list_versions(Some(Arc::new(sender))), |n| {
                 Message::CreateInstance(CreateInstanceMessage::VersionsLoaded(n))
             })
         }
@@ -177,7 +187,7 @@ impl Launcher {
         }
     }
 
-    pub fn create_instance(&mut self) -> Command<Message> {
+    pub fn create_instance(&mut self) -> Task<Message> {
         if let State::Create(MenuCreateInstance::Loaded {
             progress,
             instance_name,
@@ -195,7 +205,7 @@ impl Launcher {
             });
 
             // Create Instance asynchronously using iced Command.
-            return Command::perform(
+            return Task::perform(
                 ql_instances::create_instance_w(
                     instance_name.clone(),
                     selected_version.clone().unwrap(),
@@ -205,22 +215,22 @@ impl Launcher {
                 |n| Message::CreateInstance(CreateInstanceMessage::End(n)),
             );
         }
-        Command::none()
+        Task::none()
     }
 
-    pub fn delete_selected_instance(&mut self) -> Command<Message> {
+    pub fn delete_selected_instance(&mut self) -> Task<Message> {
         if let State::ConfirmAction { .. } = &self.state {
             let selected_instance = self.selected_instance.as_ref().unwrap();
             let deleted_instance_dir = selected_instance.get_instance_path(&self.dir);
             if let Err(err) = std::fs::remove_dir_all(&deleted_instance_dir) {
                 self.set_error(err);
-                return Command::none();
+                return Task::none();
             }
 
             self.selected_instance = None;
             return self.go_to_launch_screen(Some("Deleted Instance".to_owned()));
         }
-        Command::none()
+        Task::none()
     }
 
     pub fn edit_instance(
@@ -283,7 +293,7 @@ impl Launcher {
 
     pub fn go_to_edit_mods_menu_without_update_check(
         &mut self,
-    ) -> Result<Command<Message>, JsonFileError> {
+    ) -> Result<Task<Message>, JsonFileError> {
         let selected_instance = self.selected_instance.as_ref().unwrap();
         let config_path = selected_instance
             .get_instance_path(&self.dir)
@@ -308,16 +318,16 @@ impl Launcher {
                     locally_installed_mods: HashSet::new(),
                 });
 
-                Ok(Command::batch(vec![locally_installed_mods]))
+                Ok(locally_installed_mods)
             }
             Err(err) => {
                 self.set_error(err);
-                Ok(Command::none())
+                Ok(Task::none())
             }
         }
     }
 
-    pub fn go_to_edit_mods_menu(&mut self) -> Result<Command<Message>, JsonFileError> {
+    pub fn go_to_edit_mods_menu(&mut self) -> Result<Task<Message>, JsonFileError> {
         let selected_instance = self.selected_instance.as_ref().unwrap();
         let config_path = file_utils::get_instance_dir_s(selected_instance)?.join("config.json");
 
@@ -343,24 +353,24 @@ impl Launcher {
                 });
 
                 let update_cmd = if is_vanilla {
-                    Command::none()
+                    Task::none()
                 } else {
-                    Command::perform(
+                    Task::perform(
                         ql_mod_manager::mod_manager::check_for_updates(selected_instance.clone()),
                         |n| Message::ManageMods(ManageModsMessage::UpdateCheckResult(n)),
                     )
                 };
 
-                return Ok(Command::batch(vec![locally_installed_mods, update_cmd]));
+                return Ok(Task::batch([locally_installed_mods, update_cmd]));
             }
             Err(err) => {
                 self.set_error(err);
             }
         }
-        Ok(Command::none())
+        Ok(Task::none())
     }
 
-    pub fn mod_download(&mut self, index: usize) -> Option<Command<Message>> {
+    pub fn mod_download(&mut self, index: usize) -> Option<Task<Message>> {
         let selected_instance = self.selected_instance.clone()?;
         let State::ModsDownload(menu) = &mut self.state else {
             return None;
@@ -376,7 +386,7 @@ impl Launcher {
 
         menu.mods_download_in_progress
             .insert(hit.project_id.clone());
-        Some(Command::perform(
+        Some(Task::perform(
             ql_mod_manager::mod_manager::download_mod_w(hit.project_id.clone(), selected_instance),
             |n| Message::InstallMods(InstallModsMessage::DownloadComplete(n)),
         ))
@@ -406,7 +416,7 @@ impl Launcher {
         }
     }
 
-    pub fn update_mods(&mut self) -> Command<Message> {
+    pub fn update_mods(&mut self) -> Task<Message> {
         if let State::EditMods(menu) = &mut self.state {
             let updates = menu
                 .available_updates
@@ -419,7 +429,7 @@ impl Launcher {
                 receiver,
                 "Deleting Mods".to_owned(),
             ));
-            Command::perform(
+            Task::perform(
                 ql_mod_manager::mod_manager::apply_updates_w(
                     self.selected_instance.clone().unwrap(),
                     updates,
@@ -428,26 +438,23 @@ impl Launcher {
                 |n| Message::ManageMods(ManageModsMessage::UpdateModsFinished(n)),
             )
         } else {
-            Command::none()
+            Task::none()
         }
     }
 
-    pub fn go_to_server_manage_menu(&mut self, message: Option<String>) -> Command<Message> {
-        self.state = State::ServerManage(MenuServerManage {
-            java_install_recv: None,
-            message,
-        });
-        Command::perform(
+    pub fn go_to_server_manage_menu(&mut self, message: Option<String>) -> Task<Message> {
+        self.state = State::ServerManage(MenuServerManage { message });
+        Task::perform(
             get_entries("servers".to_owned(), true),
             Message::CoreListLoaded,
         )
     }
 
-    pub fn install_forge(&mut self) -> Command<Message> {
+    pub fn install_forge(&mut self) -> Task<Message> {
         let (f_sender, f_receiver) = std::sync::mpsc::channel();
         let (j_sender, j_receiver) = std::sync::mpsc::channel();
 
-        let command = Command::perform(
+        let command = Task::perform(
             loaders::forge::install_w(
                 self.selected_instance.clone().unwrap(),
                 Some(f_sender),
@@ -468,10 +475,10 @@ impl Launcher {
         &mut self,
         child: Arc<std::sync::Mutex<tokio::process::Child>>,
         is_classic_server: bool,
-    ) -> Command<Message> {
+    ) -> Task<Message> {
         let Some(InstanceSelection::Server(selected_server)) = &self.selected_instance else {
             err!("Launched server but can't identify which one! This is a bug, please report it");
-            return Command::none();
+            return Task::none();
         };
         if let (Some(stdout), Some(stderr), Some(stdin)) = {
             let mut child = child.lock().unwrap();
@@ -491,7 +498,7 @@ impl Launcher {
                 },
             );
 
-            return Command::perform(
+            return Task::perform(
                 ql_servers::read_logs_w(stdout, stderr, child, sender, selected_server.clone()),
                 Message::ServerManageEndedLog,
             );
@@ -508,10 +515,10 @@ impl Launcher {
                 has_issued_stop_command: false,
             },
         );
-        Command::none()
+        Task::none()
     }
 
-    pub fn go_to_main_menu_with_message(&mut self, message: impl ToString) -> Command<Message> {
+    pub fn go_to_main_menu_with_message(&mut self, message: impl ToString) -> Task<Message> {
         let message = Some(message.to_string());
         match self.selected_instance.as_ref().unwrap() {
             InstanceSelection::Instance(_) => self.go_to_launch_screen(message),
@@ -519,19 +526,19 @@ impl Launcher {
         }
     }
 
-    pub fn load_preset(&mut self) -> Command<Message> {
+    pub fn load_preset(&mut self) -> Task<Message> {
         let Some(file) = rfd::FileDialog::new()
             .add_filter("QuantumLauncher Mod Preset", &["qmp"])
             .set_title("Select Mod Preset to Load")
             .pick_file()
         else {
-            return Command::none();
+            return Task::none();
         };
         let file = match std::fs::read(&file).path(&file) {
             Ok(n) => n,
             Err(err) => {
                 self.set_error(err);
-                return Command::none();
+                return Task::none();
             }
         };
 
@@ -546,7 +553,7 @@ impl Launcher {
                 if let State::ManagePresets(menu) = &mut self.state {
                     menu.progress = Some(ProgressBar::with_recv(receiver));
                 }
-                return Command::perform(
+                return Task::perform(
                     ql_mod_manager::PresetJson::download_entries_w(
                         mods,
                         self.selected_instance.clone().unwrap(),
@@ -558,12 +565,12 @@ impl Launcher {
             Err(err) => self.set_error(err),
         }
 
-        Command::none()
+        Task::none()
     }
 
-    pub fn go_to_edit_presets_menu(&mut self) -> Command<Message> {
+    pub fn go_to_edit_presets_menu(&mut self) -> Task<Message> {
         let State::EditMods(menu) = &self.state else {
-            return Command::none();
+            return Task::none();
         };
 
         let selected_mods = menu
@@ -597,18 +604,18 @@ impl Launcher {
         });
 
         if !is_empty {
-            return Command::none();
+            return Task::none();
         }
 
         let Some(json) = VersionDetails::load_s(&self.get_selected_instance_dir().unwrap()) else {
-            return Command::none();
+            return Task::none();
         };
 
         let Ok(loader) = Loader::try_from(mod_type.as_str()) else {
-            return Command::none();
+            return Task::none();
         };
 
-        Command::perform(
+        Task::perform(
             ModVersion::get_compatible_mods_w(
                 RECOMMENDED_MODS.to_owned(),
                 json.id.clone(),
@@ -635,7 +642,7 @@ impl Launcher {
         )
     }
 
-    fn escape_back_button(&mut self) -> Command<Message> {
+    fn escape_back_button(&mut self) -> Task<Message> {
         let mut should_return_to_main_screen = false;
         let mut should_return_to_mods_screen = false;
 
@@ -652,10 +659,7 @@ impl Launcher {
             | State::Welcome => {
                 should_return_to_main_screen = true;
             }
-            State::ConfirmAction { no, .. } => {
-                let no = no.clone();
-                return Command::perform(async move {}, |()| no);
-            }
+            State::ConfirmAction { no, .. } => return self.update(no.clone()),
 
             State::InstallOptifine(MenuInstallOptifine {
                 optifine_install_progress: None,
@@ -668,9 +672,13 @@ impl Launcher {
             State::ModsDownload(menu) if menu.mods_download_in_progress.is_empty() => {
                 should_return_to_mods_screen = true;
             }
+            State::AccountLogin { cancel_handle, .. } => {
+                cancel_handle.abort();
+                should_return_to_main_screen = true;
+            }
             State::InstallPaper
             | State::InstallForge(_)
-            | State::InstallJava(_)
+            | State::InstallJava
             | State::InstallOptifine(_)
             | State::UpdateFound(_)
             | State::RedownloadAssets { .. }
@@ -681,7 +689,8 @@ impl Launcher {
             | State::ModsDownload(_)
             | State::ServerManage(_)
             | State::ServerCreate(_)
-            | State::AccountLogin { .. }
+            | State::GenericMessage(_)
+            | State::AccountLoginProgress(_)
             | State::Launch(_) => {}
         }
 
@@ -695,40 +704,37 @@ impl Launcher {
             }
         }
 
-        Command::none()
+        Task::none()
     }
 
-    pub fn iced_event(
-        &mut self,
-        event: iced::Event,
-        status: iced::event::Status,
-    ) -> Command<Message> {
+    pub fn iced_event(&mut self, event: iced::Event, status: iced::event::Status) -> Task<Message> {
         if let State::Launch(MenuLaunch { sidebar_width, .. }) = &mut self.state {
             if let Some(config) = &mut self.config {
                 config.sidebar_width = Some(*sidebar_width as u32);
             }
 
-            if self.window_size.0 > SIDEBAR_SQUISH_LIMIT as u32
+            if self.window_size.0 > SIDEBAR_SQUISH_LIMIT as f32
                 && *sidebar_width > self.window_size.0 as u16 - SIDEBAR_SQUISH_LIMIT
             {
                 *sidebar_width = self.window_size.0 as u16 - SIDEBAR_SQUISH_LIMIT;
             }
 
-            if self.window_size.0 > 100 && *sidebar_width < 100 {
+            if self.window_size.0 > 100.0 && *sidebar_width < 100 {
                 *sidebar_width = 100;
             }
         }
 
         match event {
-            iced::Event::Window(_, event) => match event {
+            iced::Event::Window(event) => match event {
                 iced::window::Event::CloseRequested => {
                     info!("Shutting down launcher (1)");
+                    std::process::exit(0);
                 }
                 iced::window::Event::Closed => {
                     info!("Shutting down launcher (2)");
                 }
-                iced::window::Event::Resized { width, height } => {
-                    self.window_size = (width, height);
+                iced::window::Event::Resized(size) => {
+                    self.window_size = (size.width, size.height);
                 }
                 iced::window::Event::RedrawRequested(_)
                 | iced::window::Event::Moved { .. }
@@ -772,7 +778,7 @@ impl Launcher {
                     {
                         if self.mouse_pos.0 < 100.0 {
                             *sidebar_width = 100;
-                        } else if (self.mouse_pos.0 as u32 + SIDEBAR_SQUISH_LIMIT as u32
+                        } else if (self.mouse_pos.0 + SIDEBAR_SQUISH_LIMIT as f32
                             > self.window_size.0)
                             && self.window_size.0 as u16 > SIDEBAR_SQUISH_LIMIT
                         {
@@ -805,7 +811,7 @@ impl Launcher {
             },
             iced::Event::Touch(_) => {}
         }
-        Command::none()
+        Task::none()
     }
 }
 

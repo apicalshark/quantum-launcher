@@ -1,10 +1,10 @@
 use crate::{file_utils, JsonDownloadError};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 /// An official Minecraft version manifest
 /// (list of all versions and their download links)
 /// from Mojang's servers.
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct Manifest {
     pub latest: Latest,
     pub versions: Vec<Version>,
@@ -19,8 +19,7 @@ impl Manifest {
     pub async fn download() -> Result<Manifest, JsonDownloadError> {
         const VERSIONS_JSON: &str = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
 
-        let client = reqwest::Client::new();
-        let manifest = file_utils::download_file_to_string(&client, VERSIONS_JSON, false).await?;
+        let manifest = file_utils::download_file_to_string(VERSIONS_JSON, false).await?;
         Ok(serde_json::from_str(&manifest)?)
     }
 
@@ -47,14 +46,14 @@ impl Manifest {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct Latest {
     pub release: String,
     pub snapshot: String,
 }
 
 #[allow(non_snake_case)]
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct Version {
     pub id: String,
     pub r#type: String,

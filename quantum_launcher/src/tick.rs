@@ -4,8 +4,8 @@ use std::{
     path::Path,
 };
 
-use iced::Command;
-use ql_core::{err, info, GenericProgress, InstanceSelection};
+use iced::Task;
+use ql_core::{err, InstanceSelection};
 use ql_instances::LogLine;
 use ql_mod_manager::mod_manager::{ModConfig, ModIndex, Search};
 
@@ -16,33 +16,26 @@ use crate::launcher_state::{
 };
 
 impl Launcher {
-    pub fn tick(&mut self) -> Command<Message> {
+    pub fn tick(&mut self) -> Task<Message> {
         match &mut self.state {
             State::Launch(MenuLaunch {
-                java_recv,
                 asset_recv,
                 edit_instance,
                 ..
             }) => {
-                if let Some(receiver) = java_recv.take() {
-                    if let Ok(GenericProgress { done: 0, .. }) = receiver.try_recv() {
-                        info!("Installing Java");
-                        self.state = State::InstallJava(ProgressBar::with_recv_and_msg(
-                            receiver,
-                            "Starting".to_owned(),
-                        ));
-                        return Command::none();
+                if let Some(receiver) = &mut self.java_recv {
+                    if receiver.tick() {
+                        self.state = State::InstallJava;
+                        return Task::none();
                     }
-                    *java_recv = Some(receiver);
                 }
 
                 if let Some(receiver) = asset_recv.take() {
                     if receiver.try_recv().is_ok() {
                         self.state = State::RedownloadAssets {
                             progress: ProgressBar::with_recv(receiver),
-                            java_recv: java_recv.take(),
                         };
-                        return Command::none();
+                        return Task::none();
                     }
                     *asset_recv = Some(receiver);
                 }
@@ -50,7 +43,7 @@ impl Launcher {
                 let mut commands = Vec::new();
 
                 if let Some(edit) = edit_instance.as_ref() {
-                    let cmd = Command::perform(
+                    let cmd = Task::perform(
                         Launcher::save_config_w(
                             self.selected_instance.clone().unwrap(),
                             edit.config.clone(),
@@ -64,12 +57,9 @@ impl Launcher {
                 self.tick_processes_and_logs();
 
                 if let Some(config) = self.config.clone() {
-                    commands.push(Command::perform(
-                        config.save_w(),
-                        Message::CoreTickConfigSaved,
-                    ));
+                    commands.push(Task::perform(config.save_w(), Message::CoreTickConfigSaved));
                 }
-                return Command::batch(commands);
+                return Task::batch(commands);
             }
             State::Create(menu) => menu.tick(),
             State::EditMods(menu) => {
@@ -97,9 +87,15 @@ impl Launcher {
                     progress.tick();
                 }
             }
-            State::InstallJava(menu) => {
-                menu.tick();
-                if menu.progress.has_finished {
+            State::InstallJava => {
+                let has_finished = if let Some(progress) = &mut self.java_recv {
+                    progress.tick();
+                    progress.progress.has_finished
+                } else {
+                    true
+                };
+                if has_finished {
+                    self.java_recv = None;
                     let message = "Installed Java".to_owned();
                     match &self.selected_instance {
                         Some(InstanceSelection::Instance(_)) | None => {
@@ -112,7 +108,7 @@ impl Launcher {
                 }
             }
             State::ModsDownload(menu) => {
-                let index_cmd = Command::perform(
+                let index_cmd = Task::perform(
                     ModIndex::get_w(self.selected_instance.clone().unwrap()),
                     |n| Message::InstallMods(InstallModsMessage::IndexUpdated(n)),
                 );
@@ -123,38 +119,34 @@ impl Launcher {
                         if commands.len() > 64 {
                             break;
                         }
-                        if !self.images_downloads_in_progress.contains(&result.title)
+                        if !self.images.downloads_in_progress.contains(&result.title)
                             && !result.icon_url.is_empty()
                         {
-                            self.images_downloads_in_progress
+                            self.images
+                                .downloads_in_progress
                                 .insert(result.title.clone());
-                            commands.push(Command::perform(
+                            commands.push(Task::perform(
                                 Search::download_image(result.icon_url.clone(), true),
                                 |n| Message::InstallMods(InstallModsMessage::ImageDownloaded(n)),
                             ));
                         }
                     }
 
-                    return Command::batch(commands);
+                    return Task::batch(commands);
                 }
                 return index_cmd;
             }
             State::LauncherSettings => {
                 if let Some(config) = self.config.clone() {
-                    return Command::perform(config.save_w(), Message::CoreTickConfigSaved);
+                    return Task::perform(config.save_w(), Message::CoreTickConfigSaved);
                 }
             }
-            State::RedownloadAssets {
-                progress,
-                java_recv,
-            } => {
+            State::RedownloadAssets { progress } => {
                 progress.tick();
                 if progress.progress.has_finished {
                     let message = "Redownloaded Assets".to_owned();
-                    let java_recv = java_recv.take();
                     self.state = State::Launch(MenuLaunch {
                         message,
-                        java_recv,
                         asset_recv: None,
                         tab: LaunchTabId::default(),
                         edit_instance: None,
@@ -162,7 +154,7 @@ impl Launcher {
                         sidebar_width: 200,
                         sidebar_dragging: false,
                     });
-                    return Command::perform(
+                    return Task::perform(
                         get_entries("instances".to_owned(), false),
                         Message::CoreListLoaded,
                     );
@@ -178,16 +170,10 @@ impl Launcher {
                     }
                 }
             }
-            State::ServerManage(menu) => {
-                if menu
-                    .java_install_recv
-                    .as_ref()
-                    .and_then(|n| n.try_recv().ok())
-                    .is_some()
-                {
-                    self.state = State::InstallJava(ProgressBar::with_recv(
-                        menu.java_install_recv.take().unwrap(),
-                    ));
+            State::ServerManage(_) => {
+                if self.java_recv.as_mut().map(|n| n.tick()).unwrap_or(false) {
+                    self.state = State::InstallJava;
+                    return Task::none();
                 }
 
                 self.tick_server_processes_and_logs();
@@ -219,27 +205,31 @@ impl Launcher {
                     progress.tick();
                 }
             }
+            State::AccountLoginProgress(progress) => {
+                progress.tick();
+            }
             // These menus don't require background ticking
             State::Error { .. }
             | State::ConfirmAction { .. }
             | State::ChangeLog
             | State::Welcome
             | State::AccountLogin { .. }
+            | State::GenericMessage(_)
             | State::InstallPaper => {}
         }
 
-        Command::none()
+        Task::none()
     }
 
-    pub fn get_imgs_to_load(&mut self) -> Vec<Command<Message>> {
+    pub fn get_imgs_to_load(&mut self) -> Vec<Task<Message>> {
         let mut commands = Vec::new();
 
-        let mut images_to_load = self.images_to_load.lock().unwrap();
+        let mut images_to_load = self.images.to_load.lock().unwrap();
 
         for url in images_to_load.iter() {
-            if !self.images_downloads_in_progress.contains(url) {
-                self.images_downloads_in_progress.insert(url.to_owned());
-                commands.push(Command::perform(
+            if !self.images.downloads_in_progress.contains(url) {
+                self.images.downloads_in_progress.insert(url.to_owned());
+                commands.push(Task::perform(
                     Search::download_image(url.to_owned(), false),
                     |n| Message::InstallMods(InstallModsMessage::ImageDownloaded(n)),
                 ));
@@ -407,7 +397,7 @@ pub fn sort_dependencies(
 }
 
 impl MenuEditMods {
-    fn tick(&mut self, instance_selection: &InstanceSelection, dir: &Path) -> Command<Message> {
+    fn tick(&mut self, instance_selection: &InstanceSelection, dir: &Path) -> Task<Message> {
         self.sorted_mods_list = sort_dependencies(&self.mods.mods, &self.locally_installed_mods);
 
         if let Some(progress) = &mut self.mod_update_progress {

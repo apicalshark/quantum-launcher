@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use crate::{err, file_utils};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::JsonDownloadError;
 
@@ -65,7 +65,7 @@ impl From<crate::json::version::JavaVersion> for JavaVersion {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct JavaListJson {
     pub gamecore: JavaList,
@@ -80,8 +80,7 @@ pub struct JavaListJson {
 
 impl JavaListJson {
     pub async fn download() -> Result<Self, JsonDownloadError> {
-        let client = reqwest::Client::new();
-        let json = file_utils::download_file_to_string(&client, JAVA_LIST_URL, false).await?;
+        let json = file_utils::download_file_to_string(JAVA_LIST_URL, false).await?;
         Ok(serde_json::from_str(&json)?)
     }
 
@@ -130,7 +129,7 @@ impl JavaListJson {
             return None;
         };
 
-        let version = match version {
+        let version_listing = match version {
             JavaVersion::Java16 => &java_list.java_runtime_alpha,
             JavaVersion::Java17Beta => &java_list.java_runtime_beta,
             JavaVersion::Java21 => &java_list.java_runtime_delta,
@@ -139,12 +138,15 @@ impl JavaListJson {
             JavaVersion::Java8 => &java_list.jre_legacy,
         };
 
-        let first_version = version.first()?;
+        let Some(first_version) = version_listing.first() else {
+            err!("{version} doesn't support your OS or Architecture!");
+            return None;
+        };
         Some(first_version.manifest.url.clone())
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct JavaList {
     /// Java 16
@@ -162,7 +164,7 @@ pub struct JavaList {
     pub minecraft_java_exe: Vec<JavaInstallListing>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct JavaInstallListing {
     pub availability: JavaInstallListingAvailability,
     pub manifest: JavaInstallListingManifest,
@@ -170,20 +172,20 @@ pub struct JavaInstallListing {
 }
 
 // WTF: Yes this is approaching Java levels of name length.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct JavaInstallListingAvailability {
     pub group: i64,
     pub progress: i64,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct JavaInstallListingManifest {
     pub sha1: String,
     pub size: usize,
     pub url: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct JavaInstallListingVersion {
     pub name: String,
     pub released: String,

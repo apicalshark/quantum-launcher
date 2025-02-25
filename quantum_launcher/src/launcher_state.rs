@@ -6,14 +6,17 @@ use std::{
     time::Instant,
 };
 
-use iced::{widget::image::Handle, Command};
+use iced::{widget::image::Handle, Task};
 use ql_core::{
     err, file_utils, info,
     json::{instance_config::InstanceConfigJson, version::VersionDetails},
     DownloadProgress, GenericProgress, InstanceSelection, IntoIoError, JsonFileError, Progress,
     SelectedMod, LAUNCHER_VERSION_NAME,
 };
-use ql_instances::{GameLaunchResult, ListEntry, LogLine, UpdateCheckInfo};
+use ql_instances::{
+    AccountData, AuthCodeResponse, AuthTokenResponse, GameLaunchResult, ListEntry, LogLine,
+    UpdateCheckInfo,
+};
 use ql_mod_manager::{
     loaders::{
         fabric::FabricVersionListItem, forge::ForgeInstallProgress,
@@ -131,7 +134,12 @@ pub enum EditPresetsMessage {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    HomeAccountSelected(String),
+    #[allow(unused)]
+    Nothing,
+    AccountSelected(String),
+    AccountResponse1(Result<AuthCodeResponse, String>),
+    AccountResponse2(Result<AuthTokenResponse, String>),
+    AccountResponse3(Result<AccountData, String>),
     CreateInstance(CreateInstanceMessage),
     EditInstance(EditInstanceMessage),
     ManageMods(ManageModsMessage),
@@ -227,7 +235,6 @@ impl std::fmt::Display for LaunchTabId {
 /// The home screen of the launcher.
 pub struct MenuLaunch {
     pub message: String,
-    pub java_recv: Option<Receiver<GenericProgress>>,
     pub asset_recv: Option<Receiver<GenericProgress>>,
     pub login_progress: Option<ProgressBar<GenericProgress>>,
     pub tab: LaunchTabId,
@@ -246,7 +253,6 @@ impl MenuLaunch {
     pub fn with_message(message: String) -> Self {
         Self {
             message,
-            java_recv: None,
             asset_recv: None,
             tab: LaunchTabId::default(),
             edit_instance: None,
@@ -322,14 +328,14 @@ impl MenuEditMods {
         idx: &ModIndex,
         selected_instance: &InstanceSelection,
         dir: &Path,
-    ) -> Command<Message> {
+    ) -> Task<Message> {
         let mut blacklist = Vec::new();
         for mod_info in idx.mods.values() {
             for file in &mod_info.files {
                 blacklist.push(file.filename.clone());
             }
         }
-        Command::perform(
+        Task::perform(
             get_locally_installed_mods(selected_instance.get_dot_minecraft_path(dir), blacklist),
             |n| Message::ManageMods(ManageModsMessage::LocalIndexLoaded(n)),
         )
@@ -432,18 +438,20 @@ pub enum State {
         yes: Message,
         no: Message,
     },
+    GenericMessage(String),
+    AccountLoginProgress(ProgressBar<GenericProgress>),
     AccountLogin {
         url: String,
         code: String,
+        cancel_handle: iced::task::Handle,
     },
     InstallPaper,
     InstallFabric(MenuInstallFabric),
     InstallForge(MenuInstallForge),
     InstallOptifine(MenuInstallOptifine),
-    InstallJava(ProgressBar<GenericProgress>),
+    InstallJava,
     RedownloadAssets {
         progress: ProgressBar<GenericProgress>,
-        java_recv: Option<Receiver<GenericProgress>>,
     },
     UpdateFound(MenuLauncherUpdate),
     ModsDownload(Box<MenuModsDownload>),
@@ -454,7 +462,6 @@ pub enum State {
 }
 
 pub struct MenuServerManage {
-    pub java_install_recv: Option<Receiver<GenericProgress>>,
     pub message: Option<String>,
 }
 
@@ -486,19 +493,17 @@ pub struct InstanceLog {
     pub command: String,
 }
 
-pub struct AccountEntry {
-    pub refresh_token: String,
-    pub username: String,
-}
-
 pub struct Launcher {
     pub state: State,
     pub dir: PathBuf,
     pub selected_instance: Option<InstanceSelection>,
     pub config: Option<LauncherConfig>,
     pub theme: LauncherTheme,
+    pub images: ImageState,
 
-    pub accounts: HashMap<String, AccountEntry>,
+    pub java_recv: Option<ProgressBar<GenericProgress>>,
+
+    pub accounts: HashMap<String, AccountData>,
     pub accounts_dropdown: Vec<String>,
     pub accounts_selected: Option<String>,
 
@@ -511,13 +516,16 @@ pub struct Launcher {
     pub client_logs: HashMap<String, InstanceLog>,
     pub server_logs: HashMap<String, InstanceLog>,
 
-    pub images_bitmap: HashMap<String, Handle>,
-    pub images_svg: HashMap<String, iced::widget::svg::Handle>,
-    pub images_downloads_in_progress: HashSet<String>,
-    pub images_to_load: Mutex<HashSet<String>>,
-
-    pub window_size: (u32, u32),
+    pub window_size: (f32, f32),
     pub mouse_pos: (f32, f32),
+}
+
+#[derive(Default)]
+pub struct ImageState {
+    pub bitmap: HashMap<String, Handle>,
+    pub svg: HashMap<String, iced::widget::svg::Handle>,
+    pub downloads_in_progress: HashSet<String>,
+    pub to_load: Mutex<HashSet<String>>,
 }
 
 pub struct ClientProcess {
@@ -592,22 +600,20 @@ impl Launcher {
             dir: launcher_dir,
             client_list: None,
             server_list: None,
+            java_recv: None,
             state,
             client_processes: HashMap::new(),
             config,
             client_logs: HashMap::new(),
             selected_instance: None,
-            images_bitmap: HashMap::new(),
-            images_svg: HashMap::new(),
-            images_downloads_in_progress: HashSet::new(),
-            images_to_load: Mutex::new(HashSet::new()),
+            images: ImageState::default(),
             theme,
             client_version_list_cache: None,
             server_version_list_cache: None,
             server_processes: HashMap::new(),
             server_logs: HashMap::new(),
             mouse_pos: (0.0, 0.0),
-            window_size: (WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32),
+            window_size: (WINDOW_WIDTH, WINDOW_HEIGHT),
             accounts: HashMap::new(),
             accounts_dropdown: vec![OFFLINE_ACCOUNT_NAME.to_owned(), NEW_ACCOUNT_NAME.to_owned()],
             accounts_selected: Some(OFFLINE_ACCOUNT_NAME.to_owned()),
@@ -637,23 +643,21 @@ impl Launcher {
         Self {
             dir: launcher_dir.unwrap_or_default(),
             state: State::Error { error },
+            java_recv: None,
             client_list: None,
             server_list: None,
             config,
             client_processes: HashMap::new(),
             client_logs: HashMap::new(),
             selected_instance: None,
-            images_bitmap: HashMap::new(),
-            images_svg: HashMap::new(),
-            images_downloads_in_progress: HashSet::new(),
-            images_to_load: Mutex::new(HashSet::new()),
+            images: ImageState::default(),
             theme,
             client_version_list_cache: None,
             server_processes: HashMap::new(),
             server_logs: HashMap::new(),
             server_version_list_cache: None,
             mouse_pos: (0.0, 0.0),
-            window_size: (WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32),
+            window_size: (WINDOW_WIDTH, WINDOW_HEIGHT),
             accounts: HashMap::new(),
             accounts_dropdown: vec![OFFLINE_ACCOUNT_NAME.to_owned(), NEW_ACCOUNT_NAME.to_owned()],
             accounts_selected: Some(OFFLINE_ACCOUNT_NAME.to_owned()),
@@ -666,7 +670,7 @@ impl Launcher {
         }
     }
 
-    pub fn go_to_launch_screen(&mut self, message: Option<String>) -> Command<Message> {
+    pub fn go_to_launch_screen(&mut self, message: Option<String>) -> Task<Message> {
         let mut menu_launch = match message {
             Some(message) => MenuLaunch::with_message(message),
             None => MenuLaunch::default(),
@@ -675,7 +679,7 @@ impl Launcher {
             menu_launch.sidebar_width = width as u16;
         }
         self.state = State::Launch(menu_launch);
-        Command::perform(
+        Task::perform(
             get_entries("instances".to_owned(), false),
             Message::CoreListLoaded,
         )

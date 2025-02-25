@@ -2,10 +2,11 @@
 //!
 //! # Contains
 //! - Java auto-installer
-//! - File utilities
+//! - File and download utilities
 //! - Error types
 //! - JSON structs for version, instance config, Fabric, Forge, OptiFine, etc
 //! - Logging macros
+//! - And much more
 
 mod error;
 /// Common utilities for working with files.
@@ -17,7 +18,10 @@ pub mod json;
 pub mod print;
 mod progress;
 
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 pub use error::{DownloadError, IntoIoError, IoError, JsonDownloadError, JsonFileError};
 pub use file_utils::{RequestError, MOCK_DIR_FAILURE};
@@ -26,6 +30,10 @@ pub use java_install::{get_java_binary, JavaInstallError};
 pub use progress::{DownloadProgress, GenericProgress, Progress};
 
 pub const CLASSPATH_SEPARATOR: char = if cfg!(unix) { ':' } else { ';' };
+
+lazy_static::lazy_static! {
+    static ref CLIENT: Arc<reqwest::Client> = Arc::new(reqwest::Client::new());
+}
 
 /// Limit on how many files to download concurrently.
 const JOBS: usize = 64;
@@ -108,7 +116,7 @@ impl InstanceSelection {
 pub const IS_ARM_LINUX: bool = cfg!(target_arch = "aarch64") && cfg!(target_os = "linux");
 // pub const IS_ARM_LINUX: bool = true;
 
-pub const LAUNCHER_VERSION_NAME: &str = "0.3.1";
+pub const LAUNCHER_VERSION_NAME: &str = "0.4.0";
 
 #[derive(Hash, PartialEq, Eq, Clone)]
 pub enum SelectedMod {
