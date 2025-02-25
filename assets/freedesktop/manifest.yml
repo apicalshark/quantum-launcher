@@ -13,9 +13,6 @@ finish-args:
   # X11 + XShm access
   - --share=ipc
   - --socket=fallback-x11
-  - --socket=x11
-  # Access to host files (read-only)
-  - --filesystem=host:ro
   # It's Minecraft, so needs access to as many devices as possible for modding
   - --device=all
   - --device=shm
@@ -45,4 +42,8 @@ modules:
       append-path: "/usr/lib/sdk/rust-stable/bin"
       build-args:
         - "--share=network"     
-    
+  - name: xrandr
+    sources:
+      - type: archive
+        url: https://www.x.org/releases/individual/app/xrandr-1.5.1.tar.gz
+        sha256: 7b99edb7970a1365eaf5bcaf552144e4dfc3ccf510c4abc08569849929fb366e
