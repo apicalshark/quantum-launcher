@@ -24,7 +24,7 @@ modules:
     sources:
       - type: git
         url: https://github.com/apicalshark/quantum-launcher
-        branch: main
+        branch: g1
       - type: file
         path: assets/freedesktop/quantum-launcher.desktop
       - type: file
