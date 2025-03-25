@@ -113,7 +113,7 @@ jobs:
 
           SOURCE_SIZE_KB=$(du -sk "$APP_DIR" | awk '{print $1}')
           echo "Source size: $SOURCE_SIZE_KB KB"
-          TOTAL_SIZE_MB=$((($SOURCE_SIZE_KB + 768) / 1024 + 1))
+          TOTAL_SIZE_MB=$((($SOURCE_SIZE_KB + 512) / 1024 + 2))
           echo "Total size: $TOTAL_SIZE_MB MB"
 
           hdiutil create -volname "$VOL_NAME" -srcfolder "$APP_DIR" -fs HFS+J -format UDRW -size "${TOTAL_SIZE_MB}m" "$DMG_PATH"
