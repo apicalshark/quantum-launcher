@@ -113,7 +113,8 @@ jobs:
 
           mkdir -p dist
 
-          SOURCE_SIZE_BYTES=$(du -sb "$APP_DIR" | awk '{print $1}')
+          SOURCE_SIZE_KB=$(du -sk "$APP_DIR" | awk '{print $1}')
+          SOURCE_SIZE_BYTES=$((SOURCE_SIZE_KB * 1024))
           BUFFER_PERCENT=20
           BUFFER_SIZE_BYTES=$((SOURCE_SIZE_BYTES * BUFFER_PERCENT / 100))
           TOTAL_SIZE_BYTES=$((SOURCE_SIZE_BYTES + BUFFER_SIZE_BYTES))
