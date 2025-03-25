@@ -1,7 +1,7 @@
 name: Build-macOS
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # allows manual triggering
 
 env:
   BIN_NAME: quantum_launcher
@@ -10,7 +10,7 @@ env:
   FINAL_NAME: quantum_launcher
   APP_VERSION: 0.4.0
   ICON_NAME: ql_logo
-  CARGO_TERM_COLOR: always
+  CARGO_TERM_COLOR: always # Tell cargo to always use colors
 
 jobs:
   dist:
