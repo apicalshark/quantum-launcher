@@ -54,13 +54,10 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.cross }}" == "true" ]; then
-            cross build --release --target ${{ matrix.target }}
+            cross build --profile release-ql --target ${{ matrix.target }}
           else
-            cargo build --release --target ${{ matrix.target }}
+            cargo build --profile release-ql --target ${{ matrix.target }}
           fi
-
-      - name: Strip release binary
-        run: strip "target/${{ matrix.target }}/release/$BIN_NAME"
 
       - name: Create App Bundle
         shell: bash
