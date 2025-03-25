@@ -70,7 +70,7 @@ jobs:
           ICON_PATH="$ASSETS_DIR/icon/${{ env.ICON_NAME }}.png"
 
           mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
-          cp "target/${{ matrix.target }}/release/$BIN_NAME" "$MACOS_DIR/$BIN_NAME"
+          cp "target/${{ matrix.target }}/release-ql/$BIN_NAME" "$MACOS_DIR/$BIN_NAME"
 
           cat <<EOF > "$CONTENTS_DIR/Info.plist"
           <?xml version="1.0" encoding="UTF-8"?>
