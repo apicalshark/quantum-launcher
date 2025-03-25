@@ -10,6 +10,7 @@ env:
   FINAL_NAME: quantum_launcher
   APP_VERSION: 0.4.0
   ICON_NAME: ql_logo
+  CARGO_TERM_COLOR: always
 
 jobs:
   dist:
