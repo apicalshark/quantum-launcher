@@ -89,7 +89,7 @@ jobs:
             <key>CFBundleShortVersionString</key>
             <string>${{ env.APP_VERSION }}</string>
             <key>CFBundleVersion</key>
-            <string>1</string>
+            <string>${{ env.APP_VERSION }}</string>
             <key>NSPrincipalClass</key>
             <string>NSApplication</string>
              <key>CFBundleIconFile</key>

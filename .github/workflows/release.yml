@@ -157,8 +157,6 @@ jobs:
             cp -r "$APP_DIR" "$DMG_MOUNT"
             hdiutil detach "$DMG_MOUNT"
 
-            cp "$DMG_PATH" "dist/"
-
           else
             cp "target/${{ matrix.target }}/release-ql/$BIN_NAME" "dist/"
           fi
