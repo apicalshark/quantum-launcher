@@ -138,14 +138,12 @@ jobs:
             mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
             cp "target/${{ matrix.target }}/release-ql/$BIN_NAME" "$MACOS_DIR/$BIN_NAME"
             cp $ASSETS_DIR/freedesktop/Info.plist "$CONTENTS_DIR/Info.plist"
-
             sips -s format icns "$ICON_PATH" --out "$RESOURCES_DIR/ql_logo.icns"
 
             APP_DIR="build/quantum-launcher.app"
             DMG_NAME="${{ env.BIN_NAME }}.dmg"
             DMG_PATH="dist/$DMG_NAME"
             VOL_NAME="quantum_launcher"
-
             mkdir -p dist
 
             SOURCE_SIZE_KB=$(du -sk "$APP_DIR" | awk '{print $1}')
@@ -155,7 +153,6 @@ jobs:
             DMG_MOUNT=$(hdiutil attach -nobrowse "$DMG_PATH" | grep "/Volumes/" | awk '{print $3}')
             cp -r "$APP_DIR" "$DMG_MOUNT"
             hdiutil detach "$DMG_MOUNT"
-
           else
             cp "target/${{ matrix.target }}/release-ql/$BIN_NAME" "dist/"
           fi
