@@ -129,25 +129,13 @@ jobs:
             cp "target/${{ matrix.target }}/release-ql/$BIN_NAME.exe" "dist/"
           elif [ "${{ matrix.build }}" = "aarch64-macos" ] || [ "${{ matrix.build }}" = "x86_64-macos" ]; then
             APP_DIR="build/quantum-launcher.app"
-            CONTENTS_DIR="$APP_DIR/Contents"
-            MACOS_DIR="$CONTENTS_DIR/MacOS"
-            RESOURCES_DIR="$CONTENTS_DIR/Resources"
-            ASSETS_DIR="assets"
-            ICON_PATH="$ASSETS_DIR/icon/ql_logo.png"
-
+            MACOS_DIR="$APP_DIR/Contents/MacOS"
+            RESOURCES_DIR="$APP_DIR/Contents/Resources"
             mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
             cp "target/${{ matrix.target }}/release-ql/$BIN_NAME" "$MACOS_DIR/$BIN_NAME"
-            cp $ASSETS_DIR/freedesktop/Info.plist "$CONTENTS_DIR/Info.plist"
-            sips -s format icns "$ICON_PATH" --out "$RESOURCES_DIR/ql_logo.icns"
-
-            DMG_NAME="${{ env.BIN_NAME }}.dmg"
-            DMG_PATH="dist/$DMG_NAME"
-            VOL_NAME="quantum_launcher"
-            mkdir -p dist
-
-            SOURCE_SIZE_KB=$(du -sk "$APP_DIR" | awk '{print $1}')
-            TOTAL_SIZE_MB=$((($SOURCE_SIZE_KB + 512) / 1024 + 2))
-            hdiutil create -volname "${{ env.BIN_NAME}}" -srcfolder "$APP_DIR"-format UDZO -size "${TOTAL_SIZE_MB}m" "$DMG_PATH"
+            cp assets/freedesktop/Info.plist "$APP_DIR/Contents/Info.plist"
+            sips -s format icns "assets/icon/ql_logo.png" --out "$RESOURCES_DIR/ql_logo.icns"
+            hdiutil create -volname "${{ env.BIN_NAME}}" -srcfolder "$APP_DIR" -ov -format UDZO "dist/${{ env.BIN_NAME }}.dmg"
           else
             cp "target/${{ matrix.target }}/release-ql/$BIN_NAME" "dist/"
           fi
