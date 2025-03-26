@@ -9,7 +9,6 @@ env:
   REPO_NAME: Mrmayman/quantum-launcher
   FINAL_NAME: quantum_launcher
   APP_VERSION: 0.4.0
-  ICON_NAME: ql_logo
   CARGO_TERM_COLOR: always # Tell cargo to always use colors
 
 jobs:
@@ -59,7 +58,7 @@ jobs:
             cargo build --profile release-ql --target ${{ matrix.target }}
           fi
 
-      - name: Create App Bundle
+      - name: Create DMG
         shell: bash
         run: |
           APP_DIR="build/quantum-launcher.app"
@@ -67,7 +66,7 @@ jobs:
           MACOS_DIR="$CONTENTS_DIR/MacOS"
           RESOURCES_DIR="$CONTENTS_DIR/Resources"
           ASSETS_DIR="assets"
-          ICON_PATH="$ASSETS_DIR/icon/${{ env.ICON_NAME }}.png"
+          ICON_PATH="$ASSETS_DIR/icon/ql_logo.png"
 
           mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
           cp "target/${{ matrix.target }}/release-ql/$BIN_NAME" "$MACOS_DIR/$BIN_NAME"
@@ -94,18 +93,15 @@ jobs:
             <key>NSPrincipalClass</key>
             <string>NSApplication</string>
              <key>CFBundleIconFile</key>
-            <string>${{ env.ICON_NAME }}</string>
+            <string>ql_logo</string>
           </dict>
           </plist>
           EOF
 
-          sips -s format icns "$ICON_PATH" --out "$RESOURCES_DIR/${{ env.ICON_NAME }}.icns"
+          sips -s format icns "$ICON_PATH" --out "$RESOURCES_DIR/ql_logo.icns"
 
-      - name: Create DMG
-        shell: bash
-        run: |
           APP_DIR="build/quantum-launcher.app"
-          DMG_NAME="${{ env.FINAL_NAME }}_${{ matrix.final_name }}.dmg"
+          DMG_NAME="${{ env.BIN_NAME }}.dmg"
           DMG_PATH="dist/$DMG_NAME"
           VOL_NAME="quantum_launcher"
 
