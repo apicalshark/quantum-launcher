@@ -89,7 +89,7 @@ jobs:
           cp -r "$APP_DIR" "$DMG_MOUNT"
           hdiutil detach "$DMG_MOUNT"
           mv "$DMG_PATH" "temp.dmg"
-          hdiutil convert -format ULFO -compression_level 9 -o "$DMG_PATH" "temp.dmg"
+          hdiutil convert -format ULFO -o "$DMG_PATH" "temp.dmg"
           rm "temp.dmg"
 
       - name: Upload DMG
