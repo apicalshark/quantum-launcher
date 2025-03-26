@@ -148,7 +148,7 @@ jobs:
 
             SOURCE_SIZE_KB=$(du -sk "$APP_DIR" | awk '{print $1}')
             TOTAL_SIZE_MB=$((($SOURCE_SIZE_KB + 512) / 1024 + 2))
-            hdiutil create -volname "$VOL_NAME" -srcfolder "$APP_DIR" -fs HFS+J -format UDRW -size "${TOTAL_SIZE_MB}m" "$DMG_PATH"
+            hdiutil create -volname "$VOL_NAME" -srcfolder "$APP_DIR" -fs HFS+J -format ULFO -size "${TOTAL_SIZE_MB}m" "$DMG_PATH"
             hdiutil attach -nobrowse "$DMG_PATH"
             DMG_MOUNT=$(hdiutil attach -nobrowse "$DMG_PATH" | grep "/Volumes/" | awk '{print $3}')
             cp -r "$APP_DIR" "$DMG_MOUNT"
