@@ -61,6 +61,7 @@ jobs:
       - name: Create DMG
         shell: bash
         run: |
+          mkdir dist
           APP_DIR="build/quantum-launcher.app"
           MACOS_DIR="$APP_DIR/Contents/MacOS"
           RESOURCES_DIR="$APP_DIR/Contents/Resources"
