@@ -124,11 +124,6 @@ jobs:
         shell: bash
         run: |
           mkdir dist
-          echo "VERSION=0.1" >> $GITHUB_ENV
-          if [[ $GITHUB_REF == refs/tags/v* ]]; then
-            TAG_VERSION=${GITHUB_REF:10}
-            echo "VERSION=$TAG_VERSION" >> $GITHUB_ENV
-          fi
 
           if [ "${{ matrix.build }}" = "x86_64-windows" ] || [ "${{ matrix.build }}" = "i686-windows" ]; then
             cp "target/${{ matrix.target }}/release-ql/$BIN_NAME.exe" "dist/"
@@ -143,34 +138,7 @@ jobs:
 
             mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
             cp "target/${{ matrix.target }}/release-ql/$BIN_NAME" "$MACOS_DIR/$BIN_NAME"
-
-            cat <<EOF > "$CONTENTS_DIR/Info.plist"
-            <?xml version="1.0" encoding="UTF-8"?>
-            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-            <plist version="1.0">
-            <dict>
-              <key>CFBundleExecutable</key>
-              <string>${{ env.BIN_NAME }}</string>
-              <key>CFBundleIdentifier</key>
-              <string>com.mrmayman.quantumlauncher</string>
-              <key>CFBundleInfoDictionaryVersion</key>
-              <string>6.0</string>
-              <key>CFBundleName</key>
-              <string>${{ env.PROJECT_NAME }}</string>
-              <key>CFBundlePackageType</key>
-              <string>APPL</string>
-              <key>CFBundleShortVersionString</key>
-              <string>${{ env.VERSION }}</string>
-              <key>CFBundleVersion</key>
-              <string>1</string>
-              <key>NSPrincipalClass</key>
-              <string>NSApplication</string>
-              <key>CFBundleIconFile</key>
-              <string>ql_logo</string>
-            </dict>
-            </plist>
-            EOF
-            cat "$CONTENTS_DIR/Info.plist"
+            cp $ASSETS_DIR/freedesktop/Info.plist "$CONTENTS_DIR/Info.plist"
 
             sips -s format icns "$ICON_PATH" --out "$RESOURCES_DIR/ql_logo.icns"
 
