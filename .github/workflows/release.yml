@@ -153,9 +153,6 @@ jobs:
             DMG_MOUNT=$(hdiutil attach -nobrowse "$DMG_PATH" | grep "/Volumes/" | awk '{print $3}')
             cp -r "$APP_DIR" "$DMG_MOUNT"
             hdiutil detach "$DMG_MOUNT"
-            mv "$DMG_PATH" "temp.dmg"
-            hdiutil convert -format ULFO -o "$DMG_PATH" "temp.dmg"
-            rm "temp.dmg"
           else
             cp "target/${{ matrix.target }}/release-ql/$BIN_NAME" "dist/"
           fi
