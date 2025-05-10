@@ -1,5 +1,8 @@
 name: Build-RPM
 
+# permissions:
+#  contents: write
+
 on:
   workflow_dispatch: # allows manual triggering
 
@@ -29,16 +32,19 @@ jobs:
           arch: x86_64
           altarch: amd64
           
+    
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-
       - name: Install Build Dependencies
         run: |
           sudo dnf install rpmdevtools rpmlint @development-tools rpkg git dnf5-plugins --refresh -y
-
+      
+      - name: Clone Repo
+        run: |
+          git clone https://github.com/Mrmayman/quantum-launcher.git
+      
       - name: Build release package
         run: |
+          cd quantum-launcher
           sudo dnf5 builddep -y quantum_launcher.spec
           mkdir ~/rpmlocal && rpkg local --outdir ~/rpmlocal
           rm -f ~/rpmlocal/${{ matrix.arch }}/*debug*
