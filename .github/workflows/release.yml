@@ -124,7 +124,6 @@ jobs:
       - name: Build release binary
         shell: bash
         run: |
-          rm Cargo.lock
           if [ "${{ matrix.cross }}" == "true" ]; then
             cross build --profile release-ql --target ${{ matrix.target }}
           else
