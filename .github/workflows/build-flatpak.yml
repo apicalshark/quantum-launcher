@@ -6,7 +6,6 @@ name: Build-Flatpak
 on:
   workflow_dispatch: # allows manual triggering
 
-
 env:
   BIN_NAME: quantum_launcher
   PROJECT_NAME: quantum_launcher
