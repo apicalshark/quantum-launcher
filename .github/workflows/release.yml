@@ -114,7 +114,6 @@ jobs:
       - name: Install ${{ matrix.rust }} toolchain
         shell: bash
         run: |
-          source $HOME/.profile
           rustup toolchain install ${{ matrix.rust }} --no-self-update
           rustup default ${{ matrix.rust }}
           rustup target add ${{ matrix.target }}
