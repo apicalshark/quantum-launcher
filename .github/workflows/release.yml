@@ -80,7 +80,7 @@ jobs:
           os: windows-latest
           rust: stable
           target: aarch64-pc-windows-msvc
-          cross: false
+          cross: true
           final_name: windows_aarch64
         - build: i686-windows
           os: ubuntu-latest
@@ -117,9 +117,9 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.cross }}" == "true" ]; then
-            cross build --profile release-ql --target ${{ matrix.target }}
+            cross build --profile release-ql --verbose --target ${{ matrix.target }}
           else
-            cargo build --profile release-ql --target ${{ matrix.target }}
+            cargo build --profile release-ql --verbose --target ${{ matrix.target }}
           fi
       
       - name: Build archive
