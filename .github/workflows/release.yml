@@ -105,16 +105,16 @@ jobs:
 
       - name: Install rustup for ${{ matrix.os }}
         if: matrix.os == 'windows-11-arm'
-        shell: pwsh
+        shell: bash
         run: |
-          Invoke-WebRequest https://win.rustup.rs/aarch64 -OutFile rustup-init.exe
-          .\rustup-init.exe -y
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          curl --proto '=https' --tlsv1.2 -sSf https://win.rustup.rs/aarch64 > rustup-init.exe
+          ./rustup-init.exe -y
           rustup --version
 
       - name: Install ${{ matrix.rust }} toolchain
         shell: bash
         run: |
+          source $HOME/.profile
           rustup toolchain install ${{ matrix.rust }} --no-self-update
           rustup default ${{ matrix.rust }}
           rustup target add ${{ matrix.target }}
