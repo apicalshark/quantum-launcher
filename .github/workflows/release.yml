@@ -105,8 +105,11 @@ jobs:
 
       - name: Install rustup for ${{ matrix.os }}
         if: matrix.os == 'windows-11-arm'
+        shell: pwsh
         run: |
-          choco install rustup.install
+          winget install Rustlang.Rustup
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          rustup --version
 
       - name: Install ${{ matrix.rust }} toolchain
         shell: bash
