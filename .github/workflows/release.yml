@@ -77,7 +77,7 @@ jobs:
           cross: false
           final_name: macos_aarch64
         - build: aarch64-windows
-          os: windows-latest
+          os: windows-11-arm
           rust: stable
           target: aarch64-pc-windows-msvc
           cross: false
