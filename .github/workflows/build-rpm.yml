@@ -1,8 +1,5 @@
 name: Build-RPM
 
-# permissions:
-#  contents: write
-
 on:
   workflow_dispatch: # allows manual triggering
 
@@ -20,30 +17,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        docker: [fedora-latest, fedora-40]
         include:
         - docker: fedora-latest
           version: latest
           os: fedora
           arch: x86_64
           altarch: amd64
-        - docker: fedora-40
-          version: 40
+        - docker: fedora-41
+          version: 41
           os: fedora
           arch: x86_64
           altarch: amd64
           
-    
     steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
       - name: Install Build Dependencies
         run: |
-          sudo dnf install rpmdevtools rpmlint @development-tools rpkg git dnf5 dnf5-plugins --refresh -y
-          sudo dnf install dnf5-command\(builddep\) -y
-      
-      - name: Clone Repo
-        run: |
-          git clone https://github.com/Mrmayman/quantum-launcher.git
-      
+          sudo dnf install rpmdevtools rpmlint @development-tools rpkg git dnf5-plugins --refresh -y
+
       - name: Build release package
         run: |
           cd quantum-launcher
