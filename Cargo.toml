@@ -38,7 +38,7 @@ image = { version = "0.24", default-features = false, features = [
 html5ever = "0.27"
 markup5ever_rcdom = "0.3"
 
-[target.'aarch64-pc-windows-msvc'.dependencies]
+[target.'cfg(all(target_os = "windows", target_arch = "aarch64"))'.dependencies]
 image = { version = "0.24", default-features = false, features = [
     "gif",
     "ico",
