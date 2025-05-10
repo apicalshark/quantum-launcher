@@ -101,6 +101,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libdbus-1-dev pkg-config libdbus-1-3
 
+      - uses: ilammy/setup-nasm@v1
+
       - name: Install ${{ matrix.rust }} toolchain
         shell: bash
         run: |
@@ -148,8 +150,6 @@ jobs:
   Flatpak:
     name: Build Flatpak
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
 
     steps:
       - name: Checkout sources
