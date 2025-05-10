@@ -103,6 +103,11 @@ jobs:
 
       - uses: ilammy/setup-nasm@v1
 
+      - name: Install rustup for ${{ matrix.os }}
+        if: matrix.os == 'windows-11-arm'
+        run: |
+          choco install rustup.install
+
       - name: Install ${{ matrix.rust }} toolchain
         shell: bash
         run: |
