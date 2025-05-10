@@ -28,7 +28,7 @@ rfd = { version = "0.15", default-features = false, features = [
 
 image = { version = "0.24", default-features = false, features = [
     # Web formats are enough
-    #"avif", 
+    "avif", 
     "gif",
     "ico",
     "jpeg",
@@ -37,6 +37,15 @@ image = { version = "0.24", default-features = false, features = [
 ] }
 html5ever = "0.27"
 markup5ever_rcdom = "0.3"
+
+[target.'aarch64-pc-windows-msvc'.dependencies]
+image = { version = "0.24", default-features = false, features = [
+    "gif",
+    "ico",
+    "jpeg",
+    "png",
+    "webp",
+] }
 
 # [profile.dev]
 # opt-level = 1
