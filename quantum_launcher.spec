@@ -19,7 +19,7 @@ A simple Minecraft Launcher written in Rust.}
 cargo fetch
 
 %build
-cargo build --profile release-ql
+cargo build --profile release-ql --locked
 
 %install
 install -Dm755 target/release-ql/quantum_launcher %{buildroot}%{_bindir}/quantum-launcher
