@@ -16,7 +16,7 @@ A simple Minecraft Launcher written in Rust.}
 
 %prep
 {{{ git_dir_setup_macro }}}
-cargo fetch
+cargo fetch --locked
 
 %build
 cargo build --profile release-ql --locked
