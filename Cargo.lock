@@ -3627,6 +3627,7 @@ dependencies = [
  "rfd",
  "serde",
  "serde_json",
+ "tabular",
  "terminal_size",
  "tokio",
  "windows 0.61.3",
@@ -4623,6 +4624,14 @@ checksum = "8e1d1b10ced5ca923a1fcb8d03e96b8d3268065d724548c0211415ff6ac6bac4"
 dependencies = [
  "core-foundation-sys",
  "libc",
+]
+
+[[package]]
+name = "tabular"
+version = "0.2.0"
+source = "git+https://github.com/Mrmayman/tabular.git#bd197a36342f06c21065c50dcf3c1851949600b0"
+dependencies = [
+ "iced",
 ]
 
 [[package]]
