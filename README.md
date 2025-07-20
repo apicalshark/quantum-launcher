@@ -1,13 +1,19 @@
+<div align="center">
+
 # <img src="https://github.com/Mrmayman/quantumlauncher/raw/main/assets/icon/ql_logo.png" style="height: 1.4em; vertical-align: middle;" /> QuantumLauncher
-## [Website](https://mrmayman.github.io/quantumlauncher) | [Discord](https://discord.gg/bWqRaSXar5) | [Changelogs](https://github.com/Mrmayman/quantumlauncher/raw/main/CHANGELOGS.md)
+## [Website](https://mrmayman.github.io/quantumlauncher) | [Discord](https://discord.gg/bWqRaSXar5) | [Changelogs](https://github.com/Mrmayman/quantumlauncher/tree/main/changelogs/)
+
+![GPL3 License](https://img.shields.io/github/license/Mrmayman/quantumlauncher)
+![Downloads](https://img.shields.io/github/downloads/Mrmayman/quantumlauncher/total)
+![Discord Online](https://img.shields.io/discord/1280474064540012619?label=&labelColor=6A7EC2&logo=discord&logoColor=ffffff&color=7389D8)
+[![Made with iced](https://iced.rs/badge.svg)](https://github.com/iced-rs/iced)
 
 A minimalistic Minecraft launcher for Windows, macOS and Linux.
 
 ![Quantum Launcher running a Minecraft Instance](https://github.com/Mrmayman/quantumlauncher/raw/main/quantum_launcher.png)
 
-QuantumLauncher is written in *Rust* with the *iced* framework,
-offering a lightweight and responsive experience.
-It is designed to be simple and easy to use, with a focus on performance and features.
+QuantumLauncher offers a lightweight and responsive experience.
+It's designed to be simple and easy to use, with a focus on performance and features.
 
 # Features
 
@@ -39,6 +45,8 @@ It is designed to be simple and easy to use, with a focus on performance and fea
 
 ![](https://github.com/Mrmayman/quantumlauncher/raw/main/assets/screenshots/themes.png)
 <br><br>
+
+</div>
 
 # Downloads and Building
 
@@ -171,8 +179,8 @@ Nearly all of this launcher is licensed under the **GNU General Public License v
 however there are a few exceptions (such as github actions and assets).
 Visit [the assets README](assets/README.md) for more information.
 
-# Note on Piracy
+# Notes
 
-If you pirate the game, it's at your own risk. I am not responsible for any issues caused.
-I recommend that you buy the game, but if you don't have the means, feel free to use this launcher.
+If you play the game in offline mode, it's at your own risk. I am not responsible for any issues caused.
+I recommend that you buy the game, but if you don't have the means, feel free to use this launcher as a last resort.
 If anyone has any issues/complaints, just open an issue in the repo.
