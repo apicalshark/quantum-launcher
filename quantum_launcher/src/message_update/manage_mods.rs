@@ -201,18 +201,17 @@ impl Launcher {
                 }
             }
             ManageModsMessage::UpdateCheckResult(updates) => {
-                let updates = match updates {
-                    Ok(n) => n,
-                    Err(err) => {
-                        err_no_log!("Could not check for updates: {err}");
-                        return Task::none();
-                    }
-                };
-
                 if let State::EditMods(menu) = &mut self.state {
                     menu.update_check_handle = None;
-                    menu.available_updates =
-                        updates.into_iter().map(|(a, b)| (a, b, true)).collect();
+                    match updates {
+                        Ok(updates) => {
+                            menu.available_updates =
+                                updates.into_iter().map(|(a, b)| (a, b, true)).collect();
+                        }
+                        Err(err) => {
+                            err_no_log!("Could not check for updates: {err}");
+                        }
+                    }
                 }
             }
             ManageModsMessage::UpdateCheckToggle(idx, t) => {
