@@ -136,6 +136,9 @@ pub fn print_to_storage(msg: &str, t: LogType) {
 macro_rules! info {
     ($($arg:tt)*) => {{
         let plain_text = format!("[info] {}\n", format_args!($($arg)*));
+        #[cfg(target_os = "windows")]
+        println!("{plain_text}");
+        #[cfg(not(target_os = "windows"))]
         println!("{} {}", colored::Colorize::yellow("[info]"), format_args!($($arg)*));
         $crate::print::print_to_file(&plain_text, $crate::print::LogType::Info);
     }};
@@ -147,6 +150,9 @@ macro_rules! info {
 macro_rules! info_no_log {
     ($($arg:tt)*) => {{
         let plain_text = format!("[info] {}\n", format_args!($($arg)*));
+        #[cfg(target_os = "windows")]
+        println!("{plain_text}");
+        #[cfg(not(target_os = "windows"))]
         println!("{} {}", colored::Colorize::yellow("[info]"), format_args!($($arg)*));
         $crate::print::print_to_storage(&plain_text, $crate::print::LogType::Info);
     }};
@@ -158,6 +164,9 @@ macro_rules! info_no_log {
 macro_rules! err_no_log {
     ($($arg:tt)*) => {{
         let plain_text = format!("[error] {}\n", format_args!($($arg)*));
+        #[cfg(target_os = "windows")]
+        eprintln!("{plain_text}");
+        #[cfg(not(target_os = "windows"))]
         eprintln!("{} {}", colored::Colorize::red("[error]"), format_args!($($arg)*));
         $crate::print::print_to_storage(&plain_text, $crate::print::LogType::Error);
     }};
@@ -169,6 +178,9 @@ macro_rules! err_no_log {
 macro_rules! err {
     ($($arg:tt)*) => {{
         let plain_text = format!("[error] {}\n", format_args!($($arg)*));
+        #[cfg(target_os = "windows")]
+        eprintln!("{plain_text}");
+        #[cfg(not(target_os = "windows"))]
         eprintln!("{} {}", colored::Colorize::red("[error]"), format_args!($($arg)*));
         $crate::print::print_to_file(&plain_text, $crate::print::LogType::Error);
     }};
@@ -180,6 +192,9 @@ macro_rules! err {
 macro_rules! pt {
     ($($arg:tt)*) => {{
         let plain_text = format!("- {}\n", format_args!($($arg)*));
+        #[cfg(target_os = "windows")]
+        println!("{plain_text}");
+        #[cfg(not(target_os = "windows"))]
         println!("{} {}", colored::Colorize::bold("-"), format_args!($($arg)*));
         $crate::print::print_to_file(&plain_text, $crate::print::LogType::Point);
     }};
