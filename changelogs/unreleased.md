@@ -28,6 +28,8 @@
 - Cleaned instance edit menu
 - Made massive improvements to the log renderer
 - Added a licenses page
+- Added a `quantum_launcher launch <INSTANCE> <USERNAME>`
+  command-line feature to launch instances.
 
 ## Fixes
 - Fixed Minecraft Indev and early Infdev being unplayable (b)

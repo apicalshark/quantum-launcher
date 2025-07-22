@@ -1,7 +1,7 @@
-use clap::Command;
+use clap::{Arg, ArgAction, Command};
 use colored::Colorize;
 use ql_core::{
-    err_no_log,
+    err, info,
     json::{instance_config::InstanceConfigJson, version::VersionDetails},
     IntoStringError, LAUNCHER_DIR, LAUNCHER_VERSION_NAME,
 };
@@ -24,17 +24,31 @@ fn command() -> Command {
     .long_about(long_about())
     .subcommand(
         get_list_instance_subcommands("list-instances")
-            .short_flag('l')
             .about("Lists all installed Minecraft instances")
             .long_about("Lists all installed Minecraft instances. Can be paired with hyphen-separated-flags like name-loader, name-version, loader-name-version"),
     )
     .subcommand(
         get_list_instance_subcommands("list-servers")
-            .short_flag('s')
             .about("Lists all installed Minecraft servers")
             .long_about("Lists all installed Minecraft servers. Can be paired with hyphen-separated-flags like name-loader, name-version, loader-name-version"),
+    ).hide(true)
+    .subcommand(
+       Command::new("launch")
+            .about("Launches the specified instance")
+            .arg_required_else_help(true)
+            .args([
+                Arg::new("instance_name")
+                    .help("The name of the instance to launch")
+                    .required(true),
+                Arg::new("username")
+                    .help("Username of the player")
+                    .required(true),
+                Arg::new("--use-account").short('a').long("use-account")
+                    .help("Whether to use a logged in account of the given username (if any)")
+                    .required(false).action(ArgAction::SetTrue)
+            ])
     )
-    .subcommand(Command::new("list-available-versions").short_flag('a').about("Lists all downloadable versions, downloading a list from Mojang/Omniarchive"))
+    .subcommand(Command::new("list-available-versions").about("Lists all downloadable versions, downloading a list from Mojang/Omniarchive"))
     .subcommand(Command::new("--no-sandbox").hide(true)) // This one doesn't do anything, but on Windows i686 it's automatically passed?
 }
 
@@ -278,13 +292,57 @@ pub fn start_cli(is_dir_err: bool) {
                 cmd_list_available_versions();
                 std::process::exit(0);
             }
-            "--no-sandbox" => {
-                err_no_log!("Unknown command --no-sandbox, ignoring...");
+            "launch" => {
+                cmd_launch_instance(subcommand);
+                std::process::exit(0);
             }
+            "--no-sandbox" => {}
             err => panic!("Unimplemented command! {err}"),
         }
     } else {
         print_intro();
+    }
+}
+
+fn cmd_launch_instance(subcommand: (&str, &clap::ArgMatches)) {
+    let instance_name: &String = subcommand.1.get_one("instance_name").unwrap();
+    let username: &String = subcommand.1.get_one("username").unwrap();
+    let _use_account: &bool = subcommand.1.get_one("--use-account").unwrap();
+    // TODO: Implement --use-account for actual auth
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+
+    let child = match runtime.block_on(ql_instances::launch(
+        instance_name.clone(),
+        username.clone(),
+        None,
+        None,
+    )) {
+        Ok(n) => n,
+        Err(err) => {
+            err!("{err}");
+            std::process::exit(1);
+        }
+    };
+
+    if let (Some(stdout), Some(stderr)) = {
+        let mut child = child.lock().unwrap();
+        (child.stdout.take(), child.stderr.take())
+    } {
+        match runtime.block_on(ql_instances::read_logs(
+            stdout,
+            stderr,
+            child,
+            None,
+            instance_name.clone(),
+        )) {
+            Ok((s, _)) => {
+                info!("Game exited with code {s}");
+            }
+            Err(err) => {
+                err!("{err}");
+                std::process::exit(1);
+            }
+        }
     }
 }
 

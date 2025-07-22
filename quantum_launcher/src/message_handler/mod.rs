@@ -94,7 +94,7 @@ impl Launcher {
                                 stdout,
                                 stderr,
                                 child,
-                                sender,
+                                Some(sender),
                                 selected_instance.clone(),
                             )
                             .await;

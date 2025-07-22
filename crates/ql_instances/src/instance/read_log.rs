@@ -4,6 +4,7 @@ use std::{
     sync::{mpsc::Sender, Arc, Mutex},
 };
 
+use colored::Colorize;
 use serde::Deserialize;
 use thiserror::Error;
 use tokio::{
@@ -40,7 +41,7 @@ pub async fn read_logs(
     stdout: ChildStdout,
     stderr: ChildStderr,
     child: Arc<Mutex<Child>>,
-    sender: Sender<LogLine>,
+    sender: Option<Sender<LogLine>>,
     instance_name: String,
 ) -> Result<(ExitStatus, String), ReadError> {
     // TODO: Use the "newfangled" approach of the Modrinth launcher:
@@ -80,24 +81,46 @@ pub async fn read_logs(
             line = stdout_reader.next_line() => {
                 if let Some(mut line) = line? {
                     if uses_xml {
-                        xml_parse(&sender, &mut xml_cache, &line, &mut has_errored);
+                        xml_parse(sender.as_ref(), &mut xml_cache, &line, &mut has_errored);
                     } else {
                         line.push('\n');
-                        _ = sender.send(LogLine::Message(line));
+                        send(sender.as_ref(), LogLine::Message(line));
                     }
                 } // else EOF
             },
             line = stderr_reader.next_line() => {
                 if let Some(mut line) = line? {
                     line.push('\n');
-                    _ = sender.send(LogLine::Error(line));
+                    send(sender.as_ref(), LogLine::Error(line));
                 }
             }
         }
     }
 }
 
-fn xml_parse(sender: &Sender<LogLine>, xml_cache: &mut String, line: &str, has_errored: &mut bool) {
+fn send(sender: Option<&Sender<LogLine>>, msg: LogLine) {
+    if let LogLine::Info(LogEvent {
+        message: Some(message),
+        ..
+    }) = &msg
+    {
+        if message.contains("Session ID is ") {
+            return;
+        }
+    }
+    if let Some(sender) = sender {
+        _ = sender.send(msg);
+    } else {
+        println!("{}", msg.print_colored())
+    }
+}
+
+fn xml_parse(
+    sender: Option<&Sender<LogLine>>,
+    xml_cache: &mut String,
+    line: &str,
+    has_errored: &mut bool,
+) {
     if !line.starts_with("  </log4j:Event>") {
         xml_cache.push_str(line);
         return;
@@ -111,7 +134,7 @@ fn xml_parse(sender: &Sender<LogLine>, xml_cache: &mut String, line: &str, has_e
         Some(start) if start > 0 => {
             let other_text = xml[..start].trim();
             if !other_text.is_empty() {
-                _ = sender.send(LogLine::Message(other_text.to_owned()));
+                send(sender, LogLine::Message(other_text.to_owned()));
             }
             &xml[start..]
         }
@@ -119,13 +142,13 @@ fn xml_parse(sender: &Sender<LogLine>, xml_cache: &mut String, line: &str, has_e
     };
 
     if let Ok(log_event) = quick_xml::de::from_str(text) {
-        _ = sender.send(LogLine::Info(log_event));
+        send(sender, LogLine::Info(log_event));
         xml_cache.clear();
     } else {
         let no_unicode = any_ascii::any_ascii(text);
         match quick_xml::de::from_str(&no_unicode) {
             Ok(log_event) => {
-                _ = sender.send(LogLine::Info(log_event));
+                send(sender, LogLine::Info(log_event));
                 xml_cache.clear();
             }
             Err(err) => {
@@ -163,6 +186,22 @@ pub enum LogLine {
     Info(LogEvent),
     Message(String),
     Error(String),
+}
+
+impl LogLine {
+    pub fn print_colored(&self) -> String {
+        match self {
+            #[cfg(target_os = "windows")]
+            LogLine::Info(event) => event.to_string(),
+            #[cfg(not(target_os = "windows"))]
+            LogLine::Info(event) => event.print_color(),
+            LogLine::Message(message) => message.clone(),
+            #[cfg(target_os = "windows")]
+            LogLine::Error(error) => error.clone(),
+            #[cfg(not(target_os = "windows"))]
+            LogLine::Error(error) => error.bright_red().to_string(),
+        }
+    }
 }
 
 impl Display for LogLine {
@@ -235,6 +274,26 @@ impl LogEvent {
         let datetime = chrono::DateTime::from_timestamp(seconds, nanoseconds as u32)?;
         let datetime = datetime.with_timezone(&chrono::Local);
         Some(datetime.format("%H:%M:%S").to_string())
+    }
+
+    pub fn print_color(&self) -> String {
+        let date = self.get_time().unwrap_or_else(|| self.timestamp.clone());
+
+        let level = self.level.bright_black().underline();
+        let thread = self.thread.bright_black().underline();
+        let class = self.logger.bright_black().underline();
+
+        let mut out = format!(
+            "{b1}{level}{b2} {b1}{date}{c}{thread}{c}{class}{b2} {msg}",
+            b1 = "[".bright_black(),
+            b2 = "]".bright_black(),
+            c = ":".bright_black(),
+            msg = if let Some(n) = &self.message { &n } else { "" }
+        );
+        if let Some(throwable) = self.throwable.as_deref() {
+            out.push_str(&format!("Caused by {throwable}"));
+        }
+        out
     }
 }
 

@@ -13,7 +13,7 @@ mod export;
 mod import;
 mod multimc;
 
-pub use export::{EXCEPTIONS, export_instance};
+pub use export::{export_instance, EXCEPTIONS};
 pub use import::import_instance;
 
 const PKG_ERR_PREFIX: &str = "while importing/exporting instance:\n";
