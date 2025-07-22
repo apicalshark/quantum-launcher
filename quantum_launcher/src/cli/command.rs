@@ -148,14 +148,14 @@ fn refresh_account(
         match account.account_type.as_deref() {
             // Hook: Account types
             Some("ElyBy") => {
-                let refresh_token = auth::elyby::read_refresh_token(&real_name)?;
+                let refresh_token = auth::elyby::read_refresh_token(real_name)?;
                 Some(
                     runtime
                         .block_on(auth::elyby::login_refresh(real_name.clone(), refresh_token))?,
                 )
             }
             _ => {
-                let refresh_token = auth::ms::read_refresh_token(&real_name)?;
+                let refresh_token = auth::ms::read_refresh_token(real_name)?;
                 Some(runtime.block_on(auth::ms::login_refresh(
                     real_name.clone(),
                     refresh_token,
