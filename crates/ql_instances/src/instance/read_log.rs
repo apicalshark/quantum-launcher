@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     fmt::Display,
     process::ExitStatus,
     sync::{mpsc::Sender, Arc, Mutex},
@@ -280,15 +281,24 @@ impl LogEvent {
         let date = self.get_time().unwrap_or_else(|| self.timestamp.clone());
 
         let level = self.level.bright_black().underline();
-        let thread = self.thread.bright_black().underline();
-        let class = self.logger.bright_black().underline();
+        // let thread = self.thread.bright_black().underline();
+        // let class = self.logger.bright_black().underline();
 
         let mut out = format!(
-            "{b1}{level}{b2} {b1}{date}{c}{thread}{c}{class}{b2} {msg}",
+            // "{b1}{level}{b2} {b1}{date}{c}{thread}{c}{class}{b2} {msg}",
+            "{b1}{level}{b2} {b1}{date}{b2} {msg}",
             b1 = "[".bright_black(),
             b2 = "]".bright_black(),
-            c = ":".bright_black(),
-            msg = if let Some(n) = &self.message { &n } else { "" }
+            // c = ":".bright_black(),
+            msg = if let Some(n) = &self.message {
+                if cfg!(target_os = "windows") {
+                    n.clone()
+                } else {
+                    parse_color(n)
+                }
+            } else {
+                String::new()
+            }
         );
         if let Some(throwable) = self.throwable.as_deref() {
             out.push_str(&format!("Caused by {throwable}"));
@@ -297,15 +307,67 @@ impl LogEvent {
     }
 }
 
+fn parse_color(msg: &str) -> String {
+    let color_map: HashMap<char, &str> = [
+        // Colors
+        ('0', "\x1b[30m"), // Black
+        ('1', "\x1b[34m"), // Dark Blue
+        ('2', "\x1b[32m"), // Dark Green
+        ('3', "\x1b[36m"), // Dark Aqua
+        ('4', "\x1b[31m"), // Dark Red
+        ('5', "\x1b[35m"), // Dark Purple
+        ('6', "\x1b[33m"), // Gold
+        ('7', "\x1b[37m"), // Gray
+        ('8', "\x1b[90m"), // Dark Gray
+        ('9', "\x1b[94m"), // Blue
+        ('a', "\x1b[92m"), // Green
+        ('b', "\x1b[96m"), // Aqua
+        ('c', "\x1b[91m"), // Red
+        ('d', "\x1b[95m"), // Light Purple
+        ('e', "\x1b[93m"), // Yellow
+        ('f', "\x1b[97m"), // White
+        // Formatting
+        ('l', "\x1b[1m"), // Bold
+        ('m', "\x1b[9m"), // Strikethrough
+        ('n', "\x1b[4m"), // Underline
+        ('o', "\x1b[3m"), // Italic
+        ('r', "\x1b[0m"), // Reset
+    ]
+    .iter()
+    .cloned()
+    .collect();
+
+    let mut out = String::new();
+
+    let mut iter = msg.chars();
+    while let Some(c) = iter.next() {
+        if c == '§' {
+            let Some(format) = iter.next() else { break };
+            if let Some(color) = color_map.get(&format) {
+                out.push_str(color);
+            } else {
+                out.push('§');
+                out.push(format);
+            }
+        } else {
+            out.push(c);
+        }
+    }
+
+    out.push_str("\x1b[0m");
+    out
+}
+
 impl Display for LogEvent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let date = self.get_time().unwrap_or_else(|| self.timestamp.clone());
         writeln!(
             f,
-            "[{level}] [{date}:{thread}:{class}] {msg}",
+            // "[{level}] [{date}:{thread}:{class}] {msg}",
+            "[{level}] [{date}] {msg}",
             level = self.level,
-            thread = self.thread,
-            class = self.logger,
+            // thread = self.thread,
+            // class = self.logger,
             msg = if let Some(n) = &self.message { &n } else { "" }
         )?;
         if let Some(throwable) = self.throwable.as_deref() {

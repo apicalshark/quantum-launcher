@@ -1,6 +1,6 @@
 use clap::{Arg, ArgAction, Command};
 use colored::Colorize;
-use ql_core::LAUNCHER_VERSION_NAME;
+use ql_core::{err, LAUNCHER_VERSION_NAME};
 use std::io::Write;
 
 use crate::menu_renderer::{DISCORD, GITHUB};
@@ -220,8 +220,12 @@ pub fn start_cli(is_dir_err: bool) {
                 std::process::exit(0);
             }
             "launch" => {
-                command::launch_instance(subcommand);
-                std::process::exit(0);
+                std::process::exit(if let Err(err) = command::launch_instance(subcommand) {
+                    err!("{err}");
+                    1
+                } else {
+                    0
+                });
             }
             "--no-sandbox" => {}
             err => panic!("Unimplemented command! {err}"),

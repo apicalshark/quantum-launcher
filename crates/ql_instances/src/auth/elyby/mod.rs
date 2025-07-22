@@ -64,8 +64,8 @@ pub async fn login_new(email: String, password: String) -> Result<Account, Error
     }))
 }
 
-pub fn read_refresh_token(username: &str) -> Result<String, Error> {
-    let entry = get_keyring_entry(username)?;
+pub fn read_refresh_token(email: &str) -> Result<String, Error> {
+    let entry = get_keyring_entry(email)?;
     Ok(entry.get_password()?)
 }
 

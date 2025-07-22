@@ -3,9 +3,10 @@ use ql_core::{
     json::{InstanceConfigJson, VersionDetails},
     IntoStringError, LAUNCHER_DIR,
 };
+use ql_instances::auth;
 use std::io::Write;
 
-use crate::state::get_entries;
+use crate::{config::LauncherConfig, state::get_entries};
 
 use super::PrintCmd;
 
@@ -82,25 +83,23 @@ pub fn list_instances(cmds: &[PrintCmd], dirname: &str) {
     }
 }
 
-pub fn launch_instance(subcommand: (&str, &clap::ArgMatches)) {
+pub fn launch_instance(
+    subcommand: (&str, &clap::ArgMatches),
+) -> Result<(), Box<dyn std::error::Error>> {
     let instance_name: &String = subcommand.1.get_one("instance_name").unwrap();
     let username: &String = subcommand.1.get_one("username").unwrap();
-    let _use_account: &bool = subcommand.1.get_one("--use-account").unwrap();
-    // TODO: Implement --use-account for actual auth
-    let runtime = tokio::runtime::Runtime::new().unwrap();
+    let use_account: bool = *subcommand.1.get_one("--use-account").unwrap();
 
-    let child = match runtime.block_on(ql_instances::launch(
+    let runtime = tokio::runtime::Runtime::new()?;
+
+    let account = refresh_account(username, use_account, &runtime)?;
+
+    let child = runtime.block_on(ql_instances::launch(
         instance_name.clone(),
         username.clone(),
         None,
-        None,
-    )) {
-        Ok(n) => n,
-        Err(err) => {
-            err!("{err}");
-            std::process::exit(1);
-        }
-    };
+        account,
+    ))?;
 
     if let (Some(stdout), Some(stderr)) = {
         let mut child = child.lock().unwrap();
@@ -122,4 +121,49 @@ pub fn launch_instance(subcommand: (&str, &clap::ArgMatches)) {
             }
         }
     }
+
+    Ok(())
+}
+
+fn refresh_account(
+    username: &String,
+    use_account: bool,
+    runtime: &tokio::runtime::Runtime,
+) -> Result<Option<auth::AccountData>, Box<dyn std::error::Error>> {
+    Ok(if use_account {
+        let config = LauncherConfig::load_s()?;
+        let Some(accounts) = config.accounts else {
+            err!("You haven't paired any accounts yet! Use the graphical interface to add some.");
+            std::process::exit(1);
+        };
+        let Some((real_name, account)) = accounts.get_key_value(username).or_else(|| {
+            accounts
+                .iter()
+                .find(|n| n.1.username_nice.as_ref().is_some_and(|n| n == username))
+        }) else {
+            err!("No logged-in account called {username:?} was found!");
+            std::process::exit(1);
+        };
+
+        match account.account_type.as_deref() {
+            // Hook: Account types
+            Some("ElyBy") => {
+                let refresh_token = auth::elyby::read_refresh_token(&real_name)?;
+                Some(
+                    runtime
+                        .block_on(auth::elyby::login_refresh(real_name.clone(), refresh_token))?,
+                )
+            }
+            _ => {
+                let refresh_token = auth::ms::read_refresh_token(&real_name)?;
+                Some(runtime.block_on(auth::ms::login_refresh(
+                    real_name.clone(),
+                    refresh_token,
+                    None,
+                ))?)
+            }
+        }
+    } else {
+        None
+    })
 }
