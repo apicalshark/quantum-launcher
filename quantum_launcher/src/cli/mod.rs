@@ -1,16 +1,11 @@
 use clap::{Arg, ArgAction, Command};
 use colored::Colorize;
-use ql_core::{
-    err, info,
-    json::{instance_config::InstanceConfigJson, version::VersionDetails},
-    IntoStringError, LAUNCHER_DIR, LAUNCHER_VERSION_NAME,
-};
+use ql_core::LAUNCHER_VERSION_NAME;
 use std::io::Write;
 
-use crate::{
-    menu_renderer::{DISCORD, GITHUB},
-    state::get_entries,
-};
+use crate::menu_renderer::{DISCORD, GITHUB};
+
+mod command;
 
 fn command() -> Command {
     Command::new(if cfg!(target_os = "windows") {
@@ -32,24 +27,29 @@ fn command() -> Command {
             .about("Lists all installed Minecraft servers")
             .long_about("Lists all installed Minecraft servers. Can be paired with hyphen-separated-flags like name-loader, name-version, loader-name-version"),
     ).hide(true)
-    .subcommand(
-       Command::new("launch")
-            .about("Launches the specified instance")
-            .arg_required_else_help(true)
-            .args([
-                Arg::new("instance_name")
-                    .help("The name of the instance to launch")
-                    .required(true),
-                Arg::new("username")
-                    .help("Username of the player")
-                    .required(true),
-                Arg::new("--use-account").short('a').long("use-account")
-                    .help("Whether to use a logged in account of the given username (if any)")
-                    .required(false).action(ArgAction::SetTrue)
-            ])
-    )
+    .subcommand(get_launch_subcommand())
     .subcommand(Command::new("list-available-versions").about("Lists all downloadable versions, downloading a list from Mojang/Omniarchive"))
     .subcommand(Command::new("--no-sandbox").hide(true)) // This one doesn't do anything, but on Windows i686 it's automatically passed?
+}
+
+fn get_launch_subcommand() -> Command {
+    Command::new("launch")
+        .about("Launches the specified instance")
+        .arg_required_else_help(true)
+        .args([
+            Arg::new("instance_name")
+                .help("The name of the instance to launch")
+                .required(true),
+            Arg::new("username")
+                .help("Username of the player")
+                .required(true),
+            Arg::new("--use-account")
+                .short('a')
+                .long("use-account")
+                .help("Whether to use a logged in account of the given username (if any)")
+                .required(false)
+                .action(ArgAction::SetTrue),
+        ])
 }
 
 fn get_list_instance_subcommands(name: &'static str) -> Command {
@@ -72,25 +72,6 @@ fn get_list_instance_subcommands(name: &'static str) -> Command {
         .subcommand(Command::new("loader-version-name"))
 }
 
-fn cmd_list_available_versions() {
-    eprintln!("Listing downloadable versions...");
-    let versions = match tokio::runtime::Runtime::new()
-        .unwrap()
-        .block_on(ql_instances::list_versions())
-        .strerr()
-    {
-        Ok(n) => n,
-        Err(err) => {
-            panic!("Could not list versions!\n{err}");
-        }
-    };
-
-    let mut stdout = std::io::stdout().lock();
-    for version in versions {
-        writeln!(stdout, "{version}").unwrap();
-    }
-}
-
 fn long_about() -> String {
     format!(
         r"
@@ -107,60 +88,6 @@ enum PrintCmd {
     Name,
     Version,
     Loader,
-}
-
-fn cmd_list_instances(cmds: &[PrintCmd], dirname: &str) {
-    let instances = match tokio::runtime::Runtime::new()
-        .unwrap()
-        .block_on(get_entries(dirname.to_owned(), false))
-        .strerr()
-    {
-        Ok(n) => n.0,
-        Err(err) => {
-            panic!("Could not list instances: {err}");
-        }
-    };
-
-    for instance in instances {
-        let mut has_printed = false;
-        for cmd in cmds {
-            match cmd {
-                PrintCmd::Name => {
-                    if has_printed {
-                        print!("\t");
-                    }
-                    print!("{instance}");
-                }
-                PrintCmd::Version => {
-                    if has_printed {
-                        print!("\t");
-                    }
-                    let instance_dir = LAUNCHER_DIR.join(dirname).join(&instance);
-
-                    let json = std::fs::read_to_string(instance_dir.join("details.json")).unwrap();
-                    let json: VersionDetails = serde_json::from_str(&json).unwrap();
-
-                    print!("{}", json.id);
-                }
-                PrintCmd::Loader => {
-                    if has_printed {
-                        print!("\t");
-                    }
-                    let instance_dir = LAUNCHER_DIR.join(dirname).join(&instance);
-                    let config_json =
-                        std::fs::read_to_string(instance_dir.join("config.json")).unwrap();
-                    let config_json: InstanceConfigJson =
-                        serde_json::from_str(&config_json).unwrap();
-
-                    print!("{}", config_json.mod_type);
-                }
-            }
-            has_printed = true;
-        }
-        if has_printed {
-            println!();
-        }
-    }
 }
 
 /// Prints the "intro" to the screen
@@ -185,7 +112,7 @@ fn print_intro() {
 
     const TEXT_WIDTH: u16 = 39;
 
-    const LOGO: &str = include_str!("../../assets/ascii/icon.txt");
+    const LOGO: &str = include_str!("../../../assets/ascii/icon.txt");
     const LOGO_WIDTH: u16 = 30;
 
     if cfg!(target_os = "windows") {
@@ -239,7 +166,7 @@ fn print_intro() {
 }
 
 fn get_side_text() -> (String, usize) {
-    let mut text = include_str!("../../assets/ascii/text.txt").to_owned();
+    let mut text = include_str!("../../../assets/ascii/text.txt").to_owned();
     let text_len_old = text.lines().count();
 
     let mut message = if cfg!(target_os = "windows") {
@@ -280,20 +207,20 @@ pub fn start_cli(is_dir_err: bool) {
         match subcommand.0 {
             "list-instances" => {
                 let command = get_list_instance_subcommand(subcommand);
-                cmd_list_instances(&command, "instances");
+                command::list_instances(&command, "instances");
                 std::process::exit(0);
             }
             "list-servers" => {
                 let command = get_list_instance_subcommand(subcommand);
-                cmd_list_instances(&command, "servers");
+                command::list_instances(&command, "servers");
                 std::process::exit(0);
             }
             "list-available-versions" => {
-                cmd_list_available_versions();
+                command::list_available_versions();
                 std::process::exit(0);
             }
             "launch" => {
-                cmd_launch_instance(subcommand);
+                command::launch_instance(subcommand);
                 std::process::exit(0);
             }
             "--no-sandbox" => {}
@@ -301,48 +228,6 @@ pub fn start_cli(is_dir_err: bool) {
         }
     } else {
         print_intro();
-    }
-}
-
-fn cmd_launch_instance(subcommand: (&str, &clap::ArgMatches)) {
-    let instance_name: &String = subcommand.1.get_one("instance_name").unwrap();
-    let username: &String = subcommand.1.get_one("username").unwrap();
-    let _use_account: &bool = subcommand.1.get_one("--use-account").unwrap();
-    // TODO: Implement --use-account for actual auth
-    let runtime = tokio::runtime::Runtime::new().unwrap();
-
-    let child = match runtime.block_on(ql_instances::launch(
-        instance_name.clone(),
-        username.clone(),
-        None,
-        None,
-    )) {
-        Ok(n) => n,
-        Err(err) => {
-            err!("{err}");
-            std::process::exit(1);
-        }
-    };
-
-    if let (Some(stdout), Some(stderr)) = {
-        let mut child = child.lock().unwrap();
-        (child.stdout.take(), child.stderr.take())
-    } {
-        match runtime.block_on(ql_instances::read_logs(
-            stdout,
-            stderr,
-            child,
-            None,
-            instance_name.clone(),
-        )) {
-            Ok((s, _)) => {
-                info!("Game exited with code {s}");
-            }
-            Err(err) => {
-                err!("{err}");
-                std::process::exit(1);
-            }
-        }
     }
 }
 
