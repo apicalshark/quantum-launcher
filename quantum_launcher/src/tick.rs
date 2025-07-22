@@ -219,7 +219,7 @@ impl Launcher {
             let message = message.replace('\t', &" ".repeat(8));
             let mut log_start = vec![
                 format!(
-                    "Starting Minecraft Server ({})",
+                    "Starting Minecraft Server ({})\n",
                     Self::get_current_date_formatted()
                 ),
                 format!("OS: {}\n", ql_instances::OS_NAME),
@@ -258,7 +258,7 @@ impl Launcher {
 
             let mut log_start = vec![
                 format!(
-                    "Launching Minecraft ({})",
+                    "Launching Minecraft ({})\n",
                     Self::get_current_date_formatted()
                 ),
                 format!("OS: {}\n", ql_instances::OS_NAME),
