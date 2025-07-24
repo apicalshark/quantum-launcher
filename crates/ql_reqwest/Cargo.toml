@@ -3,12 +3,12 @@ name = "ql_reqwest"
 version = "0.0.0"
 edition = "2021"
 
-# Default for all platforms (native-tls backend)
-[target.'cfg(not(target_os = "linux"))'.dependencies]
+# Default for Windows/macOS (native-tls backend)
+[target.'cfg(any(target_os = "windows", target_os = "macos"))'.dependencies]
 reqwest = { version = "0.12", features = ["json", "stream"] }
 
-# Override for Linux to use rustls
-[target.'cfg(target_os = "linux")'.dependencies]
+# Override for other platforms to use rustls
+[target.'cfg(not(any(target_os = "windows", target_os = "macos")))'.dependencies]
 reqwest = { version = "0.12", default-features = false, features = [
     "json",
     "stream",
