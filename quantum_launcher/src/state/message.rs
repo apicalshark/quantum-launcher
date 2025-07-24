@@ -100,6 +100,7 @@ pub enum ManageModsMessage {
 #[derive(Debug, Clone)]
 pub enum ManageJarModsMessage {
     Open,
+    Loaded(Res<JarMods>),
     ToggleCheckbox(String, bool),
     DeleteSelected,
     AddFile,

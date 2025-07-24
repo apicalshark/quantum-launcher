@@ -198,7 +198,7 @@ impl MenuEditMods {
 }
 
 pub struct MenuEditJarMods {
-    pub jarmods: JarMods,
+    pub jarmods: Option<JarMods>,
     pub selected_state: SelectedState,
     pub selected_mods: HashSet<String>,
     pub drag_and_drop_hovered: bool,

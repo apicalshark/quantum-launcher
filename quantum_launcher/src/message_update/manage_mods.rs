@@ -293,7 +293,26 @@ impl Launcher {
     pub fn update_manage_jar_mods(&mut self, msg: ManageJarModsMessage) -> Task<Message> {
         match msg {
             ManageJarModsMessage::Open => {
-                self.manage_jarmods_open();
+                self.state = State::EditJarMods(MenuEditJarMods {
+                    jarmods: None,
+                    selected_state: SelectedState::None,
+                    selected_mods: HashSet::new(),
+                    drag_and_drop_hovered: false,
+                    free_for_autosave: true,
+                });
+
+                let instance = self.selected_instance.clone().unwrap();
+                return Task::perform(async move { JarMods::get(&instance).await }, |n| {
+                    Message::ManageJarMods(ManageJarModsMessage::Loaded(n.strerr()))
+                });
+            }
+            ManageJarModsMessage::Loaded(Err(err)) => {
+                self.set_error(err);
+            }
+            ManageJarModsMessage::Loaded(Ok(jarmods)) => {
+                if let State::EditJarMods(menu) = &mut self.state {
+                    menu.jarmods = Some(jarmods);
+                }
             }
             ManageJarModsMessage::AddFile => {
                 self.manage_jarmods_add_file_from_picker();
@@ -314,18 +333,8 @@ impl Launcher {
                 if let Err(err) = res {
                     self.set_error(format!("While autosaving jarmods index: {err}"));
                 } else if let State::EditJarMods(menu) = &mut self.state {
-                    let set_a: HashSet<&str> = menu
-                        .jarmods
-                        .mods
-                        .iter()
-                        .map(|m| m.filename.as_str())
-                        .collect();
-                    let set_b: HashSet<&str> =
-                        jarmods.mods.iter().map(|m| m.filename.as_str()).collect();
-
-                    if set_a == set_b {
-                        menu.jarmods = jarmods;
-                    }
+                    // Some cleanup of jarmods state may happen during autosave
+                    menu.jarmods = Some(jarmods);
                     menu.free_for_autosave = true;
                 }
             }
@@ -338,12 +347,16 @@ impl Launcher {
     }
 
     fn manage_jarmods_move_up_or_down(&mut self, msg: &ManageJarModsMessage) {
-        if let State::EditJarMods(menu) = &mut self.state {
-            let mut selected: Vec<usize> = menu
-                .selected_mods
+        if let State::EditJarMods(MenuEditJarMods {
+            jarmods: Some(jarmods),
+            selected_mods,
+            ..
+        }) = &mut self.state
+        {
+            let mut selected: Vec<usize> = selected_mods
                 .iter()
                 .filter_map(|selected_name| {
-                    menu.jarmods
+                    jarmods
                         .mods
                         .iter()
                         .enumerate()
@@ -356,18 +369,18 @@ impl Launcher {
             }
 
             for i in selected {
-                if i < menu.jarmods.mods.len() {
+                if i < jarmods.mods.len() {
                     match msg {
                         ManageJarModsMessage::MoveUp => {
                             if i > 0 {
-                                let removed = menu.jarmods.mods.remove(i);
-                                menu.jarmods.mods.insert(i - 1, removed);
+                                let removed = jarmods.mods.remove(i);
+                                jarmods.mods.insert(i - 1, removed);
                             }
                         }
                         ManageJarModsMessage::MoveDown => {
-                            if i + 1 < menu.jarmods.mods.len() {
-                                let removed = menu.jarmods.mods.remove(i);
-                                menu.jarmods.mods.insert(i + 1, removed);
+                            if i + 1 < jarmods.mods.len() {
+                                let removed = jarmods.mods.remove(i);
+                                jarmods.mods.insert(i + 1, removed);
                             }
                         }
                         _ => {}
@@ -375,7 +388,7 @@ impl Launcher {
                 } else {
                     err!(
                         "Out of bounds in jarmods move up/down: !({i} < len:{})",
-                        menu.jarmods.mods.len()
+                        jarmods.mods.len()
                     );
                 }
             }
@@ -383,34 +396,39 @@ impl Launcher {
     }
 
     fn manage_jarmods_select_all(&mut self) {
-        if let State::EditJarMods(menu) = &mut self.state {
-            match menu.selected_state {
+        if let State::EditJarMods(MenuEditJarMods {
+            jarmods: Some(jarmods),
+            selected_state,
+            selected_mods,
+            ..
+        }) = &mut self.state
+        {
+            match selected_state {
                 SelectedState::All => {
-                    menu.selected_mods.clear();
-                    menu.selected_state = SelectedState::None;
+                    selected_mods.clear();
+                    *selected_state = SelectedState::None;
                 }
                 SelectedState::Some | SelectedState::None => {
-                    menu.selected_mods = menu
-                        .jarmods
+                    *selected_mods = jarmods
                         .mods
                         .iter()
                         .map(|mod_info| mod_info.filename.clone())
                         .collect();
-                    menu.selected_state = SelectedState::All;
+                    *selected_state = SelectedState::All;
                 }
             }
         }
     }
 
     fn manage_jarmods_toggle_selected(&mut self) {
-        if let State::EditJarMods(menu) = &mut self.state {
-            for selected in &menu.selected_mods {
-                if let Some(jarmod) = menu
-                    .jarmods
-                    .mods
-                    .iter_mut()
-                    .find(|n| n.filename == *selected)
-                {
+        if let State::EditJarMods(MenuEditJarMods {
+            jarmods: Some(jarmods),
+            selected_mods,
+            ..
+        }) = &mut self.state
+        {
+            for selected in selected_mods.iter() {
+                if let Some(jarmod) = jarmods.mods.iter_mut().find(|n| n.filename == *selected) {
                     jarmod.enabled = !jarmod.enabled;
                 }
             }
@@ -418,7 +436,12 @@ impl Launcher {
     }
 
     fn manage_jarmods_delete_selected(&mut self) {
-        if let State::EditJarMods(menu) = &mut self.state {
+        if let State::EditJarMods(MenuEditJarMods {
+            jarmods: Some(jarmods),
+            selected_mods,
+            ..
+        }) = &mut self.state
+        {
             let jarmods_path = self
                 .selected_instance
                 .as_ref()
@@ -426,15 +449,14 @@ impl Launcher {
                 .get_instance_path()
                 .join("jarmods");
 
-            for selected in &menu.selected_mods {
-                if let Some(n) = menu
-                    .jarmods
+            for selected in selected_mods.iter() {
+                if let Some(n) = jarmods
                     .mods
                     .iter()
                     .enumerate()
                     .find_map(|(i, n)| (n.filename == *selected).then_some(i))
                 {
-                    menu.jarmods.mods.remove(n);
+                    jarmods.mods.remove(n);
                 }
 
                 let path = jarmods_path.join(selected);
@@ -443,7 +465,7 @@ impl Launcher {
                 }
             }
 
-            menu.selected_mods.clear();
+            selected_mods.clear();
         }
     }
 
@@ -482,23 +504,6 @@ impl Launcher {
                 }
             }
         }
-    }
-
-    fn manage_jarmods_open(&mut self) {
-        let jarmods = match JarMods::get_s(self.selected_instance.as_ref().unwrap()) {
-            Ok(n) => n,
-            Err(err) => {
-                self.set_error(format!("While opening jar mods screen: {err}"));
-                return;
-            }
-        };
-        self.state = State::EditJarMods(MenuEditJarMods {
-            jarmods,
-            selected_state: SelectedState::None,
-            selected_mods: HashSet::new(),
-            drag_and_drop_hovered: false,
-            free_for_autosave: true,
-        });
     }
 }
 

@@ -1,5 +1,5 @@
 use iced::{widget, Length};
-use ql_core::InstanceSelection;
+use ql_core::{jarmod::JarMods, InstanceSelection};
 
 use crate::{
     icon_manager,
@@ -79,7 +79,11 @@ impl MenuEditJarMods {
     }
 
     fn get_mod_list(&self) -> Element {
-        if self.jarmods.mods.is_empty() {
+        let Some(jarmods) = &self.jarmods else {
+            return widget::column!["Loading..."].padding(10).into();
+        };
+
+        if jarmods.mods.is_empty() {
             return widget::column!("Add some mods to get started")
                 .spacing(10)
                 .padding(10)
@@ -112,7 +116,7 @@ impl MenuEditJarMods {
                 ]
                 .padding(10)
                 .spacing(5),
-                self.get_mod_list_contents(),
+                self.get_mod_list_contents(jarmods),
             )
             .spacing(10),
         )
@@ -120,10 +124,10 @@ impl MenuEditJarMods {
         .into()
     }
 
-    fn get_mod_list_contents(&self) -> Element {
+    fn get_mod_list_contents<'a>(&'a self, jarmods: &'a JarMods) -> Element<'a> {
         widget::scrollable(
             widget::column({
-                self.jarmods.mods.iter().map(|jarmod| {
+                jarmods.mods.iter().map(|jarmod| {
                     widget::checkbox(
                         format!(
                             "{}{}",

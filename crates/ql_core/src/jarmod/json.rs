@@ -23,21 +23,6 @@ impl JarMods {
         }
     }
 
-    pub fn get_s(instance: &InstanceSelection) -> Result<Self, JsonFileError> {
-        let path = instance.get_instance_path().join("jarmods.json");
-
-        if path.is_file() {
-            let file = std::fs::read_to_string(&path).path(path)?;
-            let file = serde_json::from_str(&file).json(file)?;
-            Ok(file)
-        } else {
-            let file = Self { mods: Vec::new() };
-            let file_str = serde_json::to_string(&file).json_to()?;
-            std::fs::write(&path, &file_str).path(&file_str)?;
-            Ok(file)
-        }
-    }
-
     pub async fn save(&mut self, instance: &InstanceSelection) -> Result<(), JsonFileError> {
         self.trim(instance);
         if let Err(err) = self.expand(instance).await {
