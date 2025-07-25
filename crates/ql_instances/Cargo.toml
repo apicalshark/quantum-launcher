@@ -35,6 +35,6 @@ any_ascii = "0.3"
 keyring = { version = "3", features = [
     "apple-native",
     "windows-native",
-    "linux-native-sync-persistent",
+    "sync-secret-service",
     "vendored",
 ] }
