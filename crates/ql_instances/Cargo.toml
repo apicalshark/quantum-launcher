@@ -8,6 +8,7 @@ edition = "2021"
 [features]
 default = []
 simulate_linux_arm64 = []
+simulate_macos_arm64 = []
 
 [dependencies]
 ql_core = { path = "../ql_core" }

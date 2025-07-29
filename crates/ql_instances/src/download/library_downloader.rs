@@ -221,7 +221,10 @@ impl GameDownloader {
                 #[cfg(all(target_os = "linux", target_arch = "arm"))]
                 let matches = os == "natives-linux-arm32";
 
-                #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+                #[cfg(any(
+                    all(target_os = "macos", target_arch = "aarch64"),
+                    feature = "simulate_macos_arm64"
+                ))]
                 let matches = os == "natives-osx-arm64";
 
                 #[cfg(not(any(
@@ -237,7 +240,10 @@ impl GameDownloader {
                             feature = "simulate_linux_arm64"
                         )
                     ),
-                    all(target_os = "macos", target_arch = "aarch64")
+                    any(
+                        all(target_os = "macos", target_arch = "aarch64"),
+                        feature = "simulate_macos_arm64"
+                    )
                 )))]
                 let matches = *os == format!("natives-{os_name}");
 
@@ -298,7 +304,8 @@ impl GameDownloader {
                         target_arch = "aarch64",
                         target_arch = "arm",
                         target_arch = "x86",
-                        feature = "simulate_linux_arm64"
+                        feature = "simulate_linux_arm64",
+                        feature = "simulate_macos_arm64"
                     ))]
                     let target = format!("{OS_NAME}-{ARCH}");
 
@@ -306,11 +313,25 @@ impl GameDownloader {
                         target_arch = "aarch64",
                         target_arch = "arm",
                         target_arch = "x86",
-                        feature = "simulate_linux_arm64"
+                        feature = "simulate_linux_arm64",
+                        feature = "simulate_macos_arm64"
                     )))]
                     let target = OS_NAME;
 
                     if os.name == target {
+                        allowed = rule.action == "allow";
+                    }
+
+                    #[cfg(any(
+                        all(target_os = "macos", target_arch = "aarch64"),
+                        feature = "simulate_macos_arm64"
+                    ))]
+                    if os.name == OS_NAME
+                        && library
+                            .name
+                            .as_ref()
+                            .is_some_and(|n| n.contains("natives-macos-arm64"))
+                    {
                         allowed = rule.action == "allow";
                     }
                 } else {
@@ -350,13 +371,18 @@ async fn extractlib_name_natives(
     let is_compatible = name.contains("arm32");
     #[cfg(target_arch = "x86")]
     let is_compatible = name.contains("x86") && !name.contains("x86_64");
-    #[cfg(any(target_arch = "aarch64", feature = "simulate_linux_arm64"))]
+    #[cfg(any(
+        target_arch = "aarch64",
+        feature = "simulate_linux_arm64",
+        feature = "simulate_macos_arm64"
+    ))]
     let is_compatible = name.contains("aarch") || name.contains("arm64");
     #[cfg(not(any(
         target_arch = "aarch64",
         target_arch = "arm",
         target_arch = "x86",
-        feature = "simulate_linux_arm64"
+        feature = "simulate_linux_arm64",
+        feature = "simulate_macos_arm64"
     )))]
     let is_compatible = !(name.contains("aarch")
         || name.contains("arm")
@@ -389,7 +415,8 @@ async fn extractlib_natives_field(
         target_arch = "aarch64",
         target_arch = "arm",
         target_arch = "x86",
-        feature = "simulate_linux_arm64"
+        feature = "simulate_linux_arm64",
+        feature = "simulate_macos_arm64",
     ))]
     let Some(natives_name) = natives.get(&format!("{OS_NAME}-{ARCH}")) else {
         return Ok(());
@@ -397,7 +424,8 @@ async fn extractlib_natives_field(
     #[cfg(not(any(
         target_arch = "aarch64",
         target_arch = "arm",
-        feature = "simulate_linux_arm64"
+        feature = "simulate_linux_arm64",
+        feature = "simulate_macos_arm64",
     )))]
     let Some(natives_name) = natives.get(OS_NAME) else {
         return Ok(());
@@ -428,7 +456,11 @@ async fn extractlib_natives_field(
             "https://github.com/theofficialgman/lwjgl3-binaries-arm64/raw/lwjgl-3.1.6/lwjgl-jemalloc-patched-natives-linux-arm64.jar".clone_into(&mut natives_url);
         }
 
-        #[cfg(any(target_arch = "aarch64", feature = "simulate_linux_arm64"))]
+        #[cfg(any(
+            target_arch = "aarch64",
+            feature = "simulate_linux_arm64",
+            feature = "simulate_macos_arm64"
+        ))]
         {
             if natives_url == MACOS_ARM_LWJGL_294_1 {
                 info!("Patching LWJGL 2.9.4 20150209 natives for OSX ARM64");

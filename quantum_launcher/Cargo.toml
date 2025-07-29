@@ -26,6 +26,7 @@ tiny_skia = ["iced/tiny-skia"]
 
 debug = ["iced/debug"]
 simulate_linux_arm64 = ["ql_instances/simulate_linux_arm64"]
+simulate_macos_arm64 = ["ql_instances/simulate_macos_arm64"]
 
 [dependencies]
 ql_instances = { path = "../crates/ql_instances" }
