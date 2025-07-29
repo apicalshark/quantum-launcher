@@ -355,7 +355,7 @@ pub struct MenuExportInstance {
     pub progress: Option<ProgressBar<GenericProgress>>,
 }
 
-pub struct MenuLoginElyBy {
+pub struct MenuLoginAlternate {
     pub username: String,
     pub password: String,
     pub show_password: bool,
@@ -364,6 +364,17 @@ pub struct MenuLoginElyBy {
     pub otp: Option<String>,
 
     pub is_from_welcome_screen: bool,
+
+    pub is_littleskin: bool,
+    pub oauth: Option<LittleSkinOauth>,
+    pub device_code_error: Option<String>,
+}
+
+pub struct LittleSkinOauth {
+    // pub device_code: String,
+    pub user_code: String,
+    pub verification_uri: String,
+    pub device_code_expires_at: Instant,
 }
 
 pub struct MenuLoginMS {
@@ -409,7 +420,7 @@ pub enum State {
     /// with Microsoft or ely.by
     AccountLogin,
     LoginMS(MenuLoginMS),
-    LoginElyBy(MenuLoginElyBy),
+    LoginAlternate(MenuLoginAlternate),
 
     InstallPaper,
     InstallFabric(MenuInstallFabric),

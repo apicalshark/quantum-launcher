@@ -154,6 +154,8 @@ pub enum EditPresetsMessage {
     RecommendedDownloadEnd(Res<HashSet<CurseforgeNotAllowed>>),
 }
 
+// FIXME: Look at the unused messages
+#[allow(unused)]
 #[derive(Debug, Clone)]
 pub enum AccountMessage {
     Selected(String),
@@ -174,12 +176,29 @@ pub enum AccountMessage {
         is_from_welcome_screen: bool,
     },
 
-    ElyByUsernameInput(String),
-    ElyByPasswordInput(String),
-    ElyByOtpInput(String),
-    ElyByShowPassword(bool),
-    ElyByLogin,
-    ElyByLoginResponse(Res<ql_instances::auth::elyby::Account>),
+    OpenLittleSkin {
+        is_from_welcome_screen: bool,
+    },
+
+    AltUsernameInput(String),
+    AltPasswordInput(String),
+    AltOtpInput(String),
+    AltShowPassword(bool),
+    AltLogin,
+    AltLoginResponse(Res<ql_instances::auth::elyby::Account>),
+
+    LittleSkinOauthButtonClicked,
+    // LittleSkin Device Code Flow
+    LittleSkinDeviceCodeRequested,
+    LittleSkinDeviceCodeReady {
+        user_code: String,
+        verification_uri: String,
+        expires_in: u64,
+        interval: u64,
+        device_code: String,
+    },
+    LittleSkinDeviceCodeError(String),
+    LittleSkinDeviceCodePollResult(Res<ql_instances::auth::littleskin::Account>),
 }
 
 #[derive(Debug, Clone)]

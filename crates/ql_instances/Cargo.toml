@@ -32,6 +32,8 @@ zip = { workspace = true }
 # Removing unicode characters from XML log
 any_ascii = "0.3"
 
+urlencoding = "2"
+
 keyring = { version = "3", features = [
     "apple-native",
     "windows-native",

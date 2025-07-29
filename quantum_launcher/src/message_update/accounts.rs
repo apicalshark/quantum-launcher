@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use auth::AccountData;
 use iced::Task;
 use ql_core::IntoStringError;
@@ -6,8 +8,8 @@ use ql_instances::auth;
 use crate::{
     config::ConfigAccount,
     state::{
-        AccountMessage, Launcher, MenuLoginElyBy, MenuLoginMS, Message, ProgressBar, State,
-        NEW_ACCOUNT_NAME, OFFLINE_ACCOUNT_NAME,
+        AccountMessage, Launcher, LittleSkinOauth, MenuLoginAlternate, MenuLoginMS, Message,
+        ProgressBar, State, NEW_ACCOUNT_NAME, OFFLINE_ACCOUNT_NAME,
     },
 };
 
@@ -17,7 +19,7 @@ impl Launcher {
             AccountMessage::Response1 { r: Err(err), .. }
             | AccountMessage::Response2(Err(err))
             | AccountMessage::Response3(Err(err))
-            | AccountMessage::ElyByLoginResponse(Err(err))
+            | AccountMessage::AltLoginResponse(Err(err))
             | AccountMessage::RefreshComplete(Err(err)) => {
                 self.set_error(err);
             }
@@ -48,18 +50,67 @@ impl Launcher {
                     },
                 }
             }
+            AccountMessage::LittleSkinDeviceCodeRequested => {
+                todo!("Handle LittleSkinDeviceCodeRequested");
+            }
+            AccountMessage::LittleSkinDeviceCodeReady {
+                user_code,
+                verification_uri,
+                expires_in,
+                interval,
+                device_code,
+            } => {
+                if let State::LoginAlternate(menu) = &mut self.state {
+                    menu.oauth = Some(LittleSkinOauth {
+                        // device_code: device_code.clone(),
+                        user_code: user_code.clone(),
+                        verification_uri: verification_uri.clone(),
+                        device_code_expires_at: Instant::now() + Duration::from_secs(expires_in),
+                    });
+                    menu.is_loading = false;
+                }
+
+                // Start polling for token
+                let device_code_clone = device_code.clone();
+                return Task::perform(
+                    ql_instances::auth::littleskin::oauth::poll_device_token(
+                        device_code_clone,
+                        interval,
+                        expires_in,
+                    ),
+                    |resp| match resp {
+                        Ok(account) => {
+                            Message::Account(AccountMessage::AltLoginResponse(Ok(account)))
+                        }
+                        Err(e) => Message::Account(AccountMessage::LittleSkinDeviceCodeError(
+                            e.to_string(),
+                        )),
+                    },
+                );
+            }
+            AccountMessage::LittleSkinDeviceCodeError(err_msg) => {
+                if let State::LoginAlternate(menu) = &mut self.state {
+                    menu.is_loading = false;
+                    menu.device_code_error = Some(err_msg);
+                }
+            }
+            AccountMessage::LittleSkinDeviceCodePollResult(_) => {
+                todo!("Handle LittleSkinDeviceCodePollResult");
+            }
             AccountMessage::LogoutConfirm => {
                 let username = self.accounts_selected.clone().unwrap();
                 let account_type = self
                     .accounts
                     .get(&username)
-                    .map_or(auth::AccountType::Microsoft, |n| n.account_type);
+                    .map(|n| n.account_type)
+                    .unwrap_or(auth::AccountType::Microsoft);
 
                 if let Err(err) = match account_type {
                     auth::AccountType::Microsoft => auth::ms::logout(&username),
                     auth::AccountType::ElyBy => {
                         auth::elyby::logout(username.strip_suffix(" (elyby)").unwrap_or(&username))
                     }
+                    auth::AccountType::LittleSkin => auth::littleskin::logout(&username),
                 } {
                     self.set_error(err);
                 }
@@ -117,53 +168,65 @@ impl Launcher {
             AccountMessage::OpenElyBy {
                 is_from_welcome_screen,
             } => {
-                self.state = State::LoginElyBy(MenuLoginElyBy {
+                self.state = State::LoginAlternate(MenuLoginAlternate {
                     username: String::new(),
                     password: String::new(),
                     is_loading: false,
                     otp: None,
                     show_password: false,
                     is_from_welcome_screen,
+
+                    is_littleskin: false,
+                    device_code_error: None,
+                    oauth: None,
                 });
             }
 
-            AccountMessage::ElyByUsernameInput(username) => {
-                if let State::LoginElyBy(menu) = &mut self.state {
+            AccountMessage::AltUsernameInput(username) => {
+                if let State::LoginAlternate(menu) = &mut self.state {
                     menu.username = username;
                 }
             }
-            AccountMessage::ElyByPasswordInput(password) => {
-                if let State::LoginElyBy(menu) = &mut self.state {
+            AccountMessage::AltPasswordInput(password) => {
+                if let State::LoginAlternate(menu) = &mut self.state {
                     menu.password = password;
                 }
             }
-            AccountMessage::ElyByOtpInput(otp) => {
-                if let State::LoginElyBy(menu) = &mut self.state {
+            AccountMessage::AltOtpInput(otp) => {
+                if let State::LoginAlternate(menu) = &mut self.state {
                     menu.otp = Some(otp);
                 }
             }
-            AccountMessage::ElyByShowPassword(t) => {
-                if let State::LoginElyBy(menu) = &mut self.state {
+            AccountMessage::AltShowPassword(t) => {
+                if let State::LoginAlternate(menu) = &mut self.state {
                     menu.show_password = t;
                 }
             }
 
-            AccountMessage::ElyByLogin => {
-                if let State::LoginElyBy(menu) = &mut self.state {
+            AccountMessage::AltLogin => {
+                if let State::LoginAlternate(menu) = &mut self.state {
                     let mut password = menu.password.clone();
                     if let Some(otp) = &menu.otp {
                         password.push(':');
                         password.push_str(otp);
                     }
                     menu.is_loading = true;
-                    return Task::perform(
-                        auth::elyby::login_new(menu.username.clone(), password),
-                        |n| Message::Account(AccountMessage::ElyByLoginResponse(n.strerr())),
-                    );
+
+                    if menu.is_littleskin {
+                        return Task::perform(
+                            auth::littleskin::login_new(menu.username.clone(), password),
+                            |n| Message::Account(AccountMessage::AltLoginResponse(n.strerr())),
+                        );
+                    } else {
+                        return Task::perform(
+                            auth::elyby::login_new(menu.username.clone(), password),
+                            |n| Message::Account(AccountMessage::AltLoginResponse(n.strerr())),
+                        );
+                    }
                 }
             }
-            AccountMessage::ElyByLoginResponse(Ok(acc)) => {
-                if let State::LoginElyBy(menu) = &mut self.state {
+            AccountMessage::AltLoginResponse(Ok(acc)) => {
+                if let State::LoginAlternate(menu) = &mut self.state {
                     menu.is_loading = false;
                     match acc {
                         auth::elyby::Account::Account(data) => {
@@ -174,6 +237,40 @@ impl Launcher {
                         }
                     }
                 }
+            }
+            AccountMessage::OpenLittleSkin {
+                is_from_welcome_screen,
+            } => {
+                self.state = State::LoginAlternate(MenuLoginAlternate {
+                    username: String::new(),
+                    password: String::new(),
+                    is_loading: false,
+                    otp: None,
+                    show_password: false,
+                    is_from_welcome_screen,
+                    oauth: None,
+                    device_code_error: None,
+                    is_littleskin: true,
+                });
+            }
+
+            AccountMessage::LittleSkinOauthButtonClicked => {
+                if let State::LoginAlternate(menu) = &mut self.state {
+                    menu.is_loading = true;
+                }
+
+                return Task::perform(auth::littleskin::oauth::request_device_code(), |resp| {
+                    Message::Account(match resp {
+                        Ok(code) => AccountMessage::LittleSkinDeviceCodeReady {
+                            user_code: code.user_code,
+                            verification_uri: code.verification_uri,
+                            expires_in: code.expires_in,
+                            interval: code.interval,
+                            device_code: code.device_code,
+                        },
+                        Err(e) => AccountMessage::LittleSkinDeviceCodeError(e.to_string()),
+                    })
+                });
             }
         }
         Task::none()
@@ -205,6 +302,13 @@ impl Launcher {
             }
             auth::AccountType::ElyBy => Task::perform(
                 auth::elyby::login_refresh(account.username.clone(), account.refresh_token.clone()),
+                |n| Message::Account(AccountMessage::RefreshComplete(n.strerr())),
+            ),
+            auth::AccountType::LittleSkin => Task::perform(
+                auth::littleskin::login_refresh(
+                    account.username.clone(),
+                    account.refresh_token.clone(),
+                ),
                 |n| Message::Account(AccountMessage::RefreshComplete(n.strerr())),
             ),
         }

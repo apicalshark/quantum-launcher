@@ -97,8 +97,9 @@ impl GameLauncher {
                 )));
             };
 
-        if let Some(AccountType::ElyBy) = account_details.map(|n| n.account_type) {
-            if !self.version_json.is_legacy_version()
+        if let Some(account_type) = account_details.map(|n| n.account_type) {
+            if matches!(account_type, AccountType::ElyBy | AccountType::LittleSkin)
+                && !self.version_json.is_legacy_version()
                 && !game_arguments.iter().any(|n| n.contains("uuid"))
             {
                 game_arguments.push("--uuid".to_owned());
@@ -263,14 +264,14 @@ impl GameLauncher {
             args.push("-XX:G1HeapRegionSize=32M".to_owned());
         }
 
-        if auth.is_none_or(AccountData::is_elyby) && self.version_json.id.starts_with("1.16") {
+        if auth.is_none_or(|n| !n.is_microsoft()) && self.version_json.id.starts_with("1.16") {
             // Fixes "Multiplayer is disabled" issue on 1.16.x
             args.push("-Dminecraft.api.auth.host=https://nope.invalid".to_owned());
             args.push("-Dminecraft.api.account.host=https://nope.invalid".to_owned());
             args.push("-Dminecraft.api.session.host=https://nope.invalid".to_owned());
             args.push("-Dminecraft.api.services.host=https://nope.invalid".to_owned());
-        } else if auth.is_some_and(AccountData::is_elyby) {
-            args.push(crate::auth::elyby::get_authlib_injector().await?);
+        } else if let Some(authlib) = auth.and_then(|n| n.get_authlib_url()) {
+            args.push(crate::auth::get_authlib_injector(authlib).await?);
         }
 
         if cfg!(target_pointer_width = "32") {
