@@ -170,6 +170,9 @@ is considered a bug, please report if found.
 # Contributing/Contributors
 For more info, see [CONTRIBUTING.md](https://github.com/Mrmayman/quantumlauncher/tree/main/CONTRIBUTING.md)
 
+# Testing
+For more info, see [tests/README.md](https://github.com/Mrmayman/quantumlauncher/tree/main/tests/README.md)
+
 # Licensing and Credits
 
 A lot of this launcher's design, including the code for creating and launching the game,

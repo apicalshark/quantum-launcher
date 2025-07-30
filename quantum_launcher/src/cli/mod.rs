@@ -19,6 +19,7 @@ fn command() -> Command {
     .long_about(long_about())
     .subcommand(
         get_list_instance_subcommands("list-instances")
+            .short_flag('l')
             .about("Lists all installed Minecraft instances")
             .long_about("Lists all installed Minecraft instances. Can be paired with hyphen-separated-flags like name-loader, name-version, loader-name-version"),
     )

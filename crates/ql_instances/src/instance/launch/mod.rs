@@ -1,6 +1,6 @@
 use crate::auth::AccountData;
 use error::GameLaunchError;
-use ql_core::{info, GenericProgress};
+use ql_core::{err, info, GenericProgress};
 use std::sync::{mpsc::Sender, Arc, Mutex};
 use tokio::process::Child;
 
@@ -73,6 +73,11 @@ pub async fn launch(
         .get_command(game_arguments, java_arguments)
         .await?;
     let child = command.spawn().map_err(GameLaunchError::CommandError)?;
+    if let Some(id) = child.id() {
+        info!("Launched! PID: {id}");
+    } else {
+        err!("No ID found!");
+    }
 
     if game_launcher.config_json.close_on_start.unwrap_or(false) {
         ql_core::logger_finish();
