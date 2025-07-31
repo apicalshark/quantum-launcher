@@ -4,17 +4,7 @@ import subprocess
 import sys
 import time
 
-def run(args):
-    try: subprocess.run(args)
-    except subprocess.CalledProcessError as e:
-        print(f"Error: Process failed with exit code {e.returncode}")
-        sout = e.stdout.decode()
-        if len(sout) > 0:
-            print(f"Stdout:\n{sout}")
-        sout = e.stderr.decode()
-        if len(sout) > 0:
-            print(f"Stderr:\n{sout}")
-        sys.exit(1)
+from . import procs
 
 _ANSI_ESCAPE = re.compile(r'\x1b\[[0-9;]*[mK]')
 def _remove_ansi_colors(text):
@@ -22,7 +12,7 @@ def _remove_ansi_colors(text):
 
 def _launch(instance: str) -> str | None:
     process = subprocess.Popen(
-        ["target/debug/quantum_launcher", "launch", instance, "test`"],
+        [procs.QL_BIN, "launch", instance, "test`"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True
@@ -63,26 +53,36 @@ def _is_process_alive(pid: int) -> bool:
     else:
         return True   # Process is alive
 
-def _wait_for_window(pid: int, timeout: int) -> bool:
+def _close_window(result: bytes, pid: int):
+    window_ids = result.decode().strip().splitlines()
+    print(f"✅ Window found: {window_ids} for pid {pid}, killing")
+    procs.kill_process(pid)
+
+
+def _wait_for_window(pid: int, timeout: int, name: str) -> bool:
     start_time = time.time()
     check_interval = max(1, timeout // 30)
+    print(f"\n\nChecking {name} ({pid}) with interval {check_interval} seconds")
 
     while time.time() - start_time < timeout:
         if not _is_process_alive(pid):
             print("Error: Game crashed!")
             return False
+
         try:
             result = subprocess.check_output(["xdotool", "search", "--pid", str(pid)])
-            window_ids = result.decode().strip().splitlines()
-            if window_ids:
-                win_id = window_ids[0]
-                print(f"✅ Window found: {win_id}. Sending close input (Alt+F4)...")
-                run(["xdotool", "windowactivate", win_id])
-                run(["xdotool", "key", "--window", win_id, "Alt+F4"])
-                return True
+            _close_window(result, pid)
+            return True
         except subprocess.CalledProcessError:
-            pass  # No window yet
+            try:
+                result = subprocess.check_output(["xdotool", "search", "--classname", "Minecraft*", "windowclose"])
+                print("    (found some \"Minecraft\" window, not sure)")
+                _close_window(result, pid)
+                return True
+            except subprocess.CalledProcessError:
+                pass  # No window yet
         time.sleep(check_interval)
+        print("    ...checking")
     else:
         print("Error: Timeout waiting for window!")
         return False
@@ -90,7 +90,7 @@ def _wait_for_window(pid: int, timeout: int) -> bool:
 def test(name: str, timeout: int) -> bool:
     pid = _launch(name)
     if pid:
-        if not _wait_for_window(int(pid), timeout):
+        if not _wait_for_window(int(pid), timeout, name):
             print("Test failed (window)!")
             return False
     else:
