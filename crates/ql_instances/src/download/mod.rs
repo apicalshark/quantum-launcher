@@ -362,7 +362,6 @@ impl GameDownloader {
     }
 
     async fn new_get_instance_dir(instance_name: &str) -> Result<Option<PathBuf>, IoError> {
-        info!("Initializing instance folder.");
         let instances_dir = LAUNCHER_DIR.join("instances");
         tokio::fs::create_dir_all(&instances_dir)
             .await

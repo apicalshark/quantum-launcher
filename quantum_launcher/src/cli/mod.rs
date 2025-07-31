@@ -26,9 +26,35 @@ fn command() -> Command {
     .subcommand(
         get_list_instance_subcommands("list-servers")
             .about("Lists all installed Minecraft servers")
-            .long_about("Lists all installed Minecraft servers. Can be paired with hyphen-separated-flags like name-loader, name-version, loader-name-version"),
-    ).hide(true)
+            .long_about("Lists all installed Minecraft servers. Can be paired with hyphen-separated-flags like name-loader, name-version, loader-name-version")
+            .hide(true),
+    )
     .subcommand(get_launch_subcommand())
+    .subcommand(Command::new("create")
+        .args([
+            Arg::new("instance_name").help("The name of the instance to create").required(true),
+            Arg::new("version").help("The version of Minecraft to download").required(true),
+            Arg::new("--skip-assets")
+                .short('s')
+                .long("skip-assets")
+                .required(false)
+                .help("Skips downloading game assets (sound/music) to speed up downloads")
+                .action(ArgAction::SetTrue),
+        ])
+        .about("Creates a new installation (instance) of Minecraft")
+    )
+    .subcommand(Command::new("delete")
+        .args([
+            Arg::new("instance_name").help("The name of the instance to delete").required(true),
+            Arg::new("--force")
+                .short('f')
+                .long("force")
+                .required(false)
+                .help("Forces deletion without confirmation. DANGEROUS")
+                .action(ArgAction::SetTrue),
+        ])
+        .about("Deletes an instance of Minecraft")
+    )
     .subcommand(Command::new("list-available-versions").about("Lists all downloadable versions, downloading a list from Mojang/Omniarchive"))
     .subcommand(Command::new("--no-sandbox").hide(true)) // This one doesn't do anything, but on Windows i686 it's automatically passed?
 }
@@ -220,20 +246,24 @@ pub fn start_cli(is_dir_err: bool) {
                 command::list_available_versions();
                 std::process::exit(0);
             }
-            "launch" => {
-                std::process::exit(if let Err(err) = command::launch_instance(subcommand) {
-                    err!("{err}");
-                    1
-                } else {
-                    0
-                });
-            }
+            "launch" => quit(command::launch_instance(subcommand)),
+            "create" => quit(command::create_instance(subcommand)),
+            "delete" => quit(command::delete_instance(subcommand)),
             "--no-sandbox" => {}
             err => panic!("Unimplemented command! {err}"),
         }
     } else {
         print_intro();
     }
+}
+
+fn quit(res: Result<(), Box<dyn std::error::Error + 'static>>) {
+    std::process::exit(if let Err(err) = res {
+        err!("{err}");
+        1
+    } else {
+        0
+    });
 }
 
 fn get_list_instance_subcommand(subcommand: (&str, &clap::ArgMatches)) -> Vec<PrintCmd> {

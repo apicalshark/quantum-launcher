@@ -1,10 +1,11 @@
+use colored::Colorize;
 use ql_core::{
     err, info,
     json::{InstanceConfigJson, VersionDetails},
-    IntoStringError, LAUNCHER_DIR,
+    InstanceSelection, IntoStringError, ListEntry, LAUNCHER_DIR,
 };
 use ql_instances::auth;
-use std::io::Write;
+use std::{io::Write, process::exit};
 
 use crate::{config::LauncherConfig, state::get_entries};
 
@@ -83,6 +84,76 @@ pub fn list_instances(cmds: &[PrintCmd], dirname: &str) {
     }
 }
 
+pub fn create_instance(
+    subcommand: (&str, &clap::ArgMatches),
+) -> Result<(), Box<dyn std::error::Error>> {
+    let instance_name: &String = subcommand.1.get_one("instance_name").unwrap();
+    let version: &String = subcommand.1.get_one("version").unwrap();
+    let skip_assets: bool = *subcommand.1.get_one("--skip-assets").unwrap();
+
+    let runtime = tokio::runtime::Runtime::new()?;
+    runtime.block_on(ql_instances::create_instance(
+        instance_name.clone(),
+        ListEntry {
+            name: version.clone(),
+            is_classic_server: false,
+        },
+        None,
+        !skip_assets,
+    ))?;
+
+    Ok(())
+}
+
+pub fn delete_instance(
+    subcommand: (&str, &clap::ArgMatches),
+) -> Result<(), Box<dyn std::error::Error>> {
+    let instance_name: &String = subcommand.1.get_one("instance_name").unwrap();
+    let force: bool = *subcommand.1.get_one("--force").unwrap();
+
+    if !force {
+        println!(
+            "{} {instance_name}?",
+            "Are you SURE you want to delete the instance"
+                .yellow()
+                .bold()
+        );
+        println!("This can't be undone, you will lose all your data");
+        if !confirm_action() {
+            println!("Cancelled");
+            return Ok(());
+        }
+    }
+
+    let selected_instance = InstanceSelection::Instance(instance_name.clone());
+    let deleted_instance_dir = selected_instance.get_instance_path();
+    std::fs::remove_dir_all(&deleted_instance_dir)?;
+    info!("Deleted instance {instance_name}");
+
+    Ok(())
+}
+
+fn confirm_action() -> bool {
+    print!("[Y/n] ");
+    std::io::stdout().flush().unwrap();
+
+    let mut user_input = String::new();
+    std::io::stdin().read_line(&mut user_input).unwrap();
+
+    let user_input = user_input.trim().to_lowercase();
+
+    let res = match user_input.as_str() {
+        "y" | "yes" | "" => true,
+        "n" | "no" => false,
+        _ => {
+            println!("\nInvalid input. Please respond with 'Y' or 'n'.\n");
+            confirm_action() // Retry
+        }
+    };
+    println!();
+    res
+}
+
 pub fn launch_instance(
     subcommand: (&str, &clap::ArgMatches),
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -114,15 +185,16 @@ pub fn launch_instance(
         )) {
             Ok((s, _)) => {
                 info!("Game exited with code {s}");
+                exit(s.code().unwrap_or_default());
             }
             Err(err) => {
                 err!("{err}");
-                std::process::exit(1);
+                exit(1);
             }
         }
+    } else {
+        exit(0);
     }
-
-    Ok(())
 }
 
 fn refresh_account(
@@ -134,7 +206,7 @@ fn refresh_account(
         let config = LauncherConfig::load_s()?;
         let Some(accounts) = config.accounts else {
             err!("You haven't paired any accounts yet! Use the graphical interface to add some.");
-            std::process::exit(1);
+            exit(1);
         };
         let Some((real_name, account)) = accounts.get_key_value(username).or_else(|| {
             accounts
@@ -142,7 +214,7 @@ fn refresh_account(
                 .find(|n| n.1.username_nice.as_ref().is_some_and(|n| n == username))
         }) else {
             err!("No logged-in account called {username:?} was found!");
-            std::process::exit(1);
+            exit(1);
         };
 
         match account.account_type.as_deref() {
