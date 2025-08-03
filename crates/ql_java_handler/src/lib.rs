@@ -262,6 +262,9 @@ async fn java_install_fn(
             downloads,
             executable,
         } => {
+            if let Some(parent) = file_path.parent() {
+                tokio::fs::create_dir_all(parent).await.path(parent)?;
+            }
             let file_bytes = download_file(downloads).await?;
             tokio::fs::write(&file_path, &file_bytes)
                 .await
