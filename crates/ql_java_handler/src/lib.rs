@@ -169,21 +169,19 @@ async fn install_java(
     )
     .await?;
 
-    lock_finish(lock_file).await?;
+    lock_finish(&lock_file).await?;
     send_progress(java_install_progress_sender, GenericProgress::finished());
     info!("Finished installing {}", version.to_string());
 
     Ok(())
 }
 
-async fn lock_finish(lock_file: PathBuf) -> Result<(), IoError> {
-    tokio::fs::remove_file(&lock_file)
-        .await
-        .path(lock_file.clone())?;
+async fn lock_finish(lock_file: &Path) -> Result<(), IoError> {
+    tokio::fs::remove_file(lock_file).await.path(lock_file)?;
     Ok(())
 }
 
-async fn lock_init(install_dir: &PathBuf) -> Result<PathBuf, IoError> {
+async fn lock_init(install_dir: &Path) -> Result<PathBuf, IoError> {
     let lock_file = install_dir.join("install.lock");
     tokio::fs::write(
         &lock_file,
