@@ -51,6 +51,7 @@ pub async fn create_instance(
     game_downloader.download_logging_config().await?;
     game_downloader.download_jar().await?;
     game_downloader.download_libraries().await?;
+    game_downloader.library_extras().await?;
 
     if download_assets {
         game_downloader.download_assets().await?;

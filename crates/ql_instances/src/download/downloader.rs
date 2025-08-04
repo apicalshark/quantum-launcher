@@ -1,12 +1,13 @@
-use std::path::Path;
-use std::{path::PathBuf, sync::mpsc::Sender};
+use std::{
+    path::{Path, PathBuf},
+    sync::mpsc::Sender,
+};
 
-use ql_core::json::AssetIndexMap;
 use ql_core::{
     do_jobs,
     file_utils::{self, LAUNCHER_DIR},
     impl_3_errs_jri, info,
-    json::{InstanceConfigJson, Manifest, VersionDetails},
+    json::{AssetIndexMap, InstanceConfigJson, Manifest, VersionDetails},
     pt, DownloadFileError, DownloadProgress, IntoIoError, IntoJsonError, IoError, JsonError,
     ListEntry, RequestError,
 };
@@ -384,5 +385,38 @@ impl GameDownloader {
         if print {
             pt!("{progress}");
         }
+    }
+
+    pub async fn library_extras(&self) -> Result<(), IoError> {
+        // Custom LWJGL 2.9.3 FreeBSD natives compiled by me.
+        // See `/assets/binaries/README.md` for more info.
+        #[cfg(all(target_os = "freebsd", target_arch = "x86_64"))]
+        if !self.version_json.id.ends_with("lwjgl3") {
+            const FREEBSD_LWJGL2: &[u8] =
+                include_bytes!("../../../../assets/binaries/freebsd/liblwjgl64_x86_64.so");
+
+            let v1_12_2 =
+                chrono::DateTime::parse_from_rfc3339("2017-09-18T08:39:46+00:00").unwrap();
+            match chrono::DateTime::parse_from_rfc3339(&self.version_json.releaseTime) {
+                Ok(datetime) => {
+                    if datetime <= v1_12_2 {
+                        let native_path = self.instance_dir.join("libraries/natives");
+                        tokio::fs::create_dir_all(&native_path)
+                            .await
+                            .path(&native_path)?;
+                        let native_path = native_path.join("liblwjgl64.so");
+                        tokio::fs::write(&native_path, FREEBSD_LWJGL2)
+                            .await
+                            .path(&native_path)?;
+                    }
+                }
+                Err(err) => ql_core::err!(
+                    "Couldn't parse date/time of instance ({}):\n{err}",
+                    self.version_json.releaseTime
+                ),
+            }
+        }
+
+        Ok(())
     }
 }
