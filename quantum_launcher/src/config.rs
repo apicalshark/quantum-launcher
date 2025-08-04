@@ -69,7 +69,7 @@ pub struct LauncherConfig {
     /// `String (username) : ConfigAccount { uuid: String, skin: None (unimplemented) }`
     ///
     /// Upon opening the launcher,
-    /// [`ql_instances::read_refresh_token`]`(username)`
+    /// `read_refresh_token(username)` (in [`ql_instances::auth`])
     /// is called on each account's key value (username)
     /// to get the refresh token (stored securely on disk).
     pub accounts: Option<HashMap<String, ConfigAccount>>,

@@ -139,7 +139,7 @@ pub fn changelog_0_4<'a>() -> Element<'a> {
         "- Redesigned the launcher menus!",
         widget::image(IMG_LAUNCHER.clone()).width(400),
         "- Select instances easily with a sidebar, and enjoy the simpler navigation with tabs!",
-        "- The purple colour pallete has been changed to be more vibrant and punchy",
+        "- The purple colour palette has been changed to be more vibrant and punchy",
         "- Many other menus have been changed to look nicer",
         widget::image(IMG_PRESETS.clone()).width(400),
         widget::text("Mods:").size(20),

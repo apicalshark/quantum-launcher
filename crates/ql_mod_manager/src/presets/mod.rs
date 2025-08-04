@@ -144,7 +144,7 @@ impl PresetJson {
     ///   The `.qmp` file in binary form. Must be read from
     ///   disk earlier.
     ///
-    /// Returns a `Vec<String>` of modrinth mod id's to be installed
+    /// Returns a `Vec<String>` of mod id's to be installed
     /// to "complete" the installation. You pass this to
     /// [`crate::store::download_mods_bulk`]
     ///

@@ -69,7 +69,7 @@ pub async fn read_logs(
             // then we know something else has panicked,
             // so might as well panic too.
             //
-            // WTF: (this is a methaphor for real life lol)
+            // WTF: (this is a metaphor for real life lol)
             let mut child = child.lock().unwrap();
             child.try_wait()
         };
@@ -398,12 +398,6 @@ pub async fn read_logs(
 
         if bytes == 0 {
             let status = {
-                // If the child has failed to lock
-                // (because the `Mutex` was poisoned)
-                // then we know something else has panicked,
-                // so might as well panic too.
-                //
-                // (this is a methaphor for real life lol WTF: )
                 let mut child = child.lock().unwrap();
                 child.0.try_wait()
             };

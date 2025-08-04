@@ -89,7 +89,7 @@ impl LauncherTheme {
         palette.get(color)
     }
 
-    fn get_base(&self, invert: bool, mut color: Color) -> (&super::color::Pallete, Color) {
+    fn get_base(&self, invert: bool, mut color: Color) -> (&super::color::Palette, Color) {
         let palette = match self.color {
             LauncherThemeColor::Brown => &BROWN,
             LauncherThemeColor::Purple => &PURPLE,
