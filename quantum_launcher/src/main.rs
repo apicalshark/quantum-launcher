@@ -177,6 +177,7 @@ fn main() {
         .settings(Settings {
             fonts: load_fonts(),
             default_font: iced::Font::with_name("Inter"),
+            antialiasing: true,
             ..Default::default()
         })
         .window(iced::window::Settings {
