@@ -270,7 +270,7 @@ impl GameLauncher {
             args.push("-Dminecraft.api.account.host=https://nope.invalid".to_owned());
             args.push("-Dminecraft.api.session.host=https://nope.invalid".to_owned());
             args.push("-Dminecraft.api.services.host=https://nope.invalid".to_owned());
-        } else if let Some(authlib) = auth.and_then(|n| n.get_authlib_url()) {
+        } else if let Some(authlib) = auth.and_then(AccountData::get_authlib_url) {
             args.push(crate::auth::get_authlib_injector(authlib).await?);
         }
 

@@ -276,7 +276,7 @@ fn load_account(
         let username_stripped = match account_type {
             AccountType::ElyBy => username.strip_suffix(" (elyby)").unwrap_or(username),
             AccountType::LittleSkin => username.strip_suffix(" (littleskin)").unwrap_or(username),
-            _ => username,
+            AccountType::Microsoft => username,
         };
         ql_instances::auth::read_refresh_token(username_stripped, account_type).strerr()
     }

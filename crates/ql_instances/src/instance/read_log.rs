@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    fmt::Display,
+    fmt::{Display, Write},
     process::ExitStatus,
     sync::{mpsc::Sender, Arc, Mutex},
 };
@@ -112,7 +112,7 @@ fn send(sender: Option<&Sender<LogLine>>, msg: LogLine) {
     if let Some(sender) = sender {
         _ = sender.send(msg);
     } else {
-        println!("{}", msg.print_colored())
+        println!("{}", msg.print_colored());
     }
 }
 
@@ -190,6 +190,7 @@ pub enum LogLine {
 }
 
 impl LogLine {
+    #[must_use]
     pub fn print_colored(&self) -> String {
         match self {
             #[cfg(target_os = "windows")]
@@ -277,6 +278,7 @@ impl LogEvent {
         Some(datetime.format("%H:%M:%S").to_string())
     }
 
+    #[must_use]
     pub fn print_color(&self) -> String {
         let date = self.get_time().unwrap_or_else(|| self.timestamp.clone());
 
@@ -301,7 +303,7 @@ impl LogEvent {
             }
         );
         if let Some(throwable) = self.throwable.as_deref() {
-            out.push_str(&format!("Caused by {throwable}"));
+            _ = writeln!(out, "\nCaused by {throwable}");
         }
         out
     }
@@ -334,7 +336,7 @@ fn parse_color(msg: &str) -> String {
         ('r', "\x1b[0m"), // Reset
     ]
     .iter()
-    .cloned()
+    .copied()
     .collect();
 
     let mut out = String::new();

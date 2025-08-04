@@ -441,3 +441,46 @@ pub fn view_account_login<'a>() -> Element<'a> {
     .spacing(5)
     .into()
 }
+
+pub fn view_error(error: &str) -> Element {
+    widget::scrollable(
+        widget::column!(
+            widget::text!("Error: {error}"),
+            widget::row![
+                widget::button("Back").on_press(Message::LaunchScreenOpen {
+                    message: None,
+                    clear_selection: true
+                }),
+                widget::button("Copy Error").on_press(Message::CoreErrorCopy),
+                widget::button("Copy Error + Log").on_press(Message::CoreErrorCopyLog),
+                widget::button("Join Discord for help")
+                    .on_press(Message::CoreOpenLink(DISCORD.to_owned()))
+            ]
+            .spacing(5)
+            .wrap()
+        )
+        .padding(10)
+        .spacing(10),
+    )
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .style(LauncherTheme::style_scrollable_flat_extra_dark)
+    .into()
+}
+
+pub fn view_confirm<'a>(
+    msg1: &'a str,
+    msg2: &'a str,
+    yes: &'a Message,
+    no: &'a Message,
+) -> Element<'a> {
+    widget::column![
+        widget::text!("Are you SURE you want to {msg1}?").size(20),
+        msg2,
+        widget::button("Yes").on_press(yes.clone()),
+        widget::button("No").on_press(no.clone()),
+    ]
+    .padding(10)
+    .spacing(10)
+    .into()
+}

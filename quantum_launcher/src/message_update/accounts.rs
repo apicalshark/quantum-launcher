@@ -102,8 +102,7 @@ impl Launcher {
                 let account_type = self
                     .accounts
                     .get(&username)
-                    .map(|n| n.account_type)
-                    .unwrap_or(auth::AccountType::Microsoft);
+                    .map_or(auth::AccountType::Microsoft, |n| n.account_type);
 
                 if let Err(err) = auth::logout(account_type.strip_name(&username), account_type) {
                     self.set_error(err);
@@ -312,7 +311,7 @@ impl Launcher {
         }
         let username = data.get_username_modified();
 
-        if self.accounts_dropdown.iter().any(|n| *n == username) {
+        if self.accounts_dropdown.contains(&username) {
             // Account already logged in
             return self.go_to_launch_screen::<String>(None);
         }

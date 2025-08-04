@@ -18,7 +18,7 @@ pub async fn add_files(
 
     let mut not_allowed = HashSet::new();
 
-    send_progress(progress.as_ref(), GenericProgress::default());
+    send_progress(progress.as_ref(), &GenericProgress::default());
 
     let len = paths.len();
     for (i, path) in paths.into_iter().enumerate() {
@@ -38,7 +38,7 @@ pub async fn add_files(
         };
         send_progress(
             progress.as_ref(),
-            GenericProgress {
+            &GenericProgress {
                 done: i,
                 total: len,
                 message: Some(format!("Installing {file_type}: ({}/{len})", i + 1)),
@@ -70,12 +70,12 @@ pub async fn add_files(
         }
     }
 
-    send_progress(progress.as_ref(), GenericProgress::finished());
+    send_progress(progress.as_ref(), &GenericProgress::finished());
 
     Ok(not_allowed)
 }
 
-fn send_progress(sender: Option<&Sender<GenericProgress>>, progress: GenericProgress) {
+fn send_progress(sender: Option<&Sender<GenericProgress>>, progress: &GenericProgress) {
     if let Some(sender) = sender {
         if sender.send(progress.clone()).is_ok() {
             return;

@@ -27,6 +27,9 @@ impl ServerProperties {
 
     /// Saves the configuration to a server with name `server_name`,
     /// as a `server.properties` file.
+    ///
+    /// # Errors
+    /// If server doesn't exist or user doesn't have permission to access server
     pub async fn save(&self, server_name: &str) -> Result<(), IoError> {
         let server_dir = LAUNCHER_DIR.join("servers").join(server_name);
         let properties_file = server_dir.join("server.properties");

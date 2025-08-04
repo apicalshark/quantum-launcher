@@ -22,6 +22,7 @@ pub struct AccountData {
 }
 
 impl AccountData {
+    #[must_use]
     pub fn get_username_modified(&self) -> String {
         let suffix = match self.account_type {
             auth::AccountType::Microsoft => "",
@@ -31,6 +32,7 @@ impl AccountData {
         format!("{}{suffix}", self.username)
     }
 
+    #[must_use]
     pub fn get_authlib_url(&self) -> Option<&'static str> {
         match self.account_type {
             AccountType::Microsoft => None,
@@ -62,6 +64,7 @@ impl std::fmt::Display for AccountType {
 }
 
 impl AccountType {
+    #[must_use]
     pub fn yggdrasil_authenticate(self) -> &'static str {
         match self {
             AccountType::Microsoft => unreachable!(),
@@ -72,6 +75,7 @@ impl AccountType {
         }
     }
 
+    #[must_use]
     pub fn yggdrasil_refresh(self) -> &'static str {
         match self {
             AccountType::Microsoft => unreachable!(),
@@ -80,6 +84,7 @@ impl AccountType {
         }
     }
 
+    #[must_use]
     pub fn yggdrasil_needs_agent_field(self) -> bool {
         match self {
             AccountType::Microsoft | AccountType::ElyBy => false,
@@ -101,6 +106,7 @@ impl AccountType {
         )?)
     }
 
+    #[must_use]
     pub(crate) fn get_client_id(self) -> &'static str {
         match self {
             AccountType::Microsoft => ms::CLIENT_ID,
@@ -109,6 +115,7 @@ impl AccountType {
         }
     }
 
+    #[must_use]
     pub fn strip_name(self, name: &str) -> &str {
         match self {
             AccountType::Microsoft => name,

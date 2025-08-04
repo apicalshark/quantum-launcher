@@ -4,7 +4,8 @@ use ql_core::LOGGER;
 use crate::{
     icon_manager,
     menu_renderer::{
-        button_with_icon, changelog::changelog_0_4_1, view_account_login, Element, DISCORD,
+        button_with_icon, changelog::changelog_0_4_1, view_account_login, view_confirm, view_error,
+        Element,
     },
     state::{Launcher, Message, State},
     stylesheet::{color::Color, styles::LauncherTheme, widgets::StyleButton},
@@ -83,38 +84,8 @@ impl Launcher {
                 msg2,
                 yes,
                 no,
-            } => widget::column![
-                widget::text!("Are you SURE you want to {msg1}?").size(20),
-                msg2.as_str(),
-                widget::button("Yes").on_press(yes.clone()),
-                widget::button("No").on_press(no.clone()),
-            ]
-            .padding(10)
-            .spacing(10)
-            .into(),
-            State::Error { error } => widget::scrollable(
-                widget::column!(
-                    widget::text!("Error: {error}"),
-                    widget::row![
-                        widget::button("Back").on_press(Message::LaunchScreenOpen {
-                            message: None,
-                            clear_selection: true
-                        }),
-                        widget::button("Copy Error").on_press(Message::CoreErrorCopy),
-                        widget::button("Copy Error + Log").on_press(Message::CoreErrorCopyLog),
-                        widget::button("Join Discord for help")
-                            .on_press(Message::CoreOpenLink(DISCORD.to_owned()))
-                    ]
-                    .spacing(5)
-                    .wrap()
-                )
-                .padding(10)
-                .spacing(10),
-            )
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .style(LauncherTheme::style_scrollable_flat_extra_dark)
-            .into(),
+            } => view_confirm(msg1, msg2, yes, no),
+            State::Error { error } => view_error(error),
             State::InstallFabric(menu) => {
                 menu.view(self.selected_instance.as_ref().unwrap(), self.tick_timer)
             }

@@ -387,6 +387,7 @@ impl GameDownloader {
         }
     }
 
+    #[allow(clippy::unused_async)]
     pub async fn library_extras(&self) -> Result<(), IoError> {
         // Custom LWJGL 2.9.3 FreeBSD natives compiled by me.
         // See `/assets/binaries/README.md` for more info.

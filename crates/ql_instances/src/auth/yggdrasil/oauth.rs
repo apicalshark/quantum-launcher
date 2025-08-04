@@ -101,7 +101,7 @@ async fn get_user_info(access_token: &str) -> Result<UserInfo, Error> {
     Ok(user)
 }
 
-/// Device Code Flow structs and functions for LittleSkin
+/// Device Code Flow structs and functions for littleskin
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct DeviceCodeResponse {
     pub device_code: String,
@@ -192,8 +192,7 @@ pub async fn poll_device_token(
         nice_username: mc_token_resp
             .selected_profile
             .as_ref()
-            .map(|p| p.name.clone())
-            .unwrap_or_else(|| user_info.username.clone()),
+            .map_or_else(|| user_info.username.clone(), |p| p.name.clone()),
         refresh_token: mc_token_resp.access_token,
         needs_refresh: false,
         account_type: crate::auth::AccountType::LittleSkin,
@@ -305,11 +304,11 @@ async fn get_device_token(
                     sleep(Duration::from_secs(interval + 2)).await;
                     continue;
                 }
-                "expired_token" | "access_denied" => {
-                    return Err(Error::LittleSkin(
-                        token_resp.error_description.unwrap_or(err.clone()),
-                    ));
-                }
+                // "expired_token" | "access_denied" => {
+                //     return Err(Error::LittleSkin(
+                //         token_resp.error_description.unwrap_or(err.clone()),
+                //     ));
+                // }
                 _ => {
                     return Err(Error::LittleSkin(
                         token_resp.error_description.unwrap_or(err.clone()),
