@@ -369,15 +369,17 @@ pub fn open_file_explorer<S: AsRef<OsStr>>(path: S) {
 
     let path = path.as_ref();
     info!("Opening link: {}", path.to_string_lossy());
-    if let Err(err) = Command::new(if cfg!(target_os = "linux") {
-        "xdg-open"
-    } else if cfg!(target_os = "windows") {
-        "explorer"
-    } else if cfg!(target_os = "macos") {
-        "open"
-    } else {
-        panic!("Opening file explorer not supported on this platform.")
-    })
+    if let Err(err) = Command::new(
+        if cfg!(target_os = "linux") || cfg!(target_os = "freebsd") {
+            "xdg-open"
+        } else if cfg!(target_os = "windows") {
+            "explorer"
+        } else if cfg!(target_os = "macos") {
+            "open"
+        } else {
+            panic!("Opening file explorer not supported on this platform.")
+        },
+    )
     .arg(path)
     .spawn()
     {
