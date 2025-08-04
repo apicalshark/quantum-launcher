@@ -46,6 +46,7 @@ pub enum CreateInstanceMessage {
     End(Res<String>),
     Cancel,
 
+    #[allow(unused)]
     Import,
     ImportResult(Res<Option<InstanceSelection>>),
 }
@@ -266,6 +267,7 @@ pub enum Message {
     UninstallLoaderPaperStart,
     UninstallLoaderEnd(Res),
 
+    #[allow(unused)]
     ExportInstanceOpen,
     ExportInstanceToggleItem(usize, bool),
     ExportInstanceStart,

@@ -233,9 +233,16 @@ impl LauncherSettingsTab {
                     .padding(PADDING_NOT_BOTTOM),
                     menus,
                     links,
-                    widget::column!["Made with:", widget::iced(window_size.1 / 12.0),]
-                        .padding(10)
-                        .spacing(5),
+                    widget::column![
+                        "Made with:",
+                        widget::button(widget::iced(window_size.1 / 12.0))
+                            .on_press(Message::CoreOpenLink("https://iced.rs".to_owned()))
+                            .padding(5)
+                            .style(|n: &LauncherTheme, status| n
+                                .style_button(status, StyleButton::Flat))
+                    ]
+                    .padding(10)
+                    .spacing(5),
                     widget::horizontal_rule(1),
                     widget::column![
                         widget::row![

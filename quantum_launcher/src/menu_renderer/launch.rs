@@ -55,20 +55,20 @@ impl Launcher {
             widget::horizontal_space(),
             widget::row![
                 // ENABLE THE BELOW CODE TO ENABLE SERVERS:
-                widget::column![
-                    widget::vertical_space(),
-                    if menu.is_viewing_server {
-                        widget::button("View Instances...").on_press(Message::LaunchScreenOpen {
-                            message: None,
-                            clear_selection: true,
-                        })
-                    } else {
-                        widget::button("View Servers...").on_press(Message::ServerManageOpen {
-                            selected_server: None,
-                            message: None,
-                        })
-                    },
-                ],
+                // widget::column![
+                //     widget::vertical_space(),
+                //     if menu.is_viewing_server {
+                //         widget::button("View Instances...").on_press(Message::LaunchScreenOpen {
+                //             message: None,
+                //             clear_selection: true,
+                //         })
+                //     } else {
+                //         widget::button("View Servers...").on_press(Message::ServerManageOpen {
+                //             selected_server: None,
+                //             message: None,
+                //         })
+                //     },
+                // ],
                 get_footer_text(menu),
             ],
         ]
@@ -91,14 +91,22 @@ impl Launcher {
 
                     widget::column!(
                         main_buttons,
-                        widget::horizontal_rule(10)
-                            .style(|n: &LauncherTheme| n.style_rule(Color::SecondDark, 2)),
-                        widget::button("Export Instance").on_press(Message::ExportInstanceOpen),
+                        // widget::horizontal_rule(10)
+                        //     .style(|n: &LauncherTheme| n.style_rule(Color::SecondDark, 2)),
+                        // widget::button("Export Instance").on_press(Message::ExportInstanceOpen),
                     )
                     .push_maybe({
                         if let Some(selected_instance) = selected_instance_s {
                             if self.is_process_running(menu, selected_instance) {
-                                Some(widget::text("Running...").size(20))
+                                Some(
+                                    widget::column![
+                                        widget::horizontal_rule(10)
+                                            .style(|n: &LauncherTheme| n
+                                                .style_rule(Color::SecondDark, 2)),
+                                        widget::text("Running...").size(20)
+                                    ]
+                                    .spacing(5),
+                                )
                             } else {
                                 None
                             }
@@ -377,7 +385,7 @@ impl Launcher {
                 )
             } else if self.is_launching_game {
                 tooltip(
-                    button_with_icon(icon_manager::play(), "Loading...", 16).width(98),
+                    button_with_icon(icon_manager::play(), "...", 16).width(98),
                     shortcut_ctrl("Please wait..."),
                 )
             } else {
