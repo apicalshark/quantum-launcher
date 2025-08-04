@@ -88,8 +88,6 @@ What about the others? Well...
 
 # To-do (in the future)
 
-(note: WIP means work-in-progress)
-
 ## Core
 - [x] Instance creation, deletion, renaming, launching
 - [x] Java/Game args editing
@@ -142,22 +140,30 @@ What about the others? Well...
 - [ ] The stuff from [MODS+PLUGINS.md](https://github.com/LeStegii/server-software/blob/master/java/MODS+PLUGINS.md)
 
 ## Platforms
+(note: WIP means work-in-progress)
+
 - [x] Windows x86_64
 - [x] Linux x86_64
-- [ ] macOS x86_64 (WIP)
-- [ ] Windows Aarch64 (WIP)
+- [x] macOS x86_64 (WIP)
+
+- [x] Windows Aarch64 (WIP)
 - [x] Linux Aarch64 (Almost ready)
+- [x] Linux ARM32 (WIP)
 - [x] macOS Aarch64 (Almost ready)
-- [ ] Windows i686 (WIP)
-- [ ] Linux i686 (WIP)
-- [ ] FreeBSD
+
+- [x] Windows i686 (WIP)
+- [ ] Linux i686
+
+- [ ] FreeBSD (WIP)
 - [ ] Haiku
+- [ ] Solaris
+- [ ] Android (in the future)
 
 ## Command-Line interface
 - [x] List installed instances `list-instances`, `-l`
 - [x] List versions available for download `list-available-versions`, `-a`
-- [ ] Create instance from CLI
-- [ ] Launch instance from CLI
+- [x] Create instance from CLI
+- [x] Launch instance from CLI
 - [ ] Install loaders from CLI
 - [ ] Mod installation features from CLI
 - [ ] Preset, modpack features from CLI

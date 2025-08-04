@@ -17,11 +17,6 @@
 - You can now login with elyby and littleskin accounts!
 - Minecraft 1.21.5 and below support elyby and littleskin skins (b)
 
-# (Scrapped) Instance Packaging
-- You can now package entire QuantumLauncher instances into a single file
-- (TODO) Import/Export support for Prism Launcher/MultiMC instances
-- (TODO) Migration from other launchers
-
 # UI
 - Revamped all icons in the launcher (thanks, [Aurlt](https://github.com/Aurlt) !)
 - Overhauled launcher settings menu
@@ -32,9 +27,9 @@
 # CLI
 The following commands have been added:
 
-- `quantum_launcher create <NAME> <VERSION>`
-- `quantum_launcher launch <INSTANCE> <USERNAME>` (optionally add `-s` for account auth)
-- `quantum_launcher delete <INSTANCE>`
+- `quantum_launcher create <NAME> <VERSION>` (add `-s` to skip downloading assets (music/sound))
+- `quantum_launcher launch <INSTANCE> <USERNAME>` (add `-s` for account authentication)
+- `quantum_launcher delete <INSTANCE>` (add `-f` to skip confirmation)
 
 # Platform
 Added (incomplete) support for:
