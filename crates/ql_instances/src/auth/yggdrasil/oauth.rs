@@ -153,7 +153,7 @@ pub async fn poll_device_token(
     device_code: String,
     interval: u64,
     expires_in: u64,
-) -> Result<crate::auth::littleskin::Account, Error> {
+) -> Result<super::Account, Error> {
     // Step A: exchange device_code for OAuth access_token
     let token_resp = get_device_token(&device_code, interval, expires_in).await?;
     let oauth_access_token = token_resp.access_token.ok_or(OauthError::NoAccessToken)?;
@@ -181,25 +181,23 @@ pub async fn poll_device_token(
     .and_then(|e| e.set_password(&mc_token_resp.access_token))?;
 
     // Build account data compatible with existing flows
-    Ok(crate::auth::littleskin::Account::Account(
-        crate::auth::littleskin::AccountData {
-            access_token: Some(mc_token_resp.access_token.clone()),
-            uuid: mc_token_resp
-                .selected_profile
-                .as_ref()
-                .map(|p| p.id.clone())
-                .unwrap_or_default(),
-            username: user_info.username.clone(),
-            nice_username: mc_token_resp
-                .selected_profile
-                .as_ref()
-                .map(|p| p.name.clone())
-                .unwrap_or_else(|| user_info.username.clone()),
-            refresh_token: mc_token_resp.access_token,
-            needs_refresh: false,
-            account_type: crate::auth::AccountType::LittleSkin,
-        },
-    ))
+    Ok(super::Account::Account(super::AccountData {
+        access_token: Some(mc_token_resp.access_token.clone()),
+        uuid: mc_token_resp
+            .selected_profile
+            .as_ref()
+            .map(|p| p.id.clone())
+            .unwrap_or_default(),
+        username: user_info.username.clone(),
+        nice_username: mc_token_resp
+            .selected_profile
+            .as_ref()
+            .map(|p| p.name.clone())
+            .unwrap_or_else(|| user_info.username.clone()),
+        refresh_token: mc_token_resp.access_token,
+        needs_refresh: false,
+        account_type: crate::auth::AccountType::LittleSkin,
+    }))
 }
 
 #[derive(Debug, Deserialize)]

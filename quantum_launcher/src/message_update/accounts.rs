@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 use auth::AccountData;
 use iced::Task;
 use ql_core::IntoStringError;
-use ql_instances::auth;
+use ql_instances::auth::{self, AccountType};
 
 use crate::{
     config::ConfigAccount,
@@ -73,7 +73,7 @@ impl Launcher {
                 // Start polling for token
                 let device_code_clone = device_code.clone();
                 return Task::perform(
-                    ql_instances::auth::littleskin::oauth::poll_device_token(
+                    ql_instances::auth::yggdrasil::oauth::poll_device_token(
                         device_code_clone,
                         interval,
                         expires_in,
@@ -105,13 +105,7 @@ impl Launcher {
                     .map(|n| n.account_type)
                     .unwrap_or(auth::AccountType::Microsoft);
 
-                if let Err(err) = match account_type {
-                    auth::AccountType::Microsoft => auth::ms::logout(&username),
-                    auth::AccountType::ElyBy => {
-                        auth::elyby::logout(username.strip_suffix(" (elyby)").unwrap_or(&username))
-                    }
-                    auth::AccountType::LittleSkin => auth::littleskin::logout(&username),
-                } {
+                if let Err(err) = auth::logout(account_type.strip_name(&username), account_type) {
                     self.set_error(err);
                 }
                 if let Some(accounts) = &mut self.config.accounts {
@@ -212,27 +206,28 @@ impl Launcher {
                     }
                     menu.is_loading = true;
 
-                    if menu.is_littleskin {
-                        return Task::perform(
-                            auth::littleskin::login_new(menu.username.clone(), password),
-                            |n| Message::Account(AccountMessage::AltLoginResponse(n.strerr())),
-                        );
-                    } else {
-                        return Task::perform(
-                            auth::elyby::login_new(menu.username.clone(), password),
-                            |n| Message::Account(AccountMessage::AltLoginResponse(n.strerr())),
-                        );
-                    }
+                    return Task::perform(
+                        auth::yggdrasil::login_new(
+                            menu.username.clone(),
+                            password,
+                            if menu.is_littleskin {
+                                AccountType::LittleSkin
+                            } else {
+                                AccountType::ElyBy
+                            },
+                        ),
+                        |n| Message::Account(AccountMessage::AltLoginResponse(n.strerr())),
+                    );
                 }
             }
             AccountMessage::AltLoginResponse(Ok(acc)) => {
                 if let State::LoginAlternate(menu) = &mut self.state {
                     menu.is_loading = false;
                     match acc {
-                        auth::elyby::Account::Account(data) => {
+                        auth::yggdrasil::Account::Account(data) => {
                             return self.account_response_3(data);
                         }
-                        auth::elyby::Account::NeedsOTP => {
+                        auth::yggdrasil::Account::NeedsOTP => {
                             menu.otp = Some(String::new());
                         }
                     }
@@ -259,7 +254,7 @@ impl Launcher {
                     menu.is_loading = true;
                 }
 
-                return Task::perform(auth::littleskin::oauth::request_device_code(), |resp| {
+                return Task::perform(auth::yggdrasil::oauth::request_device_code(), |resp| {
                     Message::Account(match resp {
                         Ok(code) => AccountMessage::LittleSkinDeviceCodeReady {
                             user_code: code.user_code,
@@ -300,14 +295,11 @@ impl Launcher {
                     |n| Message::Account(AccountMessage::RefreshComplete(n.strerr())),
                 )
             }
-            auth::AccountType::ElyBy => Task::perform(
-                auth::elyby::login_refresh(account.username.clone(), account.refresh_token.clone()),
-                |n| Message::Account(AccountMessage::RefreshComplete(n.strerr())),
-            ),
-            auth::AccountType::LittleSkin => Task::perform(
-                auth::littleskin::login_refresh(
+            auth::AccountType::ElyBy | auth::AccountType::LittleSkin => Task::perform(
+                auth::yggdrasil::login_refresh(
                     account.username.clone(),
                     account.refresh_token.clone(),
+                    account.account_type,
                 ),
                 |n| Message::Account(AccountMessage::RefreshComplete(n.strerr())),
             ),
@@ -315,10 +307,18 @@ impl Launcher {
     }
 
     fn account_response_3(&mut self, data: AccountData) -> Task<Message> {
-        self.accounts_dropdown.insert(0, data.username.clone());
+        if data.username == OFFLINE_ACCOUNT_NAME || data.username == NEW_ACCOUNT_NAME {
+            return self.go_to_launch_screen::<String>(None);
+        }
+        let username = data.get_username_modified();
+
+        if self.accounts_dropdown.iter().any(|n| *n == username) {
+            // Account already logged in
+            return self.go_to_launch_screen::<String>(None);
+        }
+        self.accounts_dropdown.insert(0, username.clone());
 
         let accounts = self.config.accounts.get_or_insert_default();
-        let username = data.get_username_modified();
         accounts.insert(
             username.clone(),
             ConfigAccount {

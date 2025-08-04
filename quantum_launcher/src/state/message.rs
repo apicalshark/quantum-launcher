@@ -185,7 +185,7 @@ pub enum AccountMessage {
     AltOtpInput(String),
     AltShowPassword(bool),
     AltLogin,
-    AltLoginResponse(Res<ql_instances::auth::elyby::Account>),
+    AltLoginResponse(Res<ql_instances::auth::yggdrasil::Account>),
 
     LittleSkinOauthButtonClicked,
     // LittleSkin Device Code Flow
@@ -198,7 +198,7 @@ pub enum AccountMessage {
         device_code: String,
     },
     LittleSkinDeviceCodeError(String),
-    LittleSkinDeviceCodePollResult(Res<ql_instances::auth::littleskin::Account>),
+    LittleSkinDeviceCodePollResult(Res<ql_instances::auth::yggdrasil::Account>),
 }
 
 #[derive(Debug, Clone)]

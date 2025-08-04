@@ -4,7 +4,7 @@ use ql_core::{
     json::{InstanceConfigJson, VersionDetails},
     InstanceSelection, IntoStringError, ListEntry, LAUNCHER_DIR,
 };
-use ql_instances::auth;
+use ql_instances::auth::{self, AccountType};
 use std::{io::Write, process::exit};
 
 use crate::{config::LauncherConfig, state::get_entries};
@@ -219,15 +219,21 @@ fn refresh_account(
 
         match account.account_type.as_deref() {
             // Hook: Account types
-            Some("ElyBy") => {
-                let refresh_token = auth::elyby::read_refresh_token(real_name)?;
-                Some(
-                    runtime
-                        .block_on(auth::elyby::login_refresh(real_name.clone(), refresh_token))?,
-                )
+            Some(kind @ ("ElyBy" | "LittleSkin")) => {
+                let account_type = if kind == "ElyBy" {
+                    AccountType::ElyBy
+                } else {
+                    AccountType::LittleSkin
+                };
+                let refresh_token = auth::read_refresh_token(real_name, account_type)?;
+                Some(runtime.block_on(auth::yggdrasil::login_refresh(
+                    real_name.clone(),
+                    refresh_token,
+                    account_type,
+                ))?)
             }
             _ => {
-                let refresh_token = auth::ms::read_refresh_token(real_name)?;
+                let refresh_token = auth::read_refresh_token(real_name, AccountType::Microsoft)?;
                 Some(runtime.block_on(auth::ms::login_refresh(
                     real_name.clone(),
                     refresh_token,

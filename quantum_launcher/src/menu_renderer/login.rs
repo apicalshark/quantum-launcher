@@ -5,24 +5,26 @@ use crate::{
     state::{AccountMessage, MenuLoginAlternate, MenuLoginMS, Message, NEW_ACCOUNT_NAME},
 };
 
-use super::{back_button, button_with_icon, Element};
+use super::{back_button, button_with_icon, center_x, Element};
 
 impl MenuLoginAlternate {
     pub fn view(&self, tick_timer: usize) -> Element {
-        let status: Element =
-            if self.is_loading {
-                let dots = ".".repeat((tick_timer % 3) + 1);
-                widget::text!("Loading{dots}").into()
-            } else {
-                widget::column![button_with_icon(icon_manager::tick(), "Login", 16)
-                    .on_press(Message::Account(AccountMessage::AltLogin))]
-                .push_maybe(self.is_littleskin.then_some(
-                    widget::button("Login with OAuth").on_press(Message::Account(
-                        AccountMessage::LittleSkinOauthButtonClicked,
-                    )),
-                ))
+        let status: Element = if self.is_loading {
+            let dots = ".".repeat((tick_timer % 3) + 1);
+            widget::column![widget::text!("Loading{dots}")]
+                .padding(8)
                 .into()
-            };
+        } else {
+            widget::column![button_with_icon(icon_manager::tick(), "Login", 16)
+                .on_press(Message::Account(AccountMessage::AltLogin))]
+            // Uncomment for (experimental) Oauth-based littleskin login
+            // .push_maybe(self.is_littleskin.then_some(
+            //     widget::button("Login with OAuth").on_press(Message::Account(
+            //         AccountMessage::LittleSkinOauthButtonClicked,
+            //     )),
+            // ))
+            .into()
+        };
 
         let padding = iced::Padding {
             top: 5.0,
@@ -88,53 +90,58 @@ impl MenuLoginAlternate {
                 } else {
                     Message::Account(AccountMessage::Selected(NEW_ACCOUNT_NAME.to_owned()))
                 }),
-                widget::row![
-                    widget::horizontal_space(),
-                    widget::column![
-                        widget::vertical_space(),
-                        widget::text("Username/Email:").size(12),
+                widget::column![
+                    widget::text(if self.is_littleskin {
+                        "LittleSkin Login"
+                    } else {
+                        "ElyBy Login"
+                    })
+                    .size(20),
+                    widget::vertical_space(),
+                    widget::text("Username/Email:").size(12),
+                    center_x(
                         widget::text_input("Enter Username/Email...", &self.username)
                             .padding(padding)
-                            .on_input(|n| Message::Account(AccountMessage::AltUsernameInput(n))),
-                        widget::text("Password:").size(12),
-                        password_input,
-                        widget::checkbox("Show Password", self.show_password)
-                            .size(14)
-                            .text_size(14)
-                            .on_toggle(|t| Message::Account(AccountMessage::AltShowPassword(t))),
-                        widget::Column::new().push_maybe(self.otp.as_deref().map(|otp| {
-                            widget::column![
-                                widget::text("OTP:").size(12),
-                                widget::text_input("Enter Username/Email...", otp)
-                                    .padding(padding)
-                                    .on_input(|n| Message::Account(AccountMessage::AltOtpInput(n))),
-                            ]
-                            .spacing(5)
-                        })),
-                        status,
-                        widget::Space::with_height(5),
-                        widget::row![
-                            widget::text("Or").size(14),
-                            widget::button(widget::text("Create an account").size(14)).on_press(
-                                Message::CoreOpenLink(
-                                    if self.is_littleskin {
-                                        "https://littleskin.cn/auth/register"
-                                    } else {
-                                        "https://account.ely.by/register"
-                                    }
-                                    .to_owned()
-                                )
-                            )
+                            .on_input(|n| Message::Account(AccountMessage::AltUsernameInput(n)))
+                    ),
+                    widget::text("Password:").size(12),
+                    center_x(password_input),
+                    widget::checkbox("Show Password", self.show_password)
+                        .size(14)
+                        .text_size(14)
+                        .on_toggle(|t| Message::Account(AccountMessage::AltShowPassword(t))),
+                    widget::Column::new().push_maybe(self.otp.as_deref().map(|otp| {
+                        widget::column![
+                            widget::text("OTP:").size(12),
+                            widget::text_input("Enter Username/Email...", otp)
+                                .padding(padding)
+                                .on_input(|n| Message::Account(AccountMessage::AltOtpInput(n))),
                         ]
-                        .align_y(iced::Alignment::Center)
                         .spacing(5)
-                        .wrap(),
-                        widget::vertical_space(),
+                    })),
+                    status,
+                    widget::Space::with_height(5),
+                    widget::row![
+                        widget::text("Or").size(14),
+                        widget::button(widget::text("Create an account").size(14)).on_press(
+                            Message::CoreOpenLink(
+                                if self.is_littleskin {
+                                    "https://littleskin.cn/auth/register"
+                                } else {
+                                    "https://account.ely.by/register"
+                                }
+                                .to_owned()
+                            )
+                        )
                     ]
-                    .align_x(iced::Alignment::Center)
-                    .spacing(5),
-                    widget::horizontal_space(),
+                    .align_y(iced::Alignment::Center)
+                    .spacing(5)
+                    .wrap(),
+                    widget::vertical_space(),
                 ]
+                .width(Length::Fill)
+                .align_x(iced::Alignment::Center)
+                .spacing(5)
             ]
             .padding(10)
             .into()

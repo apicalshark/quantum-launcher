@@ -1,4 +1,4 @@
-//! # Minecraft Authentication
+//! # Minecraft Authentication for Microsoft Accounts
 //!
 //! This module allows you to log into Minecraft with
 //! your paid Microsoft account.
@@ -65,10 +65,7 @@
 //! # Ok(()) }
 //! ```
 
-use ql_core::{
-    err, info, pt, retry, GenericProgress, IntoJsonError, IntoStringError, JsonError, RequestError,
-    CLIENT,
-};
+use ql_core::{info, pt, retry, GenericProgress, IntoJsonError, JsonError, RequestError, CLIENT};
 use ql_reqwest::{Client, StatusCode};
 use serde::Deserialize;
 use serde_json::json;
@@ -202,14 +199,6 @@ impl From<keyring::Error> for Error {
     }
 }
 
-pub fn logout(username: &str) -> Result<(), String> {
-    let entry = keyring::Entry::new("QuantumLauncher", username).strerr()?;
-    if let Err(err) = entry.delete_credential() {
-        err!("Couldn't remove Microsoft account credential (Username: {username}):\n{err}");
-    }
-    Ok(())
-}
-
 /// Gets the account info from the
 /// refresh token.
 ///
@@ -286,12 +275,6 @@ pub async fn login_1_link() -> Result<AuthCodeResponse, Error> {
     );
 
     Ok(data)
-}
-
-pub fn read_refresh_token(username: &str) -> Result<String, Error> {
-    let entry = keyring::Entry::new("QuantumLauncher", username)?;
-    let refresh_token = entry.get_password()?;
-    Ok(refresh_token)
 }
 
 pub async fn login_3_xbox(

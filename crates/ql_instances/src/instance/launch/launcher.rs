@@ -504,7 +504,7 @@ impl GameLauncher {
         // so that the loaders load the libraries they like, then the game
         // only loads the stuff that hasn't been already loaded.
         //
-        // classpath_entries is a HashSet that determines if an overriden
+        // classpath_entries is a HashSet that determines if an overridden
         // version of a library has already been loaded.
 
         let instance = InstanceSelection::Instance(self.instance_name.clone());

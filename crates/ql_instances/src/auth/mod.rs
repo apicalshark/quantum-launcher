@@ -1,11 +1,11 @@
+use crate::auth;
+use ql_core::{err, IntoStringError};
 use std::fmt::Display;
 
-use crate::auth;
 mod alt;
 pub mod authlib;
-pub mod elyby;
-pub mod littleskin;
 pub mod ms;
+pub mod yggdrasil;
 pub use authlib::get_authlib_injector;
 
 #[derive(Debug, Clone)]
@@ -61,6 +61,63 @@ impl std::fmt::Display for AccountType {
     }
 }
 
+impl AccountType {
+    pub fn yggdrasil_authenticate(self) -> &'static str {
+        match self {
+            AccountType::Microsoft => unreachable!(),
+            AccountType::ElyBy => "https://authserver.ely.by/auth/authenticate",
+            AccountType::LittleSkin => {
+                "https://littleskin.cn/api/yggdrasil/authserver/authenticate"
+            }
+        }
+    }
+
+    pub fn yggdrasil_refresh(self) -> &'static str {
+        match self {
+            AccountType::Microsoft => unreachable!(),
+            AccountType::ElyBy => "https://authserver.ely.by/auth/refresh",
+            AccountType::LittleSkin => "https://littleskin.cn/api/yggdrasil/authserver/refresh",
+        }
+    }
+
+    pub fn yggdrasil_needs_agent_field(self) -> bool {
+        match self {
+            AccountType::Microsoft | AccountType::ElyBy => false,
+            AccountType::LittleSkin => true,
+        }
+    }
+
+    fn get_keyring_entry(self, username: &str) -> Result<keyring::Entry, KeyringError> {
+        Ok(keyring::Entry::new(
+            "QuantumLauncher",
+            &format!(
+                "{username}{}",
+                match self {
+                    AccountType::Microsoft => "",
+                    AccountType::ElyBy => "#elyby",
+                    AccountType::LittleSkin => "#littleskin",
+                }
+            ),
+        )?)
+    }
+
+    pub(crate) fn get_client_id(self) -> &'static str {
+        match self {
+            AccountType::Microsoft => ms::CLIENT_ID,
+            AccountType::ElyBy => "quantumlauncher1",
+            AccountType::LittleSkin => "1160",
+        }
+    }
+
+    pub fn strip_name(self, name: &str) -> &str {
+        match self {
+            AccountType::Microsoft => name,
+            AccountType::ElyBy => name.strip_suffix(" (elyby)").unwrap_or(name),
+            AccountType::LittleSkin => name.strip_suffix(" (littleskin)").unwrap_or(name),
+        }
+    }
+}
+
 impl AccountData {
     #[must_use]
     pub fn is_elyby(&self) -> bool {
@@ -77,7 +134,7 @@ impl AccountData {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub struct KeyringError(pub keyring::Error);
+pub struct KeyringError(#[from] pub keyring::Error);
 
 impl Display for KeyringError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -111,4 +168,21 @@ Now after this, in the sidebar, right click it and click "Set as Default""#
             _ => write!(f, "{}", self.0),
         }
     }
+}
+
+pub fn read_refresh_token(
+    username: &str,
+    account_type: AccountType,
+) -> Result<String, KeyringError> {
+    let entry = account_type.get_keyring_entry(username)?;
+    let refresh_token = entry.get_password()?;
+    Ok(refresh_token)
+}
+
+pub fn logout(username: &str, account_type: AccountType) -> Result<(), String> {
+    let entry = account_type.get_keyring_entry(username).strerr()?;
+    if let Err(err) = entry.delete_credential() {
+        err!("Couldn't remove {account_type} account credential (Username: {username}):\n{err}");
+    }
+    Ok(())
 }

@@ -269,26 +269,35 @@ fn load_account(
     username: &str,
     account: &mut crate::config::ConfigAccount,
 ) {
+    fn get_refresh_token_for_account_type(
+        account_type: AccountType,
+        username: &str,
+    ) -> Result<String, String> {
+        let username_stripped = match account_type {
+            AccountType::ElyBy => username.strip_suffix(" (elyby)").unwrap_or(username),
+            AccountType::LittleSkin => username.strip_suffix(" (littleskin)").unwrap_or(username),
+            _ => username,
+        };
+        ql_instances::auth::read_refresh_token(username_stripped, account_type).strerr()
+    }
+
     let (account_type, refresh_token) =
         if account.account_type.as_deref() == Some("ElyBy") || username.ends_with(" (elyby)") {
-            let username_stripped = username.strip_suffix(" (elyby)").unwrap_or(username);
             (
                 AccountType::ElyBy,
-                ql_instances::auth::elyby::read_refresh_token(username_stripped).strerr(),
+                get_refresh_token_for_account_type(AccountType::ElyBy, username),
             )
         } else if account.account_type.as_deref() == Some("LittleSkin")
             || username.ends_with(" (littleskin)")
         {
-            let username_stripped = username.strip_suffix(" (littleskin)").unwrap_or(username);
             (
                 AccountType::LittleSkin,
-                ql_instances::auth::littleskin::read_refresh_token(username_stripped).strerr(),
+                get_refresh_token_for_account_type(AccountType::LittleSkin, username),
             )
         } else {
-            let username_stripped = username;
             (
                 AccountType::Microsoft,
-                ql_instances::auth::ms::read_refresh_token(username_stripped).strerr(),
+                get_refresh_token_for_account_type(AccountType::Microsoft, username),
             )
         };
 

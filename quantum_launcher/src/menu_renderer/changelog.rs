@@ -302,6 +302,13 @@ impl MenuWelcome {
                         is_from_welcome_screen: true
                     }
                 ))),
+                center_x(
+                    widget::button("Login to littleskin").on_press(Message::Account(
+                        AccountMessage::OpenLittleSkin {
+                            is_from_welcome_screen: true
+                        }
+                    ))
+                ),
                 widget::vertical_space(),
             ]
             .spacing(5)
