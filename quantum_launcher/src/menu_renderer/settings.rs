@@ -95,7 +95,7 @@ impl MenuLauncherSettings {
                     .style_button(s, StyleButton::Round)
                 })
                 .on_press(Message::LauncherSettings(
-                    LauncherSettingsMessage::StylePicked(color.to_string()),
+                    LauncherSettingsMessage::ColorSchemePicked(color.to_string()),
                 ))
                 .into()
         });

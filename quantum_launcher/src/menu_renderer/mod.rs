@@ -236,7 +236,7 @@ fn get_color_schemes(config: &LauncherConfig) -> Element {
     ];
 
     widget::pick_list(styles, config.style.clone(), |n| {
-        Message::LauncherSettings(LauncherSettingsMessage::StylePicked(n))
+        Message::LauncherSettings(LauncherSettingsMessage::ColorSchemePicked(n))
     })
     .into()
 }

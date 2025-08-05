@@ -206,7 +206,7 @@ pub enum AccountMessage {
 pub enum LauncherSettingsMessage {
     Open,
     ThemePicked(String),
-    StylePicked(String),
+    ColorSchemePicked(String),
     UiScale(f64),
     UiScaleApply,
     ClearJavaInstalls,

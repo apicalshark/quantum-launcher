@@ -429,10 +429,10 @@ impl Launcher {
             LauncherSettingsMessage::Open => {
                 self.go_to_launcher_settings();
             }
-            LauncherSettingsMessage::StylePicked(style) => {
-                info!("Setting color scheme {style}");
-                self.config.style = Some(style.clone());
-                self.theme.color = LauncherThemeColor::from_str(&style).unwrap_or_default();
+            LauncherSettingsMessage::ColorSchemePicked(color) => {
+                info!("Setting color scheme {color}");
+                self.config.style = Some(color.clone());
+                self.theme.color = LauncherThemeColor::from_str(&color).unwrap_or_default();
             }
             LauncherSettingsMessage::UiScale(scale) => {
                 if let State::LauncherSettings(menu) = &mut self.state {
