@@ -149,7 +149,7 @@ impl GameDownloader {
         // assets/dir is the current location, because
         // other assets/* folders are used by old
         // QuantumLauncher versions for an outdated format
-        // (which automigrates to assets/dir when launching game).
+        // (which auto-migrates to assets/dir when launching game).
         let current_assets_dir = assets_dir.join("dir");
         tokio::fs::create_dir_all(&current_assets_dir)
             .await

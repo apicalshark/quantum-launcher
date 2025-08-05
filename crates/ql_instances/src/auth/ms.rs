@@ -17,7 +17,7 @@
 //!
 //! ```no_run
 //! # async fn do1() -> Result<(), Box<dyn std::error::Error>> {
-//! use ql_instances::login_1_link;
+//! use ql_instances::auth::ms::login_1_link;
 //! let auth_code_response = login_1_link().await?;
 //! // AuthCodeResponse { verification_uri, user_code, .. }
 //! # Ok(()) }
@@ -30,7 +30,7 @@
 //! ```no_run
 //! # async fn do2() -> Result<(), Box<dyn std::error::Error>> {
 //! # // Default construction
-//! # let auth_code_response = ql_instances::AuthCodeResponse {
+//! # let auth_code_response = ql_instances::auth::ms::AuthCodeResponse {
 //! #     user_code: String::new(),
 //! #     device_code: String::new(),
 //! #     verification_uri: String::new(),
@@ -38,8 +38,8 @@
 //! #     interval: 0,
 //! #     message: String::new(),
 //! # };
-//! use ql_instances::login_3_xbox;
-//! use ql_instances::login_2_wait;
+//! use ql_instances::auth::ms::login_3_xbox;
+//! use ql_instances::auth::ms::login_2_wait;
 //!
 //! let auth_token_response = login_2_wait(auth_code_response).await?;
 //! // AuthTokenResponse { access_token, refresh_token }
@@ -60,7 +60,7 @@
 //! # async fn do3() -> Result<(), Box<dyn std::error::Error>> {
 //! # let username = String::new();
 //! # let refresh_token = String::new();
-//! use ql_instances::login_refresh;
+//! use ql_instances::auth::ms::login_refresh;
 //! let account_data = login_refresh(username, refresh_token, None).await?;
 //! # Ok(()) }
 //! ```
@@ -172,7 +172,7 @@ pub enum Error {
     Json(#[from] JsonError),
     #[error("{AUTH_ERR_PREFIX}Invalid account access token!")]
     InvalidAccessToken,
-    #[error("{AUTH_ERR_PREFIX}An unknown error has occured (code: {0})\n\nThis is a major bug! Please report in discord.")]
+    #[error("{AUTH_ERR_PREFIX}An unknown error has occurred (code: {0})\n\nThis is a major bug! Please report in discord.")]
     UnknownError(StatusCode),
     #[error("{AUTH_ERR_PREFIX}missing JSON field: {0}")]
     MissingField(String),
@@ -216,7 +216,7 @@ pub async fn login_refresh(
 ) -> Result<AccountData, Error> {
     send_progress(sender.as_ref(), 0, 4, "Refreshing account token...");
 
-    let response = retry(async || {
+    let response: String = retry(async || {
         CLIENT
             .post("https://login.live.com/oauth20_token.srf")
             .form(&[

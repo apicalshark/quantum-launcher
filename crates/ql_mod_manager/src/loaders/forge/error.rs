@@ -35,9 +35,9 @@ pub enum ForgeInstallError {
     LibraryParentError,
     #[error("{FORGE_INSTALL_ERR_PREFIX}no install json found for Minecraft version: {0}\n\nThis is a bug! Please report!")]
     NoInstallJson(String),
-    #[error("while installing neoforge:\nwhile checking if NeoForge supports the current version:\ncouldn't parse version release date:\n{0}")]
+    #[error("while installing NeoForge:\nwhile checking if NeoForge supports the current version:\ncouldn't parse version release date:\n{0}")]
     ChronoTime(#[from] chrono::ParseError),
-    #[error("neoforge only supports Minecraft 1.20.2 and above, your version is outdated")]
+    #[error("NeoForge only supports Minecraft 1.20.2 and above, your version is outdated")]
     NeoforgeOutdatedMinecraft,
 
     #[error("{FORGE_INSTALL_ERR_PREFIX}zip extract: {0}")]

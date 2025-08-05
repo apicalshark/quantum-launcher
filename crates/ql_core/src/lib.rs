@@ -134,7 +134,7 @@ pub async fn do_jobs<T, E>(
 /// # }
 /// # async fn trying() -> Result<(), String> {
 /// #   let files: [&str; 1] = ["test"];
-/// do_jobs(files.iter().map(|url| {
+/// do_jobs_with_limit(files.iter().map(|url| {
 ///     // Async function that returns Result<T, E>
 ///     // No need to await
 ///     download_file(url)
@@ -194,7 +194,7 @@ pub async fn do_jobs_with_limit<T, E>(
 /// #     Ok("Hi".to_owned())
 /// # }
 /// # async fn download_something_important() -> Result<String, String> {
-/// retry(async || download_file("example.com/my_file").await).await
+/// retry(download_file("example.com/my_file")).await
 /// # }
 /// ```
 ///

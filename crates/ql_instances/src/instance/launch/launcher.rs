@@ -112,9 +112,9 @@ impl GameLauncher {
         if self.version_json.needs_launchwrapper_fix() {
             // Fixes a crash in modern Minecraft
 
-            // WTF: No one will need this except for dumbass
-            // me who play a lot of instances made in this version
-            // and daily-drives bleeding edge shitcode.
+            // WTF: No one will need this except for me
+            // who plays a lot of instances created in this version
+            // and daily-drives bleeding edge code.
 
             // Thanks to [@Lassebq](https://github.com/Lassebq)
             // for pointing this out :)

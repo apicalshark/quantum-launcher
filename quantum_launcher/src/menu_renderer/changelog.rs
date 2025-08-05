@@ -58,7 +58,7 @@ pub fn changelog_0_4_1<'a>() -> Element<'a> {
         widget::text("Modding").size(32),
         "- added Modpacks, Shaders and Resource Packs stores",
         "- drag-and-drop support for mod files, modpacks and presets",
-        "- jarmod patching support (useful for old Minecraft versions)",
+        "- JarMod patching support (useful for old Minecraft versions)",
         "- OptiFine support for b1.6.6, b1.7.3, 1.2.5 and 1.5.2",
         widget::text("UX").size(24),
         "- \"Open Mod Page\" in mod description now shows URL in tooltip",

@@ -23,9 +23,9 @@ please follow these rules:
   (with different branding), avoid using the name “QuantumLauncher”
   in ways that suggest affiliation or endorsement.
 
-# On Monetisation/Competition
+# On Monetization/Competition
 
-While GPLv3 does not prohibit monetisation,
+While GPLv3 does not prohibit monetization,
 aggressively promoting a minimally changed fork
 or profiting off someone else's work without
 significant improvement or credit is considered unethical

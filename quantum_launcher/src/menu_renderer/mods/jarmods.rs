@@ -43,7 +43,7 @@ impl MenuEditJarMods {
                         .spacing(5)
                         .wrap(),
                         widget::column![
-                            "WARNING: Jarmods are mainly for OLD Minecraft versions.",
+                            "WARNING: JarMods are mainly for OLD Minecraft versions.",
                             widget::text(
                                 "This is easier than copying .class files into Minecraft's jar"
                             )
@@ -69,7 +69,7 @@ impl MenuEditJarMods {
             widget::stack!(
                 menu_main,
                 widget::center(widget::button(
-                    widget::text("Drag and drop jarmod files to add them").size(20)
+                    widget::text("Drag and drop JarMod files to add them").size(20)
                 ))
             )
             .into()
@@ -94,7 +94,7 @@ impl MenuEditJarMods {
         widget::container(
             widget::column!(
                 widget::column![
-                    widget::text("Select some jarmods to perform actions on them").size(14),
+                    widget::text("Select some JarMods to perform actions on them").size(14),
                     widget::row![
                         widget::button("Delete")
                             .on_press(Message::ManageJarMods(ManageJarModsMessage::DeleteSelected)),

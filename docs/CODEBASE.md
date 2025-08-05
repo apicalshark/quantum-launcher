@@ -98,7 +98,7 @@ You can call `.strerr()` on any `Result`s
 Use `thiserror` and `#[derive(Debug, thiserror::Error)]` for your
 error types. All errors must implement `Debug`, `thiserror::Error` and `Display`.
 
-Use `#[from]` and `#[error]` syntax of thiserror when needed.
+Use `#[from]` and `#[error]` syntax of `thiserror` when needed.
 
 ```rust
 use thiserror::Error;
@@ -153,7 +153,7 @@ Call this method on `Result<T, std::io::Error>`.
 
 For example:
 
-```rust
+```
 tokio::fs::write(&path, &bytes).await.path(path)?;
 ```
 
