@@ -465,6 +465,9 @@ impl Launcher {
                     menu.selected_tab = tab;
                 }
             }
+            LauncherSettingsMessage::ToggleAntialiasing(t) => {
+                self.config.antialiasing = Some(t);
+            }
         }
         Task::none()
     }

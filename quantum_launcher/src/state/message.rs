@@ -212,6 +212,7 @@ pub enum LauncherSettingsMessage {
     ClearJavaInstalls,
     ClearJavaInstallsConfirm,
     ChangeTab(LauncherSettingsTab),
+    ToggleAntialiasing(bool),
 }
 
 #[derive(Debug, Clone)]

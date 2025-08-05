@@ -82,7 +82,7 @@ impl MenuLauncherSettings {
         .into()
     }
 
-    fn view_options<'a>(&'a self, config: &'a LauncherConfig) -> Element<'a> {
+    fn view_ui_tab<'a>(&'a self, config: &'a LauncherConfig) -> Element<'a> {
         let (light, dark) = get_theme_selector(config);
 
         let color_scheme_picker = LauncherThemeColor::ALL.iter().map(|color| {
@@ -144,6 +144,16 @@ impl MenuLauncherSettings {
             ]
             .padding(10)
             .spacing(5),
+            widget::horizontal_rule(1),
+            widget::column![
+                widget::checkbox("Antialiasing (UI)", config.antialiasing.unwrap_or(true))
+                    .on_toggle(|n| Message::LauncherSettings(
+                        LauncherSettingsMessage::ToggleAntialiasing(n)
+                    )),
+                widget::text("Requires restarting the launcher.").size(12)
+            ]
+            .padding(10)
+            .spacing(5)
         )
         .spacing(SETTINGS_SPACING)
         .into()
@@ -158,7 +168,7 @@ impl LauncherSettingsTab {
         window_size: (f32, f32),
     ) -> Element<'a> {
         match self {
-            LauncherSettingsTab::UserInterface => menu.view_options(config),
+            LauncherSettingsTab::UserInterface => menu.view_ui_tab(config),
             LauncherSettingsTab::Internal => widget::column![
                 widget::column![
                     widget::text("Advanced").size(20),

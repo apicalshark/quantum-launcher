@@ -47,6 +47,7 @@ pub struct LauncherConfig {
     /// - Brown
     /// - Sky Blue
     /// - Catppuccin
+    /// - Teal
     pub style: Option<String>,
 
     /// The version that the launcher was last time
@@ -83,6 +84,15 @@ pub struct LauncherConfig {
     /// - `1.0` is the default value.
     /// - `(0.x-1.0)` A lower number means zoomed out UI elements.
     pub ui_scale: Option<f64>,
+    /// Whether to enable antialiasing or not.
+    /// Smooths out UI rendering and makes it a bit
+    /// crisper, but not by much. Also fixes the UI
+    /// being jittery on KDE Wayland.
+    ///
+    /// Implemented in v0.4.2
+    ///
+    /// Default: `true`
+    pub antialiasing: Option<bool>,
 }
 
 impl Default for LauncherConfig {
@@ -97,6 +107,7 @@ impl Default for LauncherConfig {
             accounts: None,
             ui_scale: None,
             java_installs: Some(Vec::new()),
+            antialiasing: Some(true),
         }
     }
 }
@@ -124,6 +135,9 @@ impl LauncherConfig {
                 return LauncherConfig::create(&config_path);
             }
         };
+        if config.antialiasing.is_none() {
+            config.antialiasing = Some(true);
+        }
 
         #[allow(deprecated)]
         {
