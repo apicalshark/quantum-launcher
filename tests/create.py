@@ -24,7 +24,10 @@ VERSIONS_L3 = [
     "1.21.8",  # latest
 ]
 
-def create(versions=VERSIONS_L2 + VERSIONS_L3):
+
+def create(versions=None):
+    if versions is None:
+        versions = VERSIONS_L2 + VERSIONS_L3
     procs.run_parallel([
         [procs.QL_BIN, "create", version, version, "-s"]
         for version in versions

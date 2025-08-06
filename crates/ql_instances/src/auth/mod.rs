@@ -1,4 +1,3 @@
-use crate::auth;
 use ql_core::{err, IntoStringError};
 use std::fmt::Display;
 

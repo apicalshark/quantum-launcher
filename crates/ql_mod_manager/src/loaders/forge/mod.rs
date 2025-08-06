@@ -536,7 +536,7 @@ pub async fn install_client(
         _ = progress.send(ForgeInstallProgress::P1Start);
     }
 
-    let mut installer = ForgeInstaller::new(
+    let installer = ForgeInstaller::new(
         forge_version,
         f_progress,
         InstanceSelection::Instance(instance_name.clone()),
