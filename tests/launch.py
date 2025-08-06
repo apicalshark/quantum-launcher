@@ -6,14 +6,14 @@ import time
 
 from . import procs
 
-_ANSI_ESCAPE = re.compile(r'\x1b\[[0-9;]*[mK]')
+_ANSI_ESCAPE: re.Pattern[str] = re.compile(r'\x1b\[[0-9;]*[mK]')
 
 
 def _remove_ansi_colors(text):
     return _ANSI_ESCAPE.sub('', text)
 
 
-def _launch(instance: str) -> str | None:
+def _launch(instance: str) -> int | None:
     process = subprocess.Popen(
         [procs.QL_BIN, "launch", instance, "test`"],
         stdout=subprocess.PIPE,
@@ -25,8 +25,8 @@ def _launch(instance: str) -> str | None:
         print("Error: Launcher has no stdout!")
         sys.exit(1)
 
-    pid = None
-    pattern = r'\[info\] Launched! PID: (\d+)'
+    pid: str | None = None
+    pattern = re.compile(r'\[info\] Launched! PID: (\d+)')
 
     for line in process.stdout:
         clean_line = _remove_ansi_colors(line)
@@ -44,7 +44,7 @@ def _launch(instance: str) -> str | None:
         process.kill()
         return None
 
-    return pid
+    return int(pid)
 
 
 def _is_process_alive(pid: int) -> bool:
@@ -58,8 +58,8 @@ def _is_process_alive(pid: int) -> bool:
         return True  # Process is alive
 
 
-def _close_window(result: bytes, pid: int):
-    window_ids = result.decode().strip().splitlines()
+def _close_window(result: bytes, pid: int) -> None:
+    window_ids: list[str] = result.decode().strip().splitlines()
     print(f"✅ Window found: {window_ids} for pid {pid}, killing")
     procs.kill_process(pid)
 
@@ -94,9 +94,9 @@ def _wait_for_window(pid: int, timeout: int, name: str) -> bool:
 
 
 def test(name: str, timeout: int) -> bool:
-    pid = _launch(name)
+    pid: int | None = _launch(name)
     if pid:
-        if not _wait_for_window(int(pid), timeout, name):
+        if not _wait_for_window(pid, timeout, name):
             print("Test failed (window)!")
             return False
     else:

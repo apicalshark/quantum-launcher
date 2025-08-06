@@ -16,12 +16,12 @@ For more info see tests/README.md
     sys.exit(1)
 
 
-def rmdir(directory_path: str):
+def rmdir(directory_path: str) -> None:
     if os.path.exists(directory_path) and os.path.isdir(directory_path):
         shutil.rmtree(directory_path)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--timeout", type=int, default=60, help="Timeout in seconds (default: 60)")
     parser.add_argument("--existing", action="store_true",
