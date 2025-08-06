@@ -166,6 +166,7 @@ async fn mmc_forge(
     }
     if is_neoforge {
         ql_mod_manager::loaders::neoforge::install(
+            Some(component.cachedVersion.clone()),
             instance_selection.clone(),
             Some(f_send),
             None, // TODO: Java install progress

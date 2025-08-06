@@ -80,8 +80,7 @@ pub async fn install_specified_loader(
                 });
             }
 
-            // TODO: Specified version
-            neoforge::install(instance, Some(send), None)
+            neoforge::install(specified_version, instance, Some(send), None)
                 .await
                 .strerr()?;
         }

@@ -3,7 +3,7 @@ use std::{fmt::Write, io::Cursor, path::Path, sync::mpsc::Sender};
 use chrono::DateTime;
 use ql_core::{
     file_utils, info, json::VersionDetails, no_window, pt, GenericProgress, InstanceSelection,
-    IntoIoError, IntoJsonError, IoError, CLASSPATH_SEPARATOR,
+    IntoIoError, IntoJsonError, IoError, CLASSPATH_SEPARATOR, REGEX_SNAPSHOT,
 };
 use ql_java_handler::{get_java_binary, JavaVersion, JAVA};
 use serde::Deserialize;
@@ -24,12 +24,26 @@ struct NeoforgeVersions {
 }
 
 pub async fn install(
+    neoforge_version: Option<String>,
     instance: InstanceSelection,
     f_progress: Option<Sender<ForgeInstallProgress>>,
     j_progress: Option<Sender<GenericProgress>>,
 ) -> Result<(), ForgeInstallError> {
     info!("Installing NeoForge");
-    let (neoforge_version, json) = get_neoforge_version(f_progress.as_ref(), &instance).await?;
+    let (neoforge_version, json) = if let Some(n) = neoforge_version {
+        (n, VersionDetails::load(&instance).await?)
+    } else {
+        pt!("Checking NeoForge versions");
+        send_progress(f_progress.as_ref(), ForgeInstallProgress::P2DownloadingJson);
+        let (versions, version_json) = get_versions(instance.clone()).await?;
+
+        let neoforge_version = versions
+            .last()
+            .ok_or(ForgeInstallError::NoForgeVersionFound)?
+            .clone();
+
+        (neoforge_version, version_json)
+    };
 
     send_progress(
         f_progress.as_ref(),
@@ -190,16 +204,13 @@ fn send_progress(f_progress: Option<&Sender<ForgeInstallProgress>>, message: For
     }
 }
 
-async fn get_neoforge_version(
-    f_progress: Option<&Sender<ForgeInstallProgress>>,
-    instance_selection: &InstanceSelection,
-) -> Result<(String, VersionDetails), ForgeInstallError> {
-    pt!("Checking NeoForge versions");
-    send_progress(f_progress, ForgeInstallProgress::P2DownloadingJson);
+pub async fn get_versions(
+    instance_selection: InstanceSelection,
+) -> Result<(Vec<String>, VersionDetails), ForgeInstallError> {
     let versions: NeoforgeVersions =
         file_utils::download_file_to_json(NEOFORGE_VERSIONS_URL, false).await?;
 
-    let version_json = VersionDetails::load(instance_selection).await?;
+    let version_json = VersionDetails::load(&instance_selection).await?;
     let release_time = DateTime::parse_from_rfc3339(&version_json.releaseTime)?;
 
     let v1_20_2 = DateTime::parse_from_rfc3339("2023-09-20T09:02:57+00:00")?;
@@ -207,22 +218,31 @@ async fn get_neoforge_version(
         return Err(ForgeInstallError::NeoforgeOutdatedMinecraft);
     }
 
-    let mut start_pattern = version_json.id[2..].to_owned();
-    if !start_pattern.contains('.') {
-        // "20" (in 1.20) -> "20.0" (in 1.20.0)
-        // Ensures there are a constant number of parts in the version.
-        start_pattern.push_str(".0");
-    }
+    let start_pattern = if REGEX_SNAPSHOT.is_match(&version_json.id) {
+        // Snapshot version
+        format!("0.{}", version_json.id)
+    } else {
+        // Release version
+        let mut start_pattern = version_json.id[2..].to_owned();
+        if !start_pattern.contains('.') {
+            // "20" (in 1.20) -> "20.0" (in 1.20.0)
+            // Ensures there are a constant number of parts in the version.
+            start_pattern.push_str(".0");
+        }
+        start_pattern
+    };
 
-    let neoforge_version = versions
+    let versions: Vec<String> = versions
         .versions
         .iter()
         .filter(|n| n.starts_with(&start_pattern))
-        .next_back()
-        .ok_or(ForgeInstallError::NoForgeVersionFound)?
-        .clone();
+        .cloned()
+        .collect();
+    if versions.is_empty() {
+        return Err(ForgeInstallError::NoForgeVersionFound);
+    }
 
-    Ok((neoforge_version, version_json))
+    Ok((versions, version_json))
 }
 
 async fn delete(dir: &Path, path: &str) -> Result<(), IoError> {

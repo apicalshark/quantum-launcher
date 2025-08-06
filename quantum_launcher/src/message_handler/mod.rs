@@ -323,8 +323,14 @@ impl Launcher {
         let command = Task::perform(
             async move {
                 if is_neoforge {
-                    loaders::neoforge::install(instance_selection, Some(f_sender), Some(j_sender))
-                        .await
+                    // TODO: Add UI to specify NeoForge version
+                    loaders::neoforge::install(
+                        None,
+                        instance_selection,
+                        Some(f_sender),
+                        Some(j_sender),
+                    )
+                    .await
                 } else {
                     loaders::forge::install(
                         None,

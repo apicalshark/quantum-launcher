@@ -3476,6 +3476,7 @@ dependencies = [
  "dirs",
  "futures",
  "ql_reqwest",
+ "regex",
  "serde",
  "serde_json",
  "thiserror 2.0.12",
