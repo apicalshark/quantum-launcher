@@ -109,7 +109,7 @@ impl PresetJson {
         };
 
         let file: Vec<u8> = Vec::new();
-        let mut zip = ZipWriter::new(std::io::Cursor::new(file));
+        let mut zip = ZipWriter::new(Cursor::new(file));
 
         for (name, bytes) in entries_local {
             zip.start_file(&name, zip::write::FileOptions::<()>::default())?;
@@ -158,7 +158,7 @@ impl PresetJson {
     /// - couldn't be loaded from disk
     /// - couldn't be parsed into valid JSON
     /// ---
-    /// - And many other stuff I probably forgot
+    /// - And many other things I probably forgot
     pub async fn load(instance: InstanceSelection, zip: Vec<u8>) -> Result<Vec<ModId>, ModError> {
         info!("Importing mod preset");
 

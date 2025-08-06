@@ -166,7 +166,7 @@ pub enum JarModError {
     #[error("{JARMOD_ERR_PREFIX}while extracting zip:\n{0}")]
     ZipExtract(#[from] ZipExtractError),
     #[error("{JARMOD_ERR_PREFIX}while processing zip:\n{0}")]
-    ZipError(#[from] ::zip::result::ZipError),
+    ZipError(#[from] zip::result::ZipError),
     #[error("{JARMOD_ERR_PREFIX}while reading from zip:\n{0}")]
     ZipWriteError(std::io::Error),
 }

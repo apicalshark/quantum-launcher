@@ -25,9 +25,9 @@ impl AccountData {
     #[must_use]
     pub fn get_username_modified(&self) -> String {
         let suffix = match self.account_type {
-            auth::AccountType::Microsoft => "",
-            auth::AccountType::ElyBy => " (elyby)",
-            auth::AccountType::LittleSkin => " (littleskin)",
+            AccountType::Microsoft => "",
+            AccountType::ElyBy => " (elyby)",
+            AccountType::LittleSkin => " (littleskin)",
         };
         format!("{}{suffix}", self.username)
     }
@@ -49,7 +49,7 @@ pub enum AccountType {
     LittleSkin,
 }
 
-impl std::fmt::Display for AccountType {
+impl Display for AccountType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,

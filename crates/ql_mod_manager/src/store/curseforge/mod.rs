@@ -123,7 +123,7 @@ struct CFSearchResult {
 }
 
 impl CFSearchResult {
-    async fn get_from_ids(ids: &[String]) -> Result<Self, super::ModError> {
+    async fn get_from_ids(ids: &[String]) -> Result<Self, ModError> {
         if ids.is_empty() {
             return Ok(Self { data: Vec::new() });
         }
@@ -170,7 +170,7 @@ impl Backend for CurseforgeBackend {
         query: super::Query,
         offset: usize,
         query_type: QueryType,
-    ) -> Result<SearchResult, super::ModError> {
+    ) -> Result<SearchResult, ModError> {
         const TOTAL_DOWNLOADS: &str = "6";
 
         let _lock = RATE_LIMITER.lock().await;
@@ -203,7 +203,7 @@ impl Backend for CurseforgeBackend {
         let response = send_request("mods/search", &params).await?;
         let response: CFSearchResult = serde_json::from_str(&response).json(response)?;
 
-        Ok(super::SearchResult {
+        Ok(SearchResult {
             mods: response
                 .data
                 .into_iter()
@@ -223,7 +223,7 @@ impl Backend for CurseforgeBackend {
         })
     }
 
-    async fn get_description(id: &str) -> Result<(ModId, String), super::ModError> {
+    async fn get_description(id: &str) -> Result<(ModId, String), ModError> {
         #[derive(Deserialize)]
         struct Resp2 {
             data: String,
@@ -259,7 +259,7 @@ impl Backend for CurseforgeBackend {
         id: &str,
         instance: &ql_core::InstanceSelection,
         sender: Option<Sender<GenericProgress>>,
-    ) -> Result<HashSet<CurseforgeNotAllowed>, super::ModError> {
+    ) -> Result<HashSet<CurseforgeNotAllowed>, ModError> {
         let mut downloader = ModDownloader::new(instance.clone(), sender.as_ref()).await?;
 
         downloader.ensure_essential_mods().await?;
@@ -276,7 +276,7 @@ impl Backend for CurseforgeBackend {
         ignore_incompatible: bool,
         set_manually_installed: bool,
         sender: Option<&Sender<GenericProgress>>,
-    ) -> Result<HashSet<CurseforgeNotAllowed>, super::ModError> {
+    ) -> Result<HashSet<CurseforgeNotAllowed>, ModError> {
         let mut downloader = ModDownloader::new(instance.clone(), sender).await?;
         downloader.ensure_essential_mods().await?;
         downloader.query_cache.extend(

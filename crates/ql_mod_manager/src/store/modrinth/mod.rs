@@ -54,7 +54,7 @@ impl Backend for ModrinthBackend {
     }
 
     async fn get_description(id: &str) -> Result<(ModId, String), ModError> {
-        let info = info::ProjectInfo::download(id).await?;
+        let info = ProjectInfo::download(id).await?;
         Ok((ModId::Modrinth(info.id), info.body))
     }
 

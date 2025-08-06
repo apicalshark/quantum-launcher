@@ -322,5 +322,5 @@ pub enum Message {
 
     LicenseOpen,
     LicenseChangeTab(LicenseTab),
-    LicenseAction(iced::widget::text_editor::Action),
+    LicenseAction(widget::text_editor::Action),
 }

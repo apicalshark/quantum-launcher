@@ -196,7 +196,7 @@ impl Launcher {
                     if let iced::event::Status::Ignored = status {
                         if self
                             .keys_pressed
-                            .contains(&iced::keyboard::Key::Named(Named::Control))
+                            .contains(&Key::Named(Named::Control))
                         {
                             match delta {
                                 iced::mouse::ScrollDelta::Lines { y, .. }

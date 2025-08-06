@@ -172,7 +172,7 @@ impl Display for QueryType {
 }
 
 impl QueryType {
-    pub const ALL: &[Self] = &[
+    pub const ALL: &'static [Self] = &[
         Self::Mods,
         Self::ResourcePacks,
         Self::Shaders,

@@ -77,7 +77,7 @@ impl ModDownloader {
             self.info.insert(id.to_owned(), info.clone());
             info
         };
-        if self.is_already_installed(id, dependent, &project_info.title) {
+        if self.mark_as_installed(id, dependent, &project_info.title) {
             pt!("Already installed mod {id}, skipping.");
             return Ok(());
         }
@@ -157,7 +157,7 @@ impl ModDownloader {
         Ok(())
     }
 
-    fn is_already_installed(&mut self, id: &str, dependent: Option<&str>, name: &str) -> bool {
+    fn mark_as_installed(&mut self, id: &str, dependent: Option<&str>, name: &str) -> bool {
         if let Some(mod_info) = self.index.mods.get_mut(id) {
             if let Some(dependent) = dependent {
                 mod_info.dependents.insert(dependent.to_owned());

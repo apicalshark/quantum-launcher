@@ -23,7 +23,7 @@ pub enum LauncherThemeColor {
 
 impl LauncherThemeColor {
     // HOOK: Add themes here
-    pub const ALL: &[Self] = &[
+    pub const ALL: &'static [Self] = &[
         Self::Purple,
         Self::Brown,
         Self::SkyBlue,

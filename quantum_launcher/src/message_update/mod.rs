@@ -348,7 +348,7 @@ impl Launcher {
                     let selected_instance = self.selected_instance.clone().unwrap();
                     let url = version.get_url().0;
                     return Task::perform(
-                        ql_mod_manager::loaders::optifine::install_b173(selected_instance, url),
+                        loaders::optifine::install_b173(selected_instance, url),
                         |n| Message::InstallOptifine(InstallOptifineMessage::End(n.strerr())),
                     );
                 }
@@ -392,7 +392,7 @@ impl Launcher {
                     return Task::perform(
                         // Note: OptiFine does not support servers
                         // so it's safe to assume we've selected an instance.
-                        ql_mod_manager::loaders::optifine::install(
+                        loaders::optifine::install(
                             get_name,
                             path,
                             Some(p_sender),

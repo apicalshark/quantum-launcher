@@ -271,7 +271,7 @@ pub struct MenuModsDownload {
     pub query_type: QueryType,
 
     /// This is for the loading of continuation of the search,
-    /// ie. when you scroll down and more stuff appears
+    /// i.e. when you scroll down and more stuff appears
     pub is_loading_continuation: bool,
 }
 
@@ -302,7 +302,7 @@ impl std::fmt::Display for LauncherSettingsTab {
 }
 
 impl LauncherSettingsTab {
-    pub const ALL: &[Self] = &[Self::UserInterface, Self::Internal, Self::About];
+    pub const ALL: &'static [Self] = &[Self::UserInterface, Self::Internal, Self::About];
 }
 
 pub struct MenuEditPresets {
@@ -452,7 +452,7 @@ pub enum LicenseTab {
 }
 
 impl LicenseTab {
-    pub const ALL: &[Self] = &[
+    pub const ALL: &'static [Self] = &[
         Self::Gpl3,
         Self::ForgeInstallerApache,
         Self::OpenFontLicense,

@@ -163,7 +163,7 @@ impl MenuLauncherSettings {
 impl LauncherSettingsTab {
     pub fn view<'a>(
         &'a self,
-        config: &'a crate::config::LauncherConfig,
+        config: &'a LauncherConfig,
         menu: &'a MenuLauncherSettings,
         window_size: (f32, f32),
     ) -> Element<'a> {

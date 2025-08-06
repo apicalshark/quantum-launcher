@@ -38,7 +38,7 @@ impl MenuInstallOptifine {
 
     pub fn install_optifine_screen<'a>(
         &self,
-    ) -> iced::widget::Column<'a, Message, LauncherTheme, iced::Renderer> {
+    ) -> widget::Column<'a, Message, LauncherTheme, iced::Renderer> {
         widget::column!(
             back_button().on_press(Message::ManageMods(
                 ManageModsMessage::ScreenOpenWithoutUpdate

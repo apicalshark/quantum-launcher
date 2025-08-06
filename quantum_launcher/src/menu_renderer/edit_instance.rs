@@ -11,7 +11,7 @@ use crate::{
 use super::Element;
 
 impl MenuEditInstance {
-    pub fn view<'a>(&'a self, selected_instance: &InstanceSelection) -> Element<'a> {
+    pub fn view(&self, selected_instance: &InstanceSelection) -> Element {
         // 2 ^ 8 = 256 MB
         const MEM_256_MB_IN_TWOS_EXPONENT: f32 = 8.0;
         // 2 ^ 13 = 8192 MB

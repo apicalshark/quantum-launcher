@@ -80,7 +80,7 @@ impl<T> IntoIoError<T> for std::io::Result<T> {
     fn path(self, p: impl Into<PathBuf>) -> Result<T, IoError> {
         self.map_err(|err: std::io::Error| IoError::Io {
             error: err.to_string(),
-            path: (p.into()).clone(),
+            path: p.into().clone(),
         })
     }
 

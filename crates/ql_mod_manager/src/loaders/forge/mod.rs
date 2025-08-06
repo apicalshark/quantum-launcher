@@ -168,7 +168,7 @@ impl ForgeInstaller {
                     }
                     Err(ForgeInstallError::Request(err))
                 }
-            }
+            };
         }
         panic!("Forge installer: Reached invalid state (while retrying downloads)")
     }

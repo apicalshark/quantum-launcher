@@ -261,7 +261,7 @@ impl Launcher {
 
     fn get_delete_mods_command(
         selected_instance: InstanceSelection,
-        menu: &crate::state::MenuEditMods,
+        menu: &MenuEditMods,
     ) -> Task<Message> {
         let ids: Vec<ModId> = menu
             .selected_mods

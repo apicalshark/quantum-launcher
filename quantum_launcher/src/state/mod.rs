@@ -187,7 +187,7 @@ impl Launcher {
         })
     }
 
-    pub fn with_error(error: impl std::fmt::Display) -> Self {
+    pub fn with_error(error: impl Display) -> Self {
         let error = error.to_string();
         let launcher_dir = if error.contains("Could not get launcher dir") {
             None

@@ -73,7 +73,7 @@ impl Launcher {
                 // Start polling for token
                 let device_code_clone = device_code.clone();
                 return Task::perform(
-                    ql_instances::auth::yggdrasil::oauth::poll_device_token(
+                    auth::yggdrasil::oauth::poll_device_token(
                         device_code_clone,
                         interval,
                         expires_in,
@@ -102,7 +102,7 @@ impl Launcher {
                 let account_type = self
                     .accounts
                     .get(&username)
-                    .map_or(auth::AccountType::Microsoft, |n| n.account_type);
+                    .map_or(AccountType::Microsoft, |n| n.account_type);
 
                 if let Err(err) = auth::logout(account_type.strip_name(&username), account_type) {
                     self.set_error(err);
@@ -281,7 +281,7 @@ impl Launcher {
 
     pub fn account_refresh(&mut self, account: &AccountData) -> Task<Message> {
         match account.account_type {
-            auth::AccountType::Microsoft => {
+            AccountType::Microsoft => {
                 let (sender, receiver) = std::sync::mpsc::channel();
                 self.state = State::AccountLoginProgress(ProgressBar::with_recv(receiver));
 
@@ -294,7 +294,7 @@ impl Launcher {
                     |n| Message::Account(AccountMessage::RefreshComplete(n.strerr())),
                 )
             }
-            auth::AccountType::ElyBy | auth::AccountType::LittleSkin => Task::perform(
+            AccountType::ElyBy | AccountType::LittleSkin => Task::perform(
                 auth::yggdrasil::login_refresh(
                     account.username.clone(),
                     account.refresh_token.clone(),

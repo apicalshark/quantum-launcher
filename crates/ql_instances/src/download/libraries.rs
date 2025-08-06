@@ -199,7 +199,7 @@ impl GameDownloader {
 
     async fn download_library_native(
         &self,
-        classifiers: &std::collections::BTreeMap<String, LibraryClassifier>,
+        classifiers: &BTreeMap<String, LibraryClassifier>,
         libraries_dir: &Path,
         extract: Option<&LibraryExtract>,
     ) -> Result<(), DownloadError> {
@@ -400,7 +400,7 @@ async fn extractlib_name_natives(
 
 async fn extractlib_natives_field(
     library: &Library,
-    classifiers: Option<&std::collections::BTreeMap<String, LibraryClassifier>>,
+    classifiers: Option<&BTreeMap<String, LibraryClassifier>>,
     jar_file: &[u8],
     natives_path: &Path,
     artifact: &LibraryDownloadArtifact,
@@ -500,7 +500,7 @@ async fn extractlib_natives_field(
     Ok(())
 }
 
-fn supports_os(classifiers: &std::collections::BTreeMap<String, LibraryClassifier>) -> bool {
+fn supports_os(classifiers: &BTreeMap<String, LibraryClassifier>) -> bool {
     classifiers.iter().any(|(k, _)| {
         OS_NAMES
             .iter()
@@ -509,6 +509,6 @@ fn supports_os(classifiers: &std::collections::BTreeMap<String, LibraryClassifie
 }
 
 pub fn extract_zip_file(archive: &[u8], target_dir: &Path) -> Result<(), ZipExtractError> {
-    zip_extract::extract(std::io::Cursor::new(archive), target_dir, true)?;
+    zip_extract::extract(Cursor::new(archive), target_dir, true)?;
     Ok(())
 }

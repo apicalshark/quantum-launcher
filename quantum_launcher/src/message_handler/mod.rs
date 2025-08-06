@@ -255,7 +255,7 @@ impl Launcher {
         Ok(Task::none())
     }
 
-    pub fn set_game_crashed(&mut self, status: std::process::ExitStatus, name: &str) {
+    pub fn set_game_crashed(&mut self, status: ExitStatus, name: &str) {
         if let State::Launch(MenuLaunch { message, .. }) = &mut self.state {
             let has_crashed = !status.success();
             if has_crashed {
@@ -349,7 +349,7 @@ impl Launcher {
 
     pub fn add_server_to_processes(
         &mut self,
-        child: Arc<std::sync::Mutex<tokio::process::Child>>,
+        child: Arc<Mutex<Child>>,
         is_classic_server: bool,
     ) -> Task<Message> {
         let Some(InstanceSelection::Server(selected_server)) = &self.selected_instance else {

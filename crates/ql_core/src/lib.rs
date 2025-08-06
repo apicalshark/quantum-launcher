@@ -97,7 +97,7 @@ pub static CLIENT: LazyLock<ql_reqwest::Client> = LazyLock::new(ql_reqwest::Clie
 /// # Errors
 /// Returns whatever error the input function returns.
 pub async fn do_jobs<T, E>(
-    results: impl Iterator<Item = impl std::future::Future<Output = Result<T, E>>>,
+    results: impl Iterator<Item = impl Future<Output = Result<T, E>>>,
 ) -> Result<Vec<T>, E> {
     #[cfg(target_os = "macos")]
     const JOBS: usize = 32;
@@ -146,7 +146,7 @@ pub async fn do_jobs<T, E>(
 /// # Errors
 /// Returns whatever error the input function returns.
 pub async fn do_jobs_with_limit<T, E>(
-    results: impl Iterator<Item = impl std::future::Future<Output = Result<T, E>>>,
+    results: impl Iterator<Item = impl Future<Output = Result<T, E>>>,
     limit: usize,
 ) -> Result<Vec<T>, E> {
     let mut tasks = futures::stream::FuturesUnordered::new();

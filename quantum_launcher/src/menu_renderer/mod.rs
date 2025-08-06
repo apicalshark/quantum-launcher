@@ -50,7 +50,7 @@ pub fn button_with_icon<'element>(
     icon: Element<'element>,
     text: &'element str,
     size: u16,
-) -> iced::widget::Button<'element, Message, LauncherTheme, iced::Renderer> {
+) -> widget::Button<'element, Message, LauncherTheme, iced::Renderer> {
     widget::button(
         widget::row![icon, widget::text(text).size(size)]
             .align_y(iced::alignment::Vertical::Center)
@@ -63,8 +63,7 @@ pub fn shortcut_ctrl<'a>(key: &str) -> Element<'a> {
     #[cfg(target_os = "macos")]
     return widget::text!("Command + {key}").size(12).into();
 
-    #[cfg(not(target_os = "macos"))]
-    return widget::text!("Control + {key}").size(12).into();
+    widget::text!("Control + {key}").size(12).into()
 }
 
 impl MenuCreateInstance {
@@ -171,13 +170,13 @@ impl MenuLauncherUpdate {
                     ),
                     button_with_icon(icon_manager::globe(), "Open Website", 16)
                         .on_press(Message::CoreOpenLink("https://mrmayman.github.com/quantumlauncher".to_owned())),
-                ).push_maybe((cfg!(target_os = "linux")).then_some(
+                ).push_maybe(cfg!(target_os = "linux").then_some(
                     widget::column!(
                         // WARN: Package manager
                         "Note: If you installed this launcher from a package manager (flatpak/apt/dnf/pacman/..) it's recommended to update from there",
                         "If you just downloaded it from the website then continue from here."
                     )
-                )).push_maybe((cfg!(target_os = "macos")).then_some(
+                )).push_maybe(cfg!(target_os = "macos").then_some(
                     // WARN: macOS updater
                     "Note: The updater may be broken on macOS, so download the new version from the website"
                 ))

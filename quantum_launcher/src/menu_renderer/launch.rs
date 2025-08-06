@@ -27,7 +27,7 @@ impl Launcher {
         let selected_instance_s = self
             .selected_instance
             .as_ref()
-            .map(ql_core::InstanceSelection::get_name);
+            .map(InstanceSelection::get_name);
 
         let difference = self.mouse_pos.0 - f32::from(menu.sidebar_width);
         let hovered = difference < SIDEBAR_DRAG_LEEWAY && difference > 0.0;
@@ -282,7 +282,7 @@ impl Launcher {
                 })))
                 .height(Length::Fill)
                 .style(LauncherTheme::style_scrollable_flat_extra_dark)
-                .id(iced::widget::scrollable::Id::new("MenuLaunch:sidebar"))
+                .id(widget::scrollable::Id::new("MenuLaunch:sidebar"))
                 .on_scroll(|n| {
                     let total = n.content_bounds().height - n.bounds().height;
                     Message::LaunchScrollSidebar(total)
@@ -414,7 +414,7 @@ impl Launcher {
             tooltip(
                 button_with_icon(icon_manager::play(), "Stop", 16)
                     .width(97)
-                    .on_press_maybe((selected_server.is_some()).then(|| {
+                    .on_press_maybe(selected_server.is_some().then(|| {
                         Message::ServerManageKillServer(selected_server.unwrap().to_owned())
                     })),
                 shortcut_ctrl("Escape"),
@@ -423,7 +423,7 @@ impl Launcher {
             tooltip(
                 button_with_icon(icon_manager::play(), "Start", 16)
                     .width(97)
-                    .on_press_maybe((selected_server.is_some()).then(|| {
+                    .on_press_maybe(selected_server.is_some().then(|| {
                         Message::ServerManageStartServer(selected_server.unwrap().to_owned())
                     })),
                 "By starting the server, you agree to the EULA",
@@ -491,7 +491,8 @@ fn get_mods_button(
 ) -> widget::Button<'_, Message, LauncherTheme> {
     button_with_icon(icon_manager::download(), "Mods", 15)
         .on_press_maybe(
-            (selected_instance_s.is_some())
+            selected_instance_s
+                .is_some()
                 .then_some(Message::ManageMods(ManageModsMessage::ScreenOpen)),
         )
         .width(98)

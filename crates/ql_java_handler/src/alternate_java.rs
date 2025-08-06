@@ -41,7 +41,7 @@
 
 use std::{io::Cursor, path::Path, sync::mpsc::Sender};
 
-use ql_core::{err, file_utils, GenericProgress};
+use ql_core::{file_utils, GenericProgress};
 
 use crate::{extract_tar_gz, send_progress, JavaInstallError, JavaVersion};
 

@@ -190,7 +190,7 @@ impl widget::pick_list::Catalog for LauncherTheme {
 
     fn default<'a>() -> <Self as widget::pick_list::Catalog>::Class<'a> {}
 
-    fn style(&self, (): &(), status: iced::widget::pick_list::Status) -> widget::pick_list::Style {
+    fn style(&self, (): &(), status: widget::pick_list::Status) -> widget::pick_list::Style {
         match status {
             widget::pick_list::Status::Active => widget::pick_list::Style {
                 text_color: self.get(Color::Light, true),
@@ -449,7 +449,7 @@ impl widget::svg::Catalog for LauncherTheme {
     fn default<'a>() -> <Self as widget::svg::Catalog>::Class<'a> {}
 
     fn style(&self, (): &(), _: widget::svg::Status) -> widget::svg::Style {
-        // Who hovers on an svg image huh?
+        // Who hovers on an SVG image, huh?
         widget::svg::Style { color: None }
     }
 }

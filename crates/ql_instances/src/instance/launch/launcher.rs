@@ -758,7 +758,7 @@ impl GameLauncher {
         &mut self,
         game_arguments: Vec<String>,
         java_arguments: Vec<String>,
-    ) -> Result<tokio::process::Command, GameLaunchError> {
+    ) -> Result<Command, GameLaunchError> {
         let mut command = self.get_java_command().await?;
         command.args(
             self.config_json
@@ -791,7 +791,7 @@ impl GameLauncher {
                 if dt >= v1_17 {
                     command.env("MESA_GL_VERSION_OVERRIDE", "3.3");
                 }
-                // Idk if this is the perfect solution,
+                // I don't know if this is the perfect solution,
                 // contact me if there's a better way
             }
         }

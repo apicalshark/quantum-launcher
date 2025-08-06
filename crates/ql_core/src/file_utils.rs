@@ -392,7 +392,7 @@ pub enum RequestError {
 /// - the user doesn't have permission to read the file metadata
 /// - the user doesn't have permission to change the file metadata
 #[cfg(target_family = "unix")]
-pub async fn set_executable(path: &std::path::Path) -> Result<(), IoError> {
+pub async fn set_executable(path: &Path) -> Result<(), IoError> {
     use std::os::unix::fs::PermissionsExt;
     let mut perms = tokio::fs::metadata(path).await.path(path)?.permissions();
     perms.set_mode(0o755); // rwxr-xr-x

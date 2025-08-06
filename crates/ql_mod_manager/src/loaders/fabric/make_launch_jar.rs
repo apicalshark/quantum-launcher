@@ -108,7 +108,7 @@ pub async fn make_launch_jar(
                 if name.starts_with(SERVICES_DIR) && name[SERVICES_DIR.len()..].find('/').is_none()
                 {
                     // Parse and merge service definitions
-                    let data = std::io::read_to_string(&mut entry)
+                    let data = io::read_to_string(&mut entry)
                         .map_err(|n| FabricInstallError::ZipEntryReadError(n, name.clone()))?;
                     parse_service_definition(&name, &data, &mut services);
                 } else if regex.is_match(&name) {
