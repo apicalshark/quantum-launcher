@@ -66,7 +66,7 @@ impl JavaListJson {
             } else if cfg!(target_arch = "x86") {
                 &self.linux_i386
             } else {
-                // TODO: Add ARM32, RISC-V, and PowerPC support.
+                // TODO: Add RISC-V and PowerPC support.
                 return None;
             }
         } else if cfg!(target_os = "macos") {
@@ -87,13 +87,9 @@ impl JavaListJson {
             } else if cfg!(target_arch = "aarch64") {
                 &self.windows_arm64
             } else {
-                // What if Windows supports some
-                // other architecture in the future?
                 return None;
             }
         } else {
-            // TODO: Unsupported OS handling.
-            // Some people might play this on BSD/Haiku?
             return None;
         };
 
@@ -130,7 +126,7 @@ pub struct JavaList {
     java_runtime_gamma: Vec<JavaInstallListing>,
     /// Java 17.0.8
     java_runtime_gamma_snapshot: Vec<JavaInstallListing>,
-    // TODO: Some platforms need exotic versions of Java 8?
+    // FIXME: Some platforms need exotic versions of Java 8?
     /// Java 8u202
     jre_legacy: Vec<JavaInstallListing>,
     // Ugly windows specific thing that doesn't seem to be required?

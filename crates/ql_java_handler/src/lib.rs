@@ -1,11 +1,10 @@
-use std::{
-    path::{Path, PathBuf},
-    sync::{mpsc::Sender, Mutex},
-};
-
 use json::{
     files::{JavaFile, JavaFileDownload, JavaFilesJson},
     list::JavaListJson,
+};
+use std::{
+    path::{Path, PathBuf},
+    sync::{mpsc::Sender, Mutex},
 };
 use thiserror::Error;
 
@@ -79,7 +78,7 @@ pub async fn get_java_binary(
 
     if cfg!(target_os = "windows") && cfg!(target_arch = "aarch64") {
         version = match version {
-            // Java 8 and 16 are unsupported on Windows Aarch64.
+            // Java 8 and 16 are unsupported on Windows aarch64.
 
             // 17 should be backwards compatible with 8 and 16
             // for the most part, but some things like Beta ModLoader
@@ -89,42 +88,32 @@ pub async fn get_java_binary(
         }
     }
 
-    if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
-        version = match version {
-            JavaVersion::Java16 => JavaVersion::Java17,
-            _ => version,
-        }
-    }
-
     if !java_dir.exists() || is_incomplete_install {
         info!("Installing Java: {version}");
         install_java(version, java_install_progress_sender).await?;
     }
 
-    let normal_name = format!("bin/{name}");
-    let java_dir = java_dir.join(if java_dir.join(&normal_name).exists() {
-        normal_name
-    } else if cfg!(target_os = "windows") {
-        format!("bin/{name}.exe")
-    } else if cfg!(target_os = "macos") {
-        // `if let` chains have been stabilised in Rust now,
-        // but I can't use the latest Rust version to maintain MSRV
+    let bin_path = find_java_bin(name, &java_dir)?;
+    Ok(bin_path.canonicalize().path(bin_path)?)
+}
 
-        // "If you are running Java 8 on macOS ARM"
-        // then use the Amazon Corretto JDK instead of Mojang-provided one
-        let prefix = if let (true, JavaVersion::Java8) = (cfg!(target_arch = "aarch64"), version) {
-            ""
-        } else {
-            "jre.bundle/"
-        };
-        format!("{prefix}Contents/Home/bin/{name}")
-    } else if cfg!(target_os = "linux") && cfg!(target_arch = "arm") {
-        format!("jdk1.8.0_231/{name}")
-    } else {
-        return Err(JavaInstallError::NoJavaBinFound);
-    });
+fn find_java_bin(name: &str, java_dir: &Path) -> Result<PathBuf, JavaInstallError> {
+    let names = [
+        format!("bin/{name}"),
+        format!("bin/{name}.exe"),
+        format!("Contents/Home/bin/{name}.exe"),
+        format!("jre.bundle/Contents/Home/bin/{name}"),
+        format!("jdk1.8.0_231/{name}"),
+    ];
 
-    Ok(java_dir.canonicalize().path(java_dir)?)
+    for name in names {
+        let path = java_dir.join(name);
+        if path.exists() {
+            return Ok(path); // Early return if the path exists
+        }
+    }
+
+    Err(JavaInstallError::NoJavaBinFound) // If no valid path is found, return an error
 }
 
 async fn install_java(
@@ -317,6 +306,8 @@ pub enum JavaInstallError {
 
     #[error("on your platform, only Java 8 (Minecraft 1.16.5 and below) is supported!\n")]
     UnsupportedOnlyJava8,
+    #[error("Java auto-installation is not supported on your platform!\nPlease manually install Java,\nand add the executable path in instance Edit tab")]
+    UnsupportedPlatform,
 
     #[error("{JAVA_INSTALL_ERR_PREFIX}zip extract error:\n{0}")]
     ZipExtract(#[from] ZipExtractError),
