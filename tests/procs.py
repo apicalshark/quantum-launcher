@@ -1,10 +1,10 @@
 import os
-import subprocess
-import sys
 import shutil
 import signal
-from typing_extensions import List
+import subprocess
+import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List
 
 QL_BIN = ""
 if sys.platform == "Windows":
@@ -18,13 +18,16 @@ if sys.platform == "Windows":
 else:
     OLD_QL_BIN = "target/debug/quantum_launcher"
 
+
 def prepare_ql_bin():
     shutil.copy(OLD_QL_BIN, QL_BIN)
     with open('tests/qldir.txt', 'w') as f:
         f.write('')
 
+
 def run(args: List[str]):
-    try: subprocess.run(args)
+    try:
+        subprocess.run(args)
     except subprocess.CalledProcessError as e:
         print(f"Error: Process failed with exit code {e.returncode}")
         sout = e.stdout.decode()
@@ -35,6 +38,7 @@ def run(args: List[str]):
             print(f"Stderr:\n{sout}")
         sys.exit(1)
 
+
 def run_parallel(commands: List[List[str]], max_workers: int | None = None):
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(run, cmd): cmd for cmd in commands}
@@ -42,11 +46,12 @@ def run_parallel(commands: List[List[str]], max_workers: int | None = None):
         try:
             for future in as_completed(futures):
                 future.result()  # Will raise if the subprocess failed
-        except Exception as e:
+        except:
             print(f"Early exit: A subprocess failed. Cancelling remaining...")
             for f in futures:
                 f.cancel()
             sys.exit(1)
+
 
 def kill_process(pid: int):
     try:

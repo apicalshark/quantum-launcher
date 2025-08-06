@@ -7,8 +7,11 @@ import time
 from . import procs
 
 _ANSI_ESCAPE = re.compile(r'\x1b\[[0-9;]*[mK]')
+
+
 def _remove_ansi_colors(text):
     return _ANSI_ESCAPE.sub('', text)
+
 
 def _launch(instance: str) -> str | None:
     process = subprocess.Popen(
@@ -43,15 +46,17 @@ def _launch(instance: str) -> str | None:
 
     return pid
 
+
 def _is_process_alive(pid: int) -> bool:
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
         return False  # No such process
     except PermissionError:
-        return True   # Process exists, but not owned by you
+        return True  # Process exists, but not owned by you
     else:
-        return True   # Process is alive
+        return True  # Process is alive
+
 
 def _close_window(result: bytes, pid: int):
     window_ids = result.decode().strip().splitlines()
@@ -86,6 +91,7 @@ def _wait_for_window(pid: int, timeout: int, name: str) -> bool:
     else:
         print("Error: Timeout waiting for window!")
         return False
+
 
 def test(name: str, timeout: int) -> bool:
     pid = _launch(name)
