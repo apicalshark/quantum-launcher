@@ -85,7 +85,7 @@ impl Launcher {
     fn new(
         is_new_user: bool,
         config: Result<LauncherConfig, JsonFileError>,
-    ) -> (Self, iced::Task<Message>) {
+    ) -> (Self, Task<Message>) {
         let check_for_updates_command = Task::perform(
             async move { ql_instances::check_for_launcher_updates().await.strerr() },
             Message::UpdateCheckResult,

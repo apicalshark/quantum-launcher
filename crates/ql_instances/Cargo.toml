@@ -28,7 +28,6 @@ quick-xml = { version = "0.37", features = ["encoding", "serialize"] }
 colored = { workspace = true }
 indicatif = "0.17"
 thiserror = { workspace = true }
-zip = { workspace = true }
 
 # Removing unicode characters from XML log
 any_ascii = "0.3"

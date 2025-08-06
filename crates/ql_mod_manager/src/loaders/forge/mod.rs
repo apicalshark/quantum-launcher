@@ -156,17 +156,17 @@ impl ForgeInstaller {
         for (i, url) in urls.iter().enumerate() {
             let result = file_utils::download_file_to_bytes(url, false).await;
 
-            match result {
+            return match result {
                 Ok(file) => {
                     pt!("({url})");
-                    return Ok(file);
+                    Ok(file)
                 }
                 Err(err) => {
                     let is_last_url = i + 1 == num_urls;
                     if err.is_not_found() && !is_last_url {
                         continue;
                     }
-                    return Err(ForgeInstallError::Request(err));
+                    Err(ForgeInstallError::Request(err))
                 }
             }
         }

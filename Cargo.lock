@@ -3505,7 +3505,6 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "urlencoding",
- "zip",
  "zip-extract",
 ]
 
@@ -3559,7 +3558,6 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.12",
  "tokio",
- "walkdir",
  "zip",
  "zip-extract",
 ]
