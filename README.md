@@ -1,6 +1,7 @@
 <div align="center">
 
 # <img src="https://github.com/Mrmayman/quantumlauncher/raw/main/assets/icon/ql_logo.png" style="height: 1.4em; vertical-align: middle;" /> QuantumLauncher
+
 ## [Website](https://mrmayman.github.io/quantumlauncher) | [Discord](https://discord.gg/bWqRaSXar5) | [Changelogs](https://github.com/Mrmayman/quantumlauncher/tree/main/changelogs/)
 
 ![GPL3 License](https://img.shields.io/github/license/Mrmayman/quantumlauncher)
@@ -60,9 +61,12 @@ git clone https://github.com/Mrmayman/quantumlauncher.git
 cd quantum-launcher
 cargo run --release
 ```
-You can omit the `--release` flag for faster compile times, but *slightly* worse performance and MUCH larger build file size.
+
+You can omit the `--release` flag for faster compile times, but *slightly* worse performance and MUCH larger build file
+size.
 
 # Why QuantumLauncher?
+
 - QuantumLauncher provides a feature rich, flexible, simple
   and lightweight experience with plenty of modding features.
 
@@ -89,6 +93,7 @@ What about the others? Well...
 # To-do (in the future)
 
 ## Core
+
 - [x] Instance creation, deletion, renaming, launching
 - [x] Java/Game args editing
 - [x] Memory allocation editing
@@ -97,7 +102,9 @@ What about the others? Well...
 - [ ] Full controller, keyboard-navigation support in UI
 
 ## Mods
+
 ### Loaders
+
 - [x] Fabric
 - [x] Forge
 - [x] Optifine
@@ -106,12 +113,16 @@ What about the others? Well...
 - [ ] OptiForge
 - [ ] OptiFabric
 - [x] Jar Mods
+
 ### Sources
+
 - [x] Modrinth mods
 - [x] Curseforge mods
 - [x] Modrinth modpacks
 - [x] Curseforge modpacks
+
 ### Features
+
 - [x] Mod store
 - [x] Mod presets (packaging mods)
 - [x] Mod updater
@@ -120,19 +131,23 @@ What about the others? Well...
 - [ ] Category Filters in Mod store
 
 ## Instances
+
 - [ ] Import MultiMC/PrismLauncher instances
 - [ ] Migrate from other launchers
 - [ ] Package QuantumLauncher instances (in progress by @sreehari425)
 - [ ] Upgrading instances to a newer Minecraft version
 
 ## Servers (disabled in GUI but can be enabled)
+
 - [x] Ability to create, delete and run Minecraft servers
 - [x] Editing basic server settings (RAM, Java, Args)
 - [ ] Editing `server.properties`
 - [ ] Editing any NBT config file
 - [ ] Plugin store
 - [ ] [playit.gg](https://playit.gg) integration
+
 ### Loaders
+
 - [x] Paper
 - [ ] Spigot
 - [ ] Bukkit
@@ -140,6 +155,7 @@ What about the others? Well...
 - [ ] The stuff from [MODS+PLUGINS.md](https://github.com/LeStegii/server-software/blob/master/java/MODS+PLUGINS.md)
 
 ## Platforms
+
 (note: WIP means work-in-progress)
 
 - [x] Windows x86_64
@@ -160,6 +176,7 @@ What about the others? Well...
 - [ ] Android (in the future)
 
 ## Command-Line interface
+
 - [x] List installed instances `list-instances`, `-l`
 - [x] List versions available for download `list-available-versions`, `-a`
 - [x] Create instance from CLI
@@ -174,9 +191,11 @@ The MSRV is Rust 1.82.0. Any deviation from this
 is considered a bug, please report if found.
 
 # Contributing/Contributors
+
 For more info, see [CONTRIBUTING.md](https://github.com/Mrmayman/quantumlauncher/tree/main/CONTRIBUTING.md)
 
 # Testing
+
 For more info, see [tests/README.md](https://github.com/Mrmayman/quantumlauncher/tree/main/tests/README.md)
 
 # Licensing and Credits
@@ -185,7 +204,7 @@ A lot of this launcher's design, including the code for creating and launching t
 and installing forge, is inspired by <https://github.com/alexivkin/minecraft-launcher/>.
 
 Nearly all of this launcher is licensed under the **GNU General Public License v3**,
-however there are a few exceptions (such as github actions and assets).
+however there are a few exceptions (such as GitHub actions and assets).
 Visit [the assets README](assets/README.md) for more information.
 
 # Notes

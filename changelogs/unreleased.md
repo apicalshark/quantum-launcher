@@ -1,6 +1,7 @@
 # Unreleased
 
 # Switch to BetterJSONs and LaunchWrapper
+
 - the launcher now uses [BetterJSONs](https://github.com/MCPHackers/BetterJSONs/)
   for downloading instances, and [LaunchWrapper](https://github.com/MCPHackers/LaunchWrapper)
   for running old Minecraft versions
@@ -14,10 +15,12 @@
 - Overhauled the Launcher Setings menu
 
 # Elyby/littleskin integration
-- You can now login with elyby and littleskin accounts!
+
+- You can now log in with elyby and littleskin accounts!
 - Minecraft 1.21.5 and below support elyby and littleskin skins (b)
 
 # UI
+
 - Revamped all icons in the launcher (thanks, [Aurlt](https://github.com/Aurlt) !)
 - Overhauled launcher settings menu
 - Cleaned instance edit menu
@@ -25,6 +28,7 @@
 - Added a licenses page
 
 # CLI
+
 The following commands have been added:
 
 - `quantum_launcher create <NAME> <VERSION>` (add `-s` to skip downloading assets (music/sound))
@@ -32,12 +36,15 @@ The following commands have been added:
 - `quantum_launcher delete <INSTANCE>` (add `-f` to skip confirmation)
 
 # Platform
+
 Added (incomplete) support for:
+
 - FreeBSD
 - Windows 7
 - Linux ARM 32-bit
 
 # Fixes
+
 - Fixed Minecraft Indev and early Infdev being unplayable (b)
 - Fixed many crashes on Linux ARM and macOS (b)
 - Fixed broken colors in old versions on M-series Macs (b)

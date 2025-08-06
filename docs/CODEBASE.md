@@ -4,18 +4,25 @@ codebase is like for any potential contributors.
 Btw, if you have any questions, feel free to ask me on [Discord](https://discord.gg/bWqRaSXar5)!
 
 # Crate Structure
+
 - `quantum_launcher` - The GUI frontend
 - `ql_instances` - Instance management, updating and launching
 - `ql_mod_manager` - Mod management and installation
 - `ql_servers` - A self-hosted server management system (incomplete)
 - `ql_packager` - Code related to packaging/importing instances
+
 ### Core components
+
 - `ql_core` - Core utilities and shared code
-- `ql_reqwest` - A shim (wrapper) around the [reqwest](https://github.com/seanmonstar/reqwest) library, that automatically deals with platform-specific features in the Cargo.toml.
+- `ql_reqwest` - A shim (wrapper) around the [reqwest](https://github.com/seanmonstar/reqwest) library, that
+  automatically deals with platform-specific features in the Cargo.toml.
+
 ### Specific-purpose "libraries"
+
 - `ql_java_handler` - A library to auto-install and provide java runtimes
 
 # UI Pattern
+
 The architecture of the launcher is based on the
 Model-View-Controller pattern (AKA the thing used in iced).
 
@@ -28,6 +35,7 @@ So it's a back-and-forth between `Message`s coming from interaction,
 and code to deal with the messages in `update()`.
 
 # Comments
+
 I tend to be loose, for better or for worse,
 when it comes to using comments.
 Have something complicated-looking that could
@@ -43,6 +51,7 @@ Heck, feel free to make it informal if that seems better.
 (maybe add a `WTF: ` tag so people can search for it for fun).
 
 # Helpers/Patterns
+
 ## 1) Logging
 
 Use `info!()`, `pt!()`, `err!()` for launcher log messages. Here's an example
@@ -56,7 +65,7 @@ Use `info!()`, `pt!()`, `err!()` for launcher log messages. Here's an example
 ```
 
 Make sure to only log useful things, don't spew endless garbage.
-As a rule of thumb, if a user's launcher breaks and they send it,
+As a rule of thumb, if a user's launcher breaks and they send the log,
 that message should be one that helps in troubleshooting/understanding what happened.
 
 - Info is for... well, informational messages that tell
@@ -71,8 +80,9 @@ There is no warn/warning macro because non-fatal errors are `err!()`
 and fatal ones are returned.
 
 ## 2) IO
+
 Try to make as much of the code dealing with filesystem or network,
-async, when possible. This rule can occasionally be broken
+async, when possible. This rule can occasionally be broken,
 but it's recommended to follow this.
 
 Use `tokio::fs` for filesystem operations,
@@ -85,6 +95,7 @@ It's a common pattern to import `ql_core::file_utils`
 and manually call `file_utils::*`.
 
 ## 3) Errors
+
 Try to return any fatal errors as `Result<T, E>`,
 those that can't be ignored/bypassed. It's generally recommended
 to make your custom error enum for a specific task or group of tasks.
@@ -146,6 +157,7 @@ There are a few extra methods for `Result<T, E>`
 from various traits, that help in error handling:
 
 ### `.path(your_path)` (from `ql_core::IntoIoError` trait)
+
 This converts the basic `std::io::Error`
 into a nicer `ql_core::IoError`.
 
@@ -157,18 +169,20 @@ For example:
 tokio::fs::write(&path, &bytes).await.path(path)?;
 ```
 
-
 ### `.json(original_string)` (from `ql_core::IntoJsonError`)
+
 For parsing json **strings** into structs.
 
 Call this method on `serde_json`'s error's Result.
 
 ### `.json_to()` (from `ql_core::IntoJsonError`)
+
 For converting **structs** into json strings.
 
 Call this method on `serde_json`'s error's Result.
 
 ### `.strerr()` (from `ql_core::IntoStringError`)
+
 For converting any error into `Result<T, String>`.
 Useful for "dynamic" or "generic" errors.
 

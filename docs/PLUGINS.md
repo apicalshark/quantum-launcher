@@ -1,16 +1,21 @@
 # Lua Plugin System (scrapped)
 
 I initially made a lua-based plugin system for QuantumLauncher but ended up scrapping it due to many reasons:
+
 - Code complexity and bloat
 - Compile times, binary size
-- Lack of use; In this small community who would be making plugins? Besides if anyone wants a feature, I can just add it for them.
+- Lack of use; In this small community who would be making plugins? Besides if anyone wants a feature, I can just add it
+  for them.
 
 ## Where to find it
 
-Commits `867e539f0495f8ef11bef38ae7b5ba1cad821939` (6 February 2025) to `16e02b1e36a736fadb3214b84de908eb21635a55` (4 April 2025) have the removed plugin system, if anyone's interested.
-The code is in `crates/ql_plugins` as well as a commented-out snippet in the `main` function in `quantum_launcher/src/main.rs`
+Commits `867e539f0495f8ef11bef38ae7b5ba1cad821939` (6 February 2025) to `16e02b1e36a736fadb3214b84de908eb21635a55` (4
+April 2025) have the removed plugin system, if anyone's interested.
+The code is in `crates/ql_plugins` as well as a commented-out snippet in the `main` function in
+`quantum_launcher/src/main.rs`
 
-If anyone's interested, feel free to create a fork and fix this messy implementation. I personally am not interested in developing a plugin system though.
+If anyone's interested, feel free to create a fork and fix this messy implementation. I personally am not interested in
+developing a plugin system though.
 
 ## Implementation
 
@@ -43,18 +48,22 @@ TODO
 ## Logging
 
 ### `qlLogInfo(...)`
+
 Logs something as an `[info]` message.
 
 ### `qlLogError(...)`
+
 Logs something as an `[error]` message.
 
 ### `qlLogPt(...)` or `print(...)`
-Logs something as a bullet point message, ie.
+
+Logs something as a bullet point message, i.e.
 less important than an info or error message.
 
 ## Java
 
 ### `qlJavaExec(name: String, version: i32, progress: Option<LuaGenericProgress>, [args], current_dir: Option<String>)`
+
 Executes any specified Java binary with the specified Java version.
 For example:
 
@@ -71,12 +80,14 @@ This requires the `Java` permission as it can be **very** dangerous when untrust
 ## File Picking
 
 ### `qlPickFile(window_title: String, filters: [String], filter_name: String) -> String`
+
 Prompts the user to pick a file. A file browser window will open,
 the user will select a file and the file contents will be returned.
 
 If you want to filter for specific extensions use the filters.
 
 Example:
+
 ```lua
 -- Prompts the user to select a jar file
 local file = qlPickFile("Select a jar file", {"jar"}, "Jar File")
@@ -85,6 +96,7 @@ local file = qlPickFile("Select a jar file", {"jar"}, "Jar File")
 ## Requests
 
 ### `qlDownload(url: String, user_agent: bool) -> String`
+
 Downloads the file at `url` and returns it as a lua string.
 
 If `user_agent` is true, this will use the quantumlauncher user agent.
