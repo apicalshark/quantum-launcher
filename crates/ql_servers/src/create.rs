@@ -3,7 +3,7 @@ use std::sync::mpsc::Sender;
 use ql_core::{
     file_utils, info,
     json::{InstanceConfigJson, Manifest, VersionDetails},
-    pt, GenericProgress, IntoIoError, IntoJsonError, IntoStringError, ListEntry, LAUNCHER_DIR,
+    pt, GenericProgress, IntoIoError, IntoJsonError, IntoStringError, ListEntry, LAUNCHER_DATA_DIR,
 };
 
 use crate::ServerError;
@@ -132,7 +132,7 @@ async fn write_config(
 }
 
 async fn get_server_dir(name: &str) -> Result<std::path::PathBuf, ServerError> {
-    let server_dir = LAUNCHER_DIR.join("servers").join(name);
+    let server_dir = LAUNCHER_DATA_DIR.join("servers").join(name);
     if server_dir.exists() {
         return Err(ServerError::ServerAlreadyExists);
     }
@@ -210,7 +210,7 @@ fn progress_json(sender: Option<&Sender<GenericProgress>>) {
 /// - If the server directory couldn't be deleted.
 /// - If the launcher directory couldn't be found or created.
 pub fn delete_server(name: &str) -> Result<(), String> {
-    let server_dir = LAUNCHER_DIR.join("servers").join(name);
+    let server_dir = LAUNCHER_DATA_DIR.join("servers").join(name);
     std::fs::remove_dir_all(&server_dir)
         .path(server_dir)
         .strerr()?;

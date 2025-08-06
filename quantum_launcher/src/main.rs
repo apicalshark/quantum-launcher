@@ -202,7 +202,7 @@ fn main() {
 }
 
 fn load_launcher_dir() -> (Option<std::path::PathBuf>, bool) {
-    let launcher_dir_res = file_utils::get_launcher_dir();
+    let launcher_dir_res = file_utils::get_launcher_config_dir();
     let mut launcher_dir = None;
     let is_dir_err = match launcher_dir_res {
         Ok(n) => {

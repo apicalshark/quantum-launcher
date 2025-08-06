@@ -13,7 +13,7 @@ use ql_core::{
         FabricJSON, InstanceConfigJson, JsonOptifine, VersionDetails,
     },
     pt, GenericProgress, InstanceSelection, IntoIoError, IntoJsonError, IoError, JsonFileError,
-    CLASSPATH_SEPARATOR, LAUNCHER_DIR,
+    CLASSPATH_SEPARATOR, LAUNCHER_DATA_DIR,
 };
 use ql_java_handler::{get_java_binary, JavaVersion};
 use tokio::process::Command;
@@ -182,7 +182,7 @@ impl GameLauncher {
     }
 
     async fn set_assets_argument(&self, argument: &mut String) -> Result<(), GameLaunchError> {
-        let launcher_dir = &*LAUNCHER_DIR;
+        let launcher_dir = &*LAUNCHER_DATA_DIR;
 
         let old_assets_path_v2 = launcher_dir
             .join("assets")
@@ -804,7 +804,7 @@ async fn get_instance_dir(instance_name: &str) -> Result<PathBuf, GameLaunchErro
         return Err(GameLaunchError::InstanceNotFound);
     }
 
-    let launcher_dir = &*LAUNCHER_DIR;
+    let launcher_dir = &*LAUNCHER_DATA_DIR;
     tokio::fs::create_dir_all(&launcher_dir)
         .await
         .path(launcher_dir)?;

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Write};
 
-use ql_core::{IntoIoError, IoError, LAUNCHER_DIR};
+use ql_core::{IntoIoError, IoError, LAUNCHER_DATA_DIR};
 
 pub struct ServerProperties {
     pub entries: HashMap<String, String>,
@@ -9,7 +9,7 @@ pub struct ServerProperties {
 impl ServerProperties {
     #[must_use]
     pub async fn load(server_name: &str) -> Option<Self> {
-        let server_dir = LAUNCHER_DIR.join("servers").join(server_name);
+        let server_dir = LAUNCHER_DATA_DIR.join("servers").join(server_name);
         let properties_file = server_dir.join("server.properties");
         let entries = tokio::fs::read_to_string(&properties_file).await.ok()?;
 
@@ -31,7 +31,7 @@ impl ServerProperties {
     /// # Errors
     /// If server doesn't exist or user doesn't have permission to access server
     pub async fn save(&self, server_name: &str) -> Result<(), IoError> {
-        let server_dir = LAUNCHER_DIR.join("servers").join(server_name);
+        let server_dir = LAUNCHER_DATA_DIR.join("servers").join(server_name);
         let properties_file = server_dir.join("server.properties");
         let mut properties_content = String::new();
         for (key, value) in &self.entries {

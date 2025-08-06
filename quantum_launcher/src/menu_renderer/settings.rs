@@ -1,5 +1,5 @@
 use iced::{widget, Length};
-use ql_core::LAUNCHER_DIR;
+use ql_core::LAUNCHER_DATA_DIR;
 
 use crate::{
     config::LauncherConfig,
@@ -173,7 +173,7 @@ impl LauncherSettingsTab {
                 widget::column![
                     widget::text("Advanced").size(20),
                     button_with_icon(icon_manager::folder(), "Open Launcher Folder", 16)
-                        .on_press(Message::CoreOpenPath(LAUNCHER_DIR.clone()))
+                        .on_press(Message::CoreOpenPath(LAUNCHER_DATA_DIR.clone()))
                 ]
                 .spacing(10)
                 .padding(10),

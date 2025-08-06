@@ -38,7 +38,7 @@ pub use error::{
     DownloadFileError, IntoIoError, IntoJsonError, IntoStringError, IoError, JsonDownloadError,
     JsonError, JsonFileError,
 };
-pub use file_utils::{RequestError, LAUNCHER_DIR};
+pub use file_utils::{RequestError, LAUNCHER_CONFIG_DIR, LAUNCHER_DATA_DIR};
 use futures::StreamExt;
 use json::VersionDetails;
 pub use loader::Loader;
@@ -239,18 +239,19 @@ impl InstanceSelection {
     #[must_use]
     pub fn get_instance_path(&self) -> PathBuf {
         match self {
-            Self::Instance(name) => LAUNCHER_DIR.join("instances").join(name),
-            Self::Server(name) => LAUNCHER_DIR.join("servers").join(name),
+            Self::Instance(name) => LAUNCHER_DATA_DIR.join("instances").join(name),
+            Self::Server(name) => LAUNCHER_DATA_DIR.join("servers").join(name),
         }
     }
 
     #[must_use]
     pub fn get_dot_minecraft_path(&self) -> PathBuf {
         match self {
-            InstanceSelection::Instance(name) => {
-                LAUNCHER_DIR.join("instances").join(name).join(".minecraft")
-            }
-            InstanceSelection::Server(name) => LAUNCHER_DIR.join("servers").join(name),
+            InstanceSelection::Instance(name) => LAUNCHER_DATA_DIR
+                .join("instances")
+                .join(name)
+                .join(".minecraft"),
+            InstanceSelection::Server(name) => LAUNCHER_DATA_DIR.join("servers").join(name),
         }
     }
 

@@ -8,7 +8,8 @@ use std::{
 use iced::{widget::image::Handle, Task};
 use ql_core::{
     err, file_utils, GenericProgress, InstanceSelection, IntoIoError, IntoStringError,
-    JsonFileError, ListEntry, Progress, LAUNCHER_DIR, LAUNCHER_VERSION_NAME,
+    JsonFileError, ListEntry, Progress, LAUNCHER_CONFIG_DIR, LAUNCHER_DATA_DIR,
+    LAUNCHER_VERSION_NAME,
 };
 use ql_instances::{
     auth::{ms::CLIENT_ID, AccountData, AccountType},
@@ -97,8 +98,8 @@ impl Launcher {
         is_new_user: bool,
         config: Result<LauncherConfig, JsonFileError>,
     ) -> Result<Self, JsonFileError> {
-        if let Err(err) = file_utils::get_launcher_dir() {
-            err!("Could not get launcher dir (This is a bug):");
+        if let Err(err) = file_utils::get_launcher_data_dir() {
+            err!("Could not get launcher data dir (This is a bug):");
             return Ok(Self::with_error(format!(
                 "Could not get launcher dir: {err}"
             )));
@@ -192,7 +193,7 @@ impl Launcher {
         let launcher_dir = if error.contains("Could not get launcher dir") {
             None
         } else {
-            Some(LAUNCHER_DIR.clone())
+            Some(LAUNCHER_CONFIG_DIR.clone())
         };
 
         let (config, theme) = launcher_dir
@@ -356,7 +357,7 @@ fn get_theme(config: &LauncherConfig) -> LauncherTheme {
 }
 
 pub async fn get_entries(path: String, is_server: bool) -> Res<(Vec<String>, bool)> {
-    let dir_path = file_utils::get_launcher_dir().strerr()?.join(path);
+    let dir_path = file_utils::get_launcher_data_dir().strerr()?.join(path);
     if !dir_path.exists() {
         tokio::fs::create_dir_all(&dir_path)
             .await
