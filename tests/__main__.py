@@ -6,10 +6,14 @@ import time
 
 from . import launch, procs, create
 
-if os.getenv("XDG_SESSION_TYPE") != "x11":
+IS_COMPATIBLE: bool = (os.getenv("XDG_SESSION_TYPE") != "x11"
+    or sys.platform.startswith("win"))
+
+if not IS_COMPATIBLE:
     print("""Unsupported platform!
-This test suite only currently supports x11 environments
-(like some Linux distributions)
+This test suite only currently supports:
+- Windows
+- x11 (Linux, etc)
 
 For more info see tests/README.md
 """)
@@ -28,6 +32,7 @@ def main() -> None:
                         help="Use existing instances from previous test, instead of redownloading")
     # parser.add_argument("--instance", required=True, help="Instance ID to test")
     args = parser.parse_args()
+    print("(building launcher...)")
     procs.run(["cargo", "build"])
 
     procs.prepare_ql_bin()
