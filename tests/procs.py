@@ -6,10 +6,10 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List
 
-QL_BIN: str = "tests/qlbin.exe" if sys.platform == "Windows" else "tests/qlbin"
+QL_BIN: str = "tests/qlbin.exe" if sys.platform == "win32" else "tests/qlbin"
 OLD_QL_BIN: str = (
     "target/debug/quantum_launcher.exe"
-    if sys.platform == "Windows"
+    if sys.platform == "win32"
     else "target/debug/quantum_launcher"
 )
 
@@ -41,8 +41,9 @@ def run_parallel(commands: List[List[str]], max_workers: int | None = None) -> N
         try:
             for future in as_completed(futures):
                 future.result()  # Will raise if the subprocess failed
-        except:
-            print(f"Early exit: A subprocess failed. Cancelling remaining...")
+        except Exception as e:
+            print("Early exit: A subprocess failed. Cancelling remaining...")
+            print(e)
             for f in futures:
                 f.cancel()
             sys.exit(1)
