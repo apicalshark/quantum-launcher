@@ -500,7 +500,7 @@ impl GameLauncher {
             .await?;
 
         // Sometimes mod loaders/core mods try to "override" their own
-        // version of a library over the base game. This code is setup
+        // version of a library over the base game. This code is set up
         // so that the loaders load the libraries they like, then the game
         // only loads the stuff that hasn't been already loaded.
         //

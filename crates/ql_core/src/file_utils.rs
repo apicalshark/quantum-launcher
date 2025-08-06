@@ -155,7 +155,7 @@ fn check_qlportable_file() -> Option<QlDirInfo> {
 }
 
 /// Returns whether the user is new to QuantumLauncher,
-/// ie. whether they have never used the launcher before.
+/// i.e. whether they have never used the launcher before.
 ///
 /// It checks whether the launcher directory does not exist.
 #[must_use]
@@ -384,7 +384,7 @@ pub enum RequestError {
 /// Sets the executable bit on a file.
 ///
 /// This makes a file executable on Unix systems,
-/// ie. it can be run as a program.
+/// i.e. it can be run as a program.
 ///
 /// # Errors
 /// Returns an error if:
@@ -405,7 +405,7 @@ use std::os::unix::fs::symlink;
 #[cfg(windows)]
 use std::os::windows::fs::{symlink_dir, symlink_file};
 
-/// Creates a symbolic link (ie. the thing at `src` "points" to `dest`,
+/// Creates a symbolic link (i.e. the thing at `src` "points" to `dest`,
 /// accessing `src` will actually access `dest`)
 ///
 /// # Errors
@@ -530,7 +530,7 @@ pub async fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), IoError> {
 /// features compared to the non-ext one:
 ///
 /// - Allows specifying exceptions for not copying.
-/// - More coming in future.
+/// - More coming in the future.
 ///
 /// # Errors
 /// - `src` doesn't exist

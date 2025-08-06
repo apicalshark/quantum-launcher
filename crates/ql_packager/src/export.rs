@@ -34,7 +34,7 @@ fn create_instance_info(
 ///
 /// - `instance` - the selected instance to export
 /// - `exceptions` - An optional vector of paths to exclude from the export.
-///   By default it will contain the contents of [`EXCEPTIONS`]. If you
+///   By default, it will contain the contents of [`EXCEPTIONS`]. If you
 ///   don't want any extra exceptions, just pass an empty `Vec`.
 ///   **Note: All exception paths are relative to instance dir
 ///   (parent dir of `.minecraft`)**

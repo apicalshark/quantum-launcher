@@ -8,7 +8,7 @@
 //! - Java auto-installer
 //! - File and download utilities
 //! - Error types
-//! - JSON structs for version, instance config, Fabric, Forge, Optifine, etc
+//! - JSON structs for version, instance config, Fabric, Forge, Optifine, etc.
 //! - Logging macros
 //! - And much more
 
@@ -171,7 +171,7 @@ pub async fn do_jobs_with_limit<T, E>(
 /// multiple (5) times if it fails.
 ///
 /// Some functions are inherently non-deterministic
-/// in nature, ie. doing the same thing multiple times
+/// in nature, i.e. doing the same thing multiple times
 /// won't always produce the same result.
 /// **For example**, network operations like *downloading
 /// a file* are non-deterministic as they can randomly

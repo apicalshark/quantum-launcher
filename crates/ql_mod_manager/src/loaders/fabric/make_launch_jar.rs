@@ -50,7 +50,7 @@ pub async fn make_launch_jar(
                 //
                 // - This avoids problems with spaces in paths
                 //   (real bug fixed in v0.4)
-                // - This makes the fabric server jar file cross platform
+                // - This makes the fabric server jar file cross-platform
                 library
                     .parent()
                     .and_then(|parent| library.strip_prefix(parent).ok())

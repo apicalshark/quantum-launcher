@@ -16,10 +16,10 @@
 //!
 //! We use [BetterJSONS](https://github.com/MCPHackers/BetterJSONs)
 //! and [LaunchWrapper](https://github.com/MCPHackers/LaunchWrapper) for:
-//! - Better platform compatibility (ARM, 32-bit, etc)
+//! - Better platform compatibility (ARM, 32-bit, etc.)
 //! - Many bugfixes
 //! - Skin, Sound, Auth fixes for old versions
-//! - Skin support from ely.by and littleskin
+//! - Skin support from `ely.by` and `littleskin`
 //!
 //! # A rant about natives
 //!

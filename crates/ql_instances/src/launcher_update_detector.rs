@@ -31,7 +31,7 @@ pub enum UpdateCheckInfo {
 ///   (experimental dev build)
 /// - If the release info couldn't be downloaded
 /// - If the release info couldn't be parsed into JSON
-/// - If no releases could be found in the Github repo
+/// - If no releases could be found in the GitHub repo
 /// - If the new version's version number is incompatible
 ///   with semver (even after conversion)
 /// - If user is on unsupported architecture
@@ -141,7 +141,7 @@ pub async fn check_for_launcher_updates() -> Result<UpdateCheckInfo, UpdateError
 /// - Couldn't be started
 /// ## Current executable:
 /// - Couldn't be found
-/// - Has a name with invalid unicode
+/// - Has a name with invalid UNICODE
 pub async fn install_launcher_update(
     url: String,
     progress: Sender<GenericProgress>,

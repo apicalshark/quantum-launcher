@@ -22,7 +22,7 @@ use super::CurseforgeNotAllowed;
 ///
 /// Not to be confused with [`crate::PresetJson`]
 /// (`.qmp` mod presets). Those are QuantumLauncher-only,
-/// but these ones are found across the internet.
+/// but these are found across the internet.
 ///
 /// This function supports both Curseforge and Modrinth modpacks,
 /// it doesn't matter which one you put in.
@@ -30,7 +30,7 @@ use super::CurseforgeNotAllowed;
 /// # Arguments
 /// - `file: Vec<u8>`: The bytes of the modpack file.
 /// - `instance: InstanceSelection`: The selected instance you want to download this pack to.
-/// - `sender: Option<&Sender<GenericProgress>>`: Supply a [`std::sync::mpsc::Sender`] if you want
+/// - `sender: Option<&Sender<GenericProgress>>`: Supply a [`Sender`] if you want
 ///   to see the progress of installation. Leave `None` if otherwise.
 ///
 /// # Returns

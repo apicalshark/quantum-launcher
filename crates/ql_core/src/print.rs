@@ -186,7 +186,7 @@ macro_rules! err {
     }};
 }
 
-/// Print a point message, ie. a small step in some process.
+/// Print a point message, i.e. a small step in some process.
 /// Saved to a log file.
 #[macro_export]
 macro_rules! pt {

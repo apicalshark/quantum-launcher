@@ -185,8 +185,8 @@ async fn mmc_forge(
 
 fn filter_bytearray(input: &str) -> String {
     // PrismLauncher puts some weird ByteArray
-    // field in the INI config file, that our pookie little ini parser
-    // doesn't understand. So we gotta filter it out.
+    // field in the INI config file, that our cute little ini parser
+    // doesn't understand. So we have to filter it out.
     input
         .lines()
         .filter(|n| !n.starts_with("mods_Page\\Columns"))

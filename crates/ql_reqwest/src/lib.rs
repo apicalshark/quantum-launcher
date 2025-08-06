@@ -6,7 +6,7 @@
 //! pub use reqwest::*;
 //! ```
 //!
-//! This crate, `ql_reqwest`, is present so I can have
+//! This crate, `ql_reqwest`, is present, so that I can have
 //! fine-grained control over reqwest's build process across
 //! platforms, and correctly tweak the TLS implementation and
 //! other crate features.

@@ -115,7 +115,7 @@ async fn write_config(
         // # Doesn't affect servers:
         // I could add GC tuning to servers too, but I can't find
         // a way to measure performance on a server. Besides this setting
-        // makes performance worse on clients so I guess it's same for servers?
+        // makes performance worse on clients, so I guess it's same for servers?
         do_gc_tuning: None,
         // This won't do anything on servers. Who wants to lose their *only way*
         // to control the server instantly after starting it?

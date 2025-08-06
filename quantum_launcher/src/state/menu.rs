@@ -416,8 +416,8 @@ pub enum State {
 
     /// Progress bar when logging into accounts
     AccountLoginProgress(ProgressBar<GenericProgress>),
-    /// A parent menu to choose whether you want to login
-    /// with Microsoft or ely.by
+    /// A parent menu to choose whether you want to log in
+    /// with Microsoft, `ely.by`, `littleskin`, etc.
     AccountLogin,
     LoginMS(MenuLoginMS),
     LoginAlternate(MenuLoginAlternate),

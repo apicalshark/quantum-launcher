@@ -23,7 +23,7 @@ pub(crate) use downloader::GameDownloader;
 ///   No sounds or music will play*
 ///
 /// # Returns
-/// Returns the instance name that you passed in.
+/// The instance name that you passed in.
 ///
 /// # Errors
 /// Check the [`DownloadError`] documentation (if there is, lol).

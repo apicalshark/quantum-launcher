@@ -6,7 +6,7 @@
 //! so this is a pseudo browser engine (a very bad one at that).
 //! The implementation of HTML can be found in the `html` module.
 //!
-//! I didn't used iced's built-in `widget::markdown` because:
+//! I didn't use iced's built-in `widget::markdown` because:
 //! - The version of iced I am using is old and doesn't have it
 //! - I don't think it would be perfectly suited for my use case.
 //!
@@ -30,7 +30,7 @@ macro_rules! todoh {
 }
 
 impl MenuModsDownload {
-    /// Takes in markdown text and renders it.
+    /// Takes in Markdown text and renders it.
     /// Supports inline HTML too!
     ///
     /// # Arguments
@@ -177,7 +177,7 @@ impl MenuModsDownload {
         // We need this to see if the markdown element ends with
         // a newline or not. Those `comrak` people just had to add
         // all the information and helpfully hide it from us
-        // (unless I'm being an idiot and it's obvious, but hey,
+        // (unless I'm being an idiot, and it's obvious, but hey,
         // open an issue or PR if there's a better way!)
     }
 }
@@ -252,7 +252,7 @@ fn render_link<'a, 'elem>(
     let mut children = widget::column(md.children().map(|n| {
         i += 1;
         let mut element = widget::column!().into();
-        // TODO
+        // TODO: Add proper layout calculation
         _ = MenuModsDownload::render_element(n, 0, &mut element, images, window_size);
         element
     }));

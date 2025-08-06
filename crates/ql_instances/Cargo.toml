@@ -29,7 +29,7 @@ colored = { workspace = true }
 indicatif = "0.17"
 thiserror = { workspace = true }
 
-# Removing unicode characters from XML log
+# Removing UNICODE characters from XML log
 any_ascii = "0.3"
 
 urlencoding = "2"

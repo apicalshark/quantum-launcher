@@ -8,7 +8,7 @@ command: quantum-launcher
 finish-args:
   # Needs to talk to the network:
   - --share=network
-  # X11 + XShm access, fallback-x11 wont work in wayland
+  # X11 + XShm access, fallback-x11 won't work in wayland
   - --share=ipc
   - --socket=x11
 

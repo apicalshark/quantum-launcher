@@ -74,7 +74,7 @@ pub struct LauncherConfig {
     /// is called on each account's key value (username)
     /// to get the refresh token (stored securely on disk).
     pub accounts: Option<HashMap<String, ConfigAccount>>,
-    /// The scale of the UI, ie. how big everything is.
+    /// The scale of the UI, i.e. how big everything is.
     ///
     /// Implemented in v0.4
     ///
@@ -194,7 +194,7 @@ pub struct ConfigAccount {
     /// This will be identical to the regular
     /// username of the account in most cases
     /// except for the case where the user
-    /// has an ely.by account with an email.
+    /// has an `ely.by` account with an email.
     /// In that case, this will be the actual
     /// username while the regular "username"
     /// would be an email.

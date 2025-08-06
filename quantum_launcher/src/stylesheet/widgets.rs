@@ -65,7 +65,7 @@ impl widget::container::Catalog for LauncherTheme {
 // to have a gradient skeumorphic look for the buttons
 //
 // I disabled this because even though it looks decent
-// it doesnt fit with the rest of the launcher, and
+// it doesn't fit with the rest of the launcher, and
 // all the other widgets look bad with this skeumorphic
 // aesthetic.
 /*
