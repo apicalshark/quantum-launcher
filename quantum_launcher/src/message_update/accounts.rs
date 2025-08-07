@@ -274,6 +274,9 @@ impl Launcher {
         if account == NEW_ACCOUNT_NAME {
             self.state = State::AccountLogin;
         } else {
+            if account != OFFLINE_ACCOUNT_NAME {
+                self.config.account_selected = Some(account.clone());
+            }
             self.accounts_selected = Some(account);
         }
         Task::none()

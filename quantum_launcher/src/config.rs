@@ -35,12 +35,9 @@ pub struct LauncherConfig {
     pub java_installs: Option<Vec<String>>,
 
     /// The theme (Light/Dark) set by the user.
-    ///
-    /// Implemented in v0.3
+    // Since: v0.3
     pub theme: Option<String>,
     /// The color scheme set by the user.
-    ///
-    /// Implemented in v0.3
     ///
     /// Valid options are:
     /// - Purple
@@ -48,24 +45,20 @@ pub struct LauncherConfig {
     /// - Sky Blue
     /// - Catppuccin
     /// - Teal
+    // Since: v0.3
     pub style: Option<String>,
 
     /// The version that the launcher was last time
     /// you opened it.
-    ///
-    /// Implemented in v0.3, so if it's missing then
-    /// it was last opened in v0.1 or v0.2
+    // Since: v0.3
     pub version: Option<String>,
 
     /// The width of the sidebar in the main menu
     /// (which shows the list of instances). You can
     /// drag it around to resize it.
-    ///
-    /// Implemented in v0.4
+    // Since: v0.4
     pub sidebar_width: Option<u32>,
     /// A list of Minecraft accounts logged into the launcher.
-    ///
-    /// Implemented in v0.4
     ///
     /// `String (username) : ConfigAccount { uuid: String, skin: None (unimplemented) }`
     ///
@@ -73,25 +66,29 @@ pub struct LauncherConfig {
     /// `read_refresh_token(username)` (in [`ql_instances::auth`])
     /// is called on each account's key value (username)
     /// to get the refresh token (stored securely on disk).
+    // Since: v0.4
     pub accounts: Option<HashMap<String, ConfigAccount>>,
+    /// Refers to the entry of the `accounts` map
+    /// that's selected in the UI when you open the launcher.
+    // Since: v0.4.2
+    pub account_selected: Option<String>,
+
     /// The scale of the UI, i.e. how big everything is.
-    ///
-    /// Implemented in v0.4
     ///
     /// - `(1.0-*)` A higher number means more zoomed in buttons, text
     ///   and everything else (useful if you are on a high DPI display
     ///   or have bad eyesight),
     /// - `1.0` is the default value.
     /// - `(0.x-1.0)` A lower number means zoomed out UI elements.
+    // Since: v0.4
     pub ui_scale: Option<f64>,
     /// Whether to enable antialiasing or not.
     /// Smooths out UI rendering and makes it a bit
     /// crisper, but not by much. Also fixes the UI
     /// being jittery on KDE Wayland.
     ///
-    /// Implemented in v0.4.2
-    ///
     /// Default: `true`
+    // Since: v0.4.2
     pub antialiasing: Option<bool>,
 }
 
@@ -108,6 +105,7 @@ impl Default for LauncherConfig {
             ui_scale: None,
             java_installs: Some(Vec::new()),
             antialiasing: Some(true),
+            account_selected: None,
         }
     }
 }

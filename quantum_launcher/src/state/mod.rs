@@ -154,10 +154,12 @@ impl Launcher {
             }
         }
 
-        let selected_account = accounts_dropdown
-            .first()
-            .cloned()
-            .unwrap_or_else(|| OFFLINE_ACCOUNT_NAME.to_owned());
+        let selected_account = config.account_selected.clone().unwrap_or(
+            accounts_dropdown
+                .first()
+                .cloned()
+                .unwrap_or_else(|| OFFLINE_ACCOUNT_NAME.to_owned()),
+        );
 
         Ok(Self {
             client_list: None,
