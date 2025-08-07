@@ -40,11 +40,13 @@ impl Launcher {
                 self.tick_client_processes_and_logs();
                 self.tick_server_processes_and_logs();
 
-                let launcher_config = self.config.clone();
-                commands.push(Task::perform(
-                    async move { launcher_config.save().await.strerr() },
-                    Message::CoreTickConfigSaved,
-                ));
+                if self.tick_timer % 5 == 0 {
+                    let launcher_config = self.config.clone();
+                    commands.push(Task::perform(
+                        async move { launcher_config.save().await.strerr() },
+                        Message::CoreTickConfigSaved,
+                    ));
+                }
                 return Task::batch(commands);
             }
             State::Create(menu) => menu.tick(),

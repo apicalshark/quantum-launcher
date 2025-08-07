@@ -91,22 +91,14 @@ impl Launcher {
 
                     widget::column!(
                         main_buttons,
-                        // widget::horizontal_rule(10)
-                        //     .style(|n: &LauncherTheme| n.style_rule(Color::SecondDark, 2)),
+                        widget::horizontal_rule(10)
+                            .style(|n: &LauncherTheme| n.style_rule(Color::SecondDark, 2)),
                         // widget::button("Export Instance").on_press(Message::ExportInstanceOpen),
                     )
                     .push_maybe({
                         if let Some(selected_instance) = selected_instance_s {
                             if self.is_process_running(menu, selected_instance) {
-                                Some(
-                                    widget::column![
-                                        widget::horizontal_rule(10)
-                                            .style(|n: &LauncherTheme| n
-                                                .style_rule(Color::SecondDark, 2)),
-                                        widget::text("Running...").size(20)
-                                    ]
-                                    .spacing(5),
-                                )
+                                Some(widget::text("Running...").size(20))
                             } else {
                                 None
                             }
