@@ -191,14 +191,8 @@ pub async fn download_file_to_string(url: &str, user_agent: bool) -> Result<Stri
             );
         }
         let response = get.send().await?;
-        if response.status().is_success() {
-            Ok(response.text().await?)
-        } else {
-            Err(RequestError::DownloadError {
-                code: response.status(),
-                url: response.url().clone(),
-            })
-        }
+        check_for_success(&response).await?;
+        Ok(response.text().await?)
     }
 
     retry(async || inner(url, user_agent).await).await
@@ -255,14 +249,8 @@ pub async fn download_file_to_bytes(url: &str, user_agent: bool) -> Result<Vec<u
             get = get.header("User-Agent", "quantumlauncher");
         }
         let response = get.send().await?;
-        if response.status().is_success() {
-            Ok(response.bytes().await?.to_vec())
-        } else {
-            Err(RequestError::DownloadError {
-                code: response.status(),
-                url: response.url().clone(),
-            })
-        }
+        check_for_success(&response).await?;
+        Ok(response.bytes().await?.to_vec())
     }
 
     retry(async || inner(url, user_agent).await).await
@@ -296,29 +284,22 @@ pub async fn download_file_to_path(
             get = get.header("User-Agent", "quantumlauncher");
         }
         let response = get.send().await?;
+        check_for_success(&response).await?;
 
-        if response.status().is_success() {
-            let stream = response
-                .bytes_stream()
-                .map(|n| n.map_err(std::io::Error::other));
-            let mut stream = StreamReader::new(stream);
+        let stream = response
+            .bytes_stream()
+            .map(|n| n.map_err(std::io::Error::other));
+        let mut stream = StreamReader::new(stream);
 
-            if let Some(parent) = path.parent() {
-                if !parent.is_dir() {
-                    tokio::fs::create_dir_all(&parent).await.path(parent)?;
-                }
+        if let Some(parent) = path.parent() {
+            if !parent.is_dir() {
+                tokio::fs::create_dir_all(&parent).await.path(parent)?;
             }
-
-            let mut file = tokio::fs::File::create(&path).await.path(path)?;
-            tokio::io::copy(&mut stream, &mut file).await.path(path)?;
-            Ok(())
-        } else {
-            Err(RequestError::DownloadError {
-                code: response.status(),
-                url: response.url().clone(),
-            }
-            .into())
         }
+
+        let mut file = tokio::fs::File::create(&path).await.path(path)?;
+        tokio::io::copy(&mut stream, &mut file).await.path(path)?;
+        Ok(())
     }
 
     retry(async || inner(url, user_agent, path).await).await
@@ -348,17 +329,22 @@ pub async fn download_file_to_bytes_with_agent(
             .header("User-Agent", user_agent)
             .send()
             .await?;
-        if response.status().is_success() {
-            Ok(response.bytes().await?.to_vec())
-        } else {
-            Err(RequestError::DownloadError {
-                code: response.status(),
-                url: response.url().clone(),
-            })
-        }
+        check_for_success(&response).await?;
+        Ok(response.bytes().await?.to_vec())
     }
 
     retry(async || inner(url, user_agent).await).await
+}
+
+pub async fn check_for_success(response: &Response) -> Result<(), RequestError> {
+    if response.status().is_success() {
+        Ok(())
+    } else {
+        Err(RequestError::DownloadError {
+            code: response.status(),
+            url: response.url().clone(),
+        })
+    }
 }
 
 const NETWORK_ERROR_MSG: &str = r"
@@ -402,6 +388,7 @@ pub async fn set_executable(path: &Path) -> Result<(), IoError> {
 #[cfg(unix)]
 use std::os::unix::fs::symlink;
 
+use ql_reqwest::Response;
 #[cfg(windows)]
 use std::os::windows::fs::{symlink_dir, symlink_file};
 

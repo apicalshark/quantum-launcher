@@ -14,6 +14,7 @@ use crate::{rate_limiter::RATE_LIMITER, store::SearchMod};
 
 use super::{Backend, CurseforgeNotAllowed, ModError, QueryType, SearchResult};
 use categories::get_categories;
+use ql_core::file_utils::check_for_success;
 
 mod categories;
 mod download;
@@ -150,16 +151,9 @@ impl CFSearchResult {
             .send()
             .await
             .map_err(RequestError::from)?;
-        if response.status().is_success() {
-            let text = response.text().await.map_err(RequestError::from)?;
-            Ok(serde_json::from_str(&text).json(text)?)
-        } else {
-            Err(RequestError::DownloadError {
-                code: response.status(),
-                url: response.url().clone(),
-            }
-            .into())
-        }
+        check_for_success(&response).await?;
+        let text = response.text().await.map_err(RequestError::from)?;
+        Ok(serde_json::from_str(&text).json(text)?)
     }
 }
 
@@ -344,14 +338,8 @@ pub async fn send_request(
         .send()
         .await?;
 
-    if response.status().is_success() {
-        Ok(response.text().await?)
-    } else {
-        Err(RequestError::DownloadError {
-            code: response.status(),
-            url: response.url().clone(),
-        })
-    }
+    check_for_success(&response).await?;
+    Ok(response.text().await?)
 }
 
 // Please don't steal :)

@@ -1,10 +1,12 @@
 use crate::auth::alt::AccountResponse;
 
 use super::{AccountData, AccountType};
-use ql_core::{info, pt, IntoJsonError, RequestError, CLIENT};
+use ql_core::{info, pt, IntoJsonError, CLIENT};
 
 pub use super::alt::{Account, AccountResponseError, Error};
+use ql_core::file_utils::check_for_success;
 use serde::Serialize;
+
 pub mod oauth;
 
 const CLIENT_ID: &str = "1160";
@@ -39,16 +41,8 @@ pub async fn login_new(
         .json(&value)
         .send()
         .await?;
-
-    let text = if response.status().is_success() {
-        response.text().await?
-    } else {
-        return Err(RequestError::DownloadError {
-            code: response.status(),
-            url: response.url().clone(),
-        }
-        .into());
-    };
+    check_for_success(&response).await?;
+    let text = response.text().await?;
 
     let account_response = match serde_json::from_str::<AccountResponse>(&text).json(text.clone()) {
         Ok(n) => n,
@@ -108,16 +102,8 @@ pub async fn login_refresh(
         .json(&value)
         .send()
         .await?;
-
-    let text = if response.status().is_success() {
-        response.text().await?
-    } else {
-        return Err(RequestError::DownloadError {
-            code: response.status(),
-            url: response.url().clone(),
-        }
-        .into());
-    };
+    check_for_success(&response).await?;
+    let text = response.text().await?;
 
     let account_response = serde_json::from_str::<AccountResponse>(&text).json(text.clone())?;
     entry.set_password(&account_response.accessToken)?;
