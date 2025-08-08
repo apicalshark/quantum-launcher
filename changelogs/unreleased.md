@@ -27,6 +27,12 @@
 - Made massive improvements to the log renderer
 - Added a licenses page
 
+# Tweaks
+
+- You can now change antialiasing for the UI in settings
+- The launcher now remembers the last account selected upon opening
+- Many autosaving features has been slowed down, and disk accesses reduced
+
 # CLI
 
 The following commands have been added:
@@ -54,6 +60,8 @@ Added (incomplete) support for:
 - Fixed java install progress bar being stuck at the end
 - Fixed many formatting issues in game logs
 - Fixed welcome screen not working
+- Fixed arrow keys to switch instances, not updating the Edit menu
+- Fixed lag spikes on some systems when selecting instances
 
 - Old Minecraft versions are now in the correct order in the download list (b)
 - Snapshots of 1.0 to 1.5.2 are no longer missing for download (b)
