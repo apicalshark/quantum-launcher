@@ -50,15 +50,7 @@ impl Launcher {
             Message::ManageJarMods(message) => return self.update_manage_jar_mods(message),
             Message::LaunchInstanceSelected { name, is_server } => {
                 self.selected_instance = Some(InstanceSelection::new(&name, is_server));
-
-                if let State::Launch(MenuLaunch { .. }) = self.state {
-                    if let Err(err) = self.edit_instance() {
-                        err!("Could not open edit instance menu: {err}");
-                        if let State::Launch(MenuLaunch { edit_instance, .. }) = &mut self.state {
-                            *edit_instance = None;
-                        }
-                    }
-                }
+                self.load_edit_instance(None);
             }
             Message::LaunchUsernameSet(username) => {
                 self.config.username = username;
@@ -381,17 +373,7 @@ impl Launcher {
             }
             Message::CoreEvent(event, status) => return self.iced_event(event, status),
             Message::LaunchChangeTab(launch_tab_id) => {
-                if let LaunchTabId::Edit = launch_tab_id {
-                    if let Err(err) = self.edit_instance() {
-                        err!("Could not open edit instance menu: {err}");
-                        if let State::Launch(MenuLaunch { edit_instance, .. }) = &mut self.state {
-                            *edit_instance = None;
-                        }
-                    }
-                }
-                if let State::Launch(MenuLaunch { tab, .. }) = &mut self.state {
-                    *tab = launch_tab_id;
-                }
+                self.load_edit_instance(Some(launch_tab_id));
             }
             Message::CoreLogToggle => {
                 self.is_log_open = !self.is_log_open;
@@ -545,6 +527,27 @@ impl Launcher {
             }
         }
         Task::none()
+    }
+
+    pub fn load_edit_instance(&mut self, new_tab: Option<LaunchTabId>) {
+        if let State::Launch(MenuLaunch {
+            tab, edit_instance, ..
+        }) = &mut self.state
+        {
+            if let (LaunchTabId::Edit, Some(selected_instance)) =
+                (new_tab.unwrap_or(*tab), self.selected_instance.clone())
+            {
+                if let Err(err) = Self::load_edit_instance_inner(edit_instance, selected_instance) {
+                    err!("Could not open edit instance menu: {err}");
+                    *edit_instance = None;
+                }
+            } else {
+                *edit_instance = None;
+            }
+            if let Some(new_tab) = new_tab {
+                *tab = new_tab;
+            }
+        }
     }
 
     fn go_to_licenses_menu(&mut self) {

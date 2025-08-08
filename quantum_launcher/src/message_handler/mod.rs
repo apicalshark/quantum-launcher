@@ -140,15 +140,10 @@ impl Launcher {
         Task::none()
     }
 
-    pub fn edit_instance(&mut self) -> Result<(), JsonFileError> {
-        let State::Launch(MenuLaunch { edit_instance, .. }) = &mut self.state else {
-            return Ok(());
-        };
-
-        let Some(selected_instance) = self.selected_instance.as_ref() else {
-            return Ok(());
-        };
-
+    pub fn load_edit_instance_inner(
+        edit_instance: &mut Option<MenuEditInstance>,
+        selected_instance: InstanceSelection,
+    ) -> Result<(), JsonFileError> {
         let config_path = selected_instance.get_instance_path().join("config.json");
 
         let config_json = std::fs::read_to_string(&config_path).path(config_path)?;
@@ -157,6 +152,9 @@ impl Launcher {
 
         let slider_value = f32::log2(config_json.ram_in_mb as f32);
         let memory_mb = config_json.ram_in_mb;
+        
+        // Use this to check for performance impact
+        // std::thread::sleep(std::time::Duration::from_millis(500));
 
         let instance_name = selected_instance.get_name();
 
