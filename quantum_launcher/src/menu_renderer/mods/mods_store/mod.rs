@@ -120,7 +120,7 @@ impl MenuModsDownload {
                             theme
                                 .style_scrollable_flat_extra_dark(status)
                         )
-                        .id(iced::widget::scrollable::Id::new("MenuModsDownload:main:mods_list"))
+                        .id(widget::scrollable::Id::new("MenuModsDownload:main:mods_list"))
                         .height(Length::Fill)
                         .width(Length::Fill)
                         .on_scroll(|viewport| {

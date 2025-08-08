@@ -280,7 +280,7 @@ async fn get_mods_resourcepacks_shaderpacks_dir(
 
     // Minecraft 13w24a release date (1.6.1 snapshot)
     // Switched from Texture Packs to Resource Packs
-    let v1_6_1 = DateTime::parse_from_rfc3339("2013-06-13T15:32:23+00:00").unwrap();
+    let v1_6_1 = DateTime::parse_from_rfc3339("2013-06-13T15:32:23+00:00")?;
     let resource_packs = match DateTime::parse_from_rfc3339(&version_json.releaseTime) {
         Ok(dt) => {
             if dt >= v1_6_1 {

@@ -131,15 +131,7 @@ impl Launcher {
             AccountMessage::RefreshComplete(Ok(data)) => {
                 self.accounts.insert(data.get_username_modified(), data);
 
-                let account_data = if let Some(account) = &self.accounts_selected {
-                    if account == NEW_ACCOUNT_NAME || account == OFFLINE_ACCOUNT_NAME {
-                        None
-                    } else {
-                        self.accounts.get(account).cloned()
-                    }
-                } else {
-                    None
-                };
+                let account_data = self.get_selected_account_data();
 
                 return Task::batch([
                     self.go_to_launch_screen::<String>(None),
@@ -363,5 +355,17 @@ impl Launcher {
         });
 
         task
+    }
+
+    pub fn get_selected_account_data(&self) -> Option<AccountData> {
+        if let Some(account) = &self.accounts_selected {
+            if account == NEW_ACCOUNT_NAME || account == OFFLINE_ACCOUNT_NAME {
+                None
+            } else {
+                self.accounts.get(account).cloned()
+            }
+        } else {
+            None
+        }
     }
 }

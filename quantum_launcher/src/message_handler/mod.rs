@@ -23,7 +23,7 @@ use crate::{
     state::{
         ClientProcess, EditPresetsMessage, ManageModsMessage, MenuEditInstance, MenuEditMods,
         MenuInstallForge, MenuLaunch, MenuLauncherUpdate, ProgressBar, SelectedState, State,
-        NEW_ACCOUNT_NAME, OFFLINE_ACCOUNT_NAME,
+        OFFLINE_ACCOUNT_NAME,
     },
     Launcher, Message, ServerProcess,
 };
@@ -569,15 +569,7 @@ impl Launcher {
         }
 
         self.is_launching_game = true;
-        let account_data = if let Some(account) = &self.accounts_selected {
-            if account == NEW_ACCOUNT_NAME || account == OFFLINE_ACCOUNT_NAME {
-                None
-            } else {
-                self.accounts.get(account).cloned()
-            }
-        } else {
-            None
-        };
+        let account_data = self.get_selected_account_data();
         if let Some(account) = &account_data {
             if account.access_token.is_none() || account.needs_refresh {
                 return self.account_refresh(account);
