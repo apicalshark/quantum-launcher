@@ -66,6 +66,27 @@ pub fn shortcut_ctrl<'a>(key: &str) -> Element<'a> {
     widget::text!("Control + {key}").size(12).into()
 }
 
+fn sidebar_button<'a, A: PartialEq>(
+    current: A,
+    selected: A,
+    text: impl Into<Element<'a>>,
+    message: Message,
+) -> Element<'a> {
+    if current == selected {
+        widget::container(widget::row!(widget::Space::with_width(5), text.into()))
+            .style(LauncherTheme::style_container_selected_flat_button)
+            .width(Length::Fill)
+            .padding(5)
+            .into()
+    } else {
+        widget::button(text)
+            .on_press(message)
+            .style(|n: &LauncherTheme, status| n.style_button(status, StyleButton::FlatExtraDark))
+            .width(Length::Fill)
+            .into()
+    }
+}
+
 impl MenuCreateInstance {
     pub fn view(&self) -> Element {
         match self {
@@ -379,21 +400,12 @@ impl MenuLicense {
             .padding(10),
             widget::container(widget::column(LicenseTab::ALL.iter().map(|tab| {
                 let text = widget::text(tab.to_string());
-                if *tab == self.selected_tab {
-                    widget::container(widget::row!(widget::Space::with_width(5), text))
-                        .style(LauncherTheme::style_container_selected_flat_button)
-                        .width(Length::Fill)
-                        .padding(5)
-                        .into()
-                } else {
-                    widget::button(text)
-                        .on_press(Message::LicenseChangeTab(*tab))
-                        .style(|n: &LauncherTheme, status| {
-                            n.style_button(status, StyleButton::FlatExtraDark)
-                        })
-                        .width(Length::Fill)
-                        .into()
-                }
+                sidebar_button(
+                    *tab,
+                    self.selected_tab,
+                    text,
+                    Message::LicenseChangeTab(*tab),
+                )
             })))
             .height(Length::Fill)
             .width(200)

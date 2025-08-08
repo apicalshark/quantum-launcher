@@ -12,7 +12,9 @@ use crate::{
     },
 };
 
-use super::{back_button, button_with_icon, get_theme_selector, Element, DISCORD, GITHUB};
+use super::{
+    back_button, button_with_icon, get_theme_selector, sidebar_button, Element, DISCORD, GITHUB,
+};
 
 const SETTINGS_SPACING: f32 = 7.0;
 const PADDING_NOT_BOTTOM: iced::Padding = iced::Padding {
@@ -51,23 +53,12 @@ impl MenuLauncherSettings {
                     .spacing(10),
                     widget::column(LauncherSettingsTab::ALL.iter().map(|tab| {
                         let text = widget::text(tab.to_string());
-                        if *tab == self.selected_tab {
-                            widget::container(widget::row!(widget::Space::with_width(5), text))
-                                .style(LauncherTheme::style_container_selected_flat_button)
-                                .width(Length::Fill)
-                                .padding(5)
-                                .into()
-                        } else {
-                            widget::button(text)
-                                .on_press(Message::LauncherSettings(
-                                    LauncherSettingsMessage::ChangeTab(*tab),
-                                ))
-                                .style(|n: &LauncherTheme, status| {
-                                    n.style_button(status, StyleButton::FlatExtraDark)
-                                })
-                                .width(Length::Fill)
-                                .into()
-                        }
+                        sidebar_button(
+                            *tab,
+                            self.selected_tab,
+                            text,
+                            Message::LauncherSettings(LauncherSettingsMessage::ChangeTab(*tab)),
+                        )
                     }))
                 ]
                 .spacing(10)
