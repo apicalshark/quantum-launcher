@@ -124,7 +124,7 @@ jobs:
 
       - name: Download appimagetool
         run: |
-          wget https://github.com/AppImage/AppImageKit/releases/download/13/${{ matrix.appimage_tool }}
+          wget https://github.com/AppImage/AppImageKit/releases/download/continuous/${{ matrix.appimage_tool }}
           chmod +x ${{ matrix.appimage_tool }}
 
       - name: Build AppImage
