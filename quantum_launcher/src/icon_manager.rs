@@ -81,4 +81,4 @@ icon_define!(refresh_clock, '\u{e91F}'); // This should be an update icon
 
 icon_define!(chatbox_alt, '\u{e920}'); // This is experimental, I guess
 icon_define!(mode_dark, '\u{e921}');
-icon_define!(mode_light, '\u{e923}');
+icon_define!(mode_light, '\u{e922}');
