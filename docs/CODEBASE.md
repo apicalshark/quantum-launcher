@@ -65,7 +65,7 @@ Use `info!()`, `pt!()`, `err!()` for launcher log messages. Here's an example
 ```
 
 Make sure to only log useful things, don't spew endless garbage.
-As a rule of thumb, if a user's launcher breaks and they send the log,
+As a rule of thumb, if a user's launcher breaks, and they send the log,
 that message should be one that helps in troubleshooting/understanding what happened.
 
 - Info is for... well, informational messages that tell
