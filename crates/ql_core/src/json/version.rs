@@ -79,24 +79,6 @@ impl VersionDetails {
         Ok(version_json)
     }
 
-    /// Loads a Minecraft instance JSON from disk,
-    /// based on a path to the root of the instance directory.
-    ///
-    /// This is the sync function, for the `async` function
-    /// see [`VersionDetails::load_from_path`]
-    ///
-    /// # Errors
-    /// - `dir`/`details.json` doesn't exist or isn't a file
-    /// - `details.json` file couldn't be loaded
-    /// - `details.json` couldn't be parsed into valid JSON
-    pub fn load_s(instance_dir: &Path) -> Result<Self, JsonFileError> {
-        let path = instance_dir.join("details.json");
-        let file = std::fs::read_to_string(&path).path(path)?;
-        let details: VersionDetails = serde_json::from_str(&file).json(file)?;
-
-        Ok(details)
-    }
-
     pub async fn apply_tweaks(
         &mut self,
         instance: &InstanceSelection,

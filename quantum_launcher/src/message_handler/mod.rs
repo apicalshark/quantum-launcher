@@ -169,13 +169,13 @@ impl Launcher {
     }
 
     pub fn go_to_edit_mods_menu_without_update_check(&mut self) -> Task<Message> {
-        pub fn inner(this: &mut Launcher) -> Result<Task<Message>, JsonFileError> {
+        async fn inner(this: &mut Launcher) -> Result<Task<Message>, JsonFileError> {
             let instance = this.selected_instance.as_ref().unwrap();
 
-            let config_json = block_on(InstanceConfigJson::read(instance))?;
-            let version_json = Box::new(VersionDetails::load_s(&instance.get_instance_path())?);
+            let config_json = InstanceConfigJson::read(instance).await?;
+            let version_json = Box::new(VersionDetails::load(instance).await?);
 
-            let idx = ModIndex::get_s(instance)?;
+            let idx = ModIndex::get(instance).await?;
             let locally_installed_mods =
                 MenuEditMods::update_locally_installed_mods(&idx, instance);
 
@@ -195,7 +195,7 @@ impl Launcher {
 
             Ok(locally_installed_mods)
         }
-        match inner(self) {
+        match block_on(inner(self)) {
             Ok(n) => n,
             Err(err) => {
                 self.set_error(format!("While opening Mods screen:\n{err}"));
@@ -206,19 +206,13 @@ impl Launcher {
 
     pub fn go_to_edit_mods_menu(&mut self) -> Result<Task<Message>, JsonFileError> {
         let selected_instance = self.selected_instance.as_ref().unwrap();
-        let config_path = selected_instance.get_instance_path().join("config.json");
 
-        let config_json = std::fs::read_to_string(&config_path).path(config_path)?;
-        let config_json: InstanceConfigJson =
-            serde_json::from_str(&config_json).json(config_json)?;
-
-        let version_json = Box::new(VersionDetails::load_s(
-            &selected_instance.get_instance_path(),
-        )?);
+        let config_json = block_on(InstanceConfigJson::read(selected_instance))?;
+        let version_json = Box::new(block_on(VersionDetails::load(selected_instance))?);
 
         let is_vanilla = config_json.mod_type == "Vanilla";
 
-        let idx = ModIndex::get_s(selected_instance)?;
+        let idx = block_on(ModIndex::get(selected_instance))?;
         let locally_installed_mods =
             MenuEditMods::update_locally_installed_mods(&idx, selected_instance);
 
@@ -407,10 +401,6 @@ impl Launcher {
             None | Some(InstanceSelection::Instance(_)) => self.go_to_launch_screen(message),
             Some(InstanceSelection::Server(_)) => self.go_to_server_manage_menu(message),
         }
-    }
-
-    pub fn get_selected_instance_dir(&self) -> Option<PathBuf> {
-        Some(self.selected_instance.as_ref()?.get_instance_path())
     }
 
     pub fn get_selected_dot_minecraft_dir(&self) -> Option<PathBuf> {

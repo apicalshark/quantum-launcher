@@ -21,9 +21,9 @@ impl Launcher {
         let version_json = if let State::EditMods(menu) = &self.state {
             menu.version_json.clone()
         } else {
-            Box::new(VersionDetails::load_s(&selection.get_instance_path())?)
+            Box::new(block_on(VersionDetails::load(selection))?)
         };
-        let mod_index = ModIndex::get_s(selection)?;
+        let mod_index = block_on(ModIndex::get(selection))?;
 
         let mut menu = MenuModsDownload {
             scroll_offset: AbsoluteOffset::default(),

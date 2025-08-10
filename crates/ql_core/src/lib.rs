@@ -420,8 +420,9 @@ pub enum OptifineUniqueVersion {
 
 impl OptifineUniqueVersion {
     #[must_use]
-    pub fn get(instance: &InstanceSelection) -> Option<Self> {
-        VersionDetails::load_s(&instance.get_instance_path())
+    pub async fn get(instance: &InstanceSelection) -> Option<Self> {
+        VersionDetails::load(instance)
+            .await
             .ok()
             .and_then(|n| match n.get_id() {
                 "1.5.2" => Some(OptifineUniqueVersion::V1_5_2),

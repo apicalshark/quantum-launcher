@@ -1,10 +1,10 @@
-use std::collections::HashSet;
-
+use iced::futures::executor::block_on;
 use iced::Task;
 use ql_core::{
     err, json::VersionDetails, InstanceSelection, IntoStringError, Loader, ModId, SelectedMod,
 };
 use ql_mod_manager::store::{RecommendedMod, RECOMMENDED_MODS};
+use std::collections::HashSet;
 
 use crate::state::{
     EditPresetsMessage, Launcher, MenuCurseforgeManualDownload, MenuEditPresets,
@@ -246,7 +246,7 @@ impl Launcher {
         if recommended_mods.is_some() {
             return None;
         }
-        let json = VersionDetails::load_s(&selected_instance.get_instance_path()).ok()?;
+        let json = block_on(VersionDetails::load(selected_instance)).ok()?;
         let loader = Loader::try_from(mod_type.as_str()).ok()?;
         let version = json.get_id().to_owned();
         let ids = RECOMMENDED_MODS.to_owned();
@@ -298,7 +298,9 @@ impl Launcher {
             return Task::none();
         }
 
-        let Ok(json) = VersionDetails::load_s(&self.get_selected_instance_dir().unwrap()) else {
+        let Ok(json) = block_on(VersionDetails::load(
+            self.selected_instance.as_ref().unwrap(),
+        )) else {
             return Task::none();
         };
         let Ok(loader) = Loader::try_from(mod_type.as_str()) else {

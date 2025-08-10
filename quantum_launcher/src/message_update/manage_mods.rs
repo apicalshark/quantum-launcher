@@ -1,11 +1,11 @@
-use std::{collections::HashSet, path::PathBuf};
-
+use iced::futures::executor::block_on;
 use iced::Task;
 use ql_core::{
     err, err_no_log, jarmod::JarMods, InstanceSelection, IntoIoError, IntoStringError, ModId,
     SelectedMod,
 };
 use ql_mod_manager::store::ModIndex;
+use std::{collections::HashSet, path::PathBuf};
 
 use crate::state::{
     Launcher, ManageJarModsMessage, ManageModsMessage, MenuCurseforgeManualDownload,
@@ -280,7 +280,7 @@ impl Launcher {
 
     fn update_mod_index(&mut self) {
         if let State::EditMods(menu) = &mut self.state {
-            match ModIndex::get_s(self.selected_instance.as_ref().unwrap()).strerr() {
+            match block_on(ModIndex::get(self.selected_instance.as_ref().unwrap())).strerr() {
                 Ok(idx) => menu.mods = idx,
                 Err(err) => self.set_error(err),
             }

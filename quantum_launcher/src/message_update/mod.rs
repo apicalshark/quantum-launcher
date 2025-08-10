@@ -4,6 +4,7 @@ use iced::{
     widget::{image::Handle, scrollable::AbsoluteOffset},
     Task,
 };
+use iced::futures::executor::block_on;
 use ql_core::{err, info, InstanceSelection, IntoStringError, ModId, OptifineUniqueVersion};
 use ql_mod_manager::{
     loaders,
@@ -328,7 +329,7 @@ impl Launcher {
         match message {
             InstallOptifineMessage::ScreenOpen => {
                 let optifine_unique_version =
-                    OptifineUniqueVersion::get(self.selected_instance.as_ref().unwrap());
+                    block_on(OptifineUniqueVersion::get(self.selected_instance.as_ref().unwrap()));
 
                 if let Some(version @ OptifineUniqueVersion::B1_7_3) = optifine_unique_version {
                     self.state = State::InstallOptifine(MenuInstallOptifine {
@@ -365,7 +366,7 @@ impl Launcher {
                     let (j_sender, j_recv) = std::sync::mpsc::channel();
 
                     let instance = self.selected_instance.as_ref().unwrap();
-                    let optifine_unique_version = OptifineUniqueVersion::get(instance);
+                    let optifine_unique_version = block_on(OptifineUniqueVersion::get(instance));
 
                     if let Some(OptifineUniqueVersion::B1_7_3) = optifine_unique_version {}
 
