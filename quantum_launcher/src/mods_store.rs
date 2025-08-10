@@ -1,41 +1,34 @@
 use std::{
     collections::{HashMap, HashSet},
-    sync::Mutex,
     time::Instant,
 };
 
+use iced::futures::executor::block_on;
 use iced::{widget::scrollable::AbsoluteOffset, Task};
 use ql_core::{
     json::{instance_config::InstanceConfigJson, version::VersionDetails},
-    InstanceSelection, IntoIoError, IntoStringError, Loader, StoreBackendType,
+    InstanceSelection, IntoStringError, JsonFileError, Loader, StoreBackendType,
 };
 use ql_mod_manager::store::{ModIndex, Query, QueryType};
 
 use crate::state::{InstallModsMessage, Launcher, MenuModsDownload, Message, State};
 
 impl Launcher {
-    pub fn open_mods_store(&mut self) -> Result<Task<Message>, String> {
+    pub fn open_mods_store(&mut self) -> Result<Task<Message>, JsonFileError> {
         let selection = self.selected_instance.as_ref().unwrap();
-        let instances_dir = selection.get_instance_path();
 
-        let config_path = instances_dir.join("config.json");
-        let config = std::fs::read_to_string(&config_path)
-            .path(config_path)
-            .strerr()?;
-        let config: InstanceConfigJson = serde_json::from_str(&config).strerr()?;
-
-        let version_path = instances_dir.join("details.json");
-        let version = std::fs::read_to_string(&version_path)
-            .path(version_path)
-            .strerr()?;
-        let version: VersionDetails = serde_json::from_str(&version).strerr()?;
-
-        let mod_index = ModIndex::get_s(selection).strerr()?;
+        let config = block_on(InstanceConfigJson::read(selection))?;
+        let version_json = if let State::EditMods(menu) = &self.state {
+            menu.version_json.clone()
+        } else {
+            Box::new(VersionDetails::load_s(&selection.get_instance_path())?)
+        };
+        let mod_index = ModIndex::get_s(selection)?;
 
         let mut menu = MenuModsDownload {
             scroll_offset: AbsoluteOffset::default(),
             config,
-            json: Mutex::new(version),
+            version_json,
             latest_load: Instant::now(),
             query: String::new(),
             results: None,
@@ -52,7 +45,7 @@ impl Launcher {
             matches!(&self.selected_instance, Some(InstanceSelection::Server(_))),
             0,
         );
-        self.state = State::ModsDownload(Box::new(menu));
+        self.state = State::ModsDownload(menu);
         Ok(command)
     }
 }
@@ -63,7 +56,7 @@ impl MenuModsDownload {
 
         let query = Query {
             name: self.query.clone(),
-            version: self.json.lock().unwrap().get_id().to_owned(),
+            version: self.version_json.get_id().to_owned(),
             loader,
             server_side: is_server,
             // open_source: false, // TODO: Add Open Source filter

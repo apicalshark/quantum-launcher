@@ -246,7 +246,7 @@ impl Launcher {
         if recommended_mods.is_some() {
             return None;
         }
-        let json = VersionDetails::load_s(&selected_instance.get_instance_path())?;
+        let json = VersionDetails::load_s(&selected_instance.get_instance_path()).ok()?;
         let loader = Loader::try_from(mod_type.as_str()).ok()?;
         let version = json.get_id().to_owned();
         let ids = RECOMMENDED_MODS.to_owned();
@@ -298,10 +298,9 @@ impl Launcher {
             return Task::none();
         }
 
-        let Some(json) = VersionDetails::load_s(&self.get_selected_instance_dir().unwrap()) else {
+        let Ok(json) = VersionDetails::load_s(&self.get_selected_instance_dir().unwrap()) else {
             return Task::none();
         };
-
         let Ok(loader) = Loader::try_from(mod_type.as_str()) else {
             return Task::none();
         };

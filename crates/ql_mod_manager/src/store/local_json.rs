@@ -72,7 +72,7 @@ impl ModIndex {
         }
     }
 
-    pub fn get_s(selected_instance: &InstanceSelection) -> Result<Self, ModError> {
+    pub fn get_s(selected_instance: &InstanceSelection) -> Result<Self, JsonFileError> {
         let dot_mc_dir = selected_instance.get_dot_minecraft_path();
 
         let mods_dir = dot_mc_dir.join("mods");

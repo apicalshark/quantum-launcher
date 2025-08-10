@@ -105,7 +105,7 @@ impl MenuModsDownload {
                             ).size(12)
                         ).padding(10).width(Length::Fill).style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::ExtraDark)),
                     )
-                ).push_maybe((self.query_type == QueryType::Mods && self.json.lock().unwrap().is_legacy_version())
+                ).push_maybe((self.query_type == QueryType::Mods && self.version_json.is_legacy_version())
                     .then_some(
                         widget::container(
                             widget::text(

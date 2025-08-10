@@ -1,6 +1,5 @@
 use std::{
     collections::{HashMap, HashSet},
-    sync::Mutex,
     time::Instant,
 };
 
@@ -133,6 +132,7 @@ pub struct MenuEditMods {
     pub mod_update_progress: Option<ProgressBar<GenericProgress>>,
 
     pub config: InstanceConfigJson,
+    pub version_json: Box<VersionDetails>,
     pub mods: ModIndex,
 
     pub locally_installed_mods: HashSet<String>,
@@ -258,7 +258,7 @@ pub struct MenuModsDownload {
     pub query: String,
     pub results: Option<SearchResult>,
     pub mod_descriptions: HashMap<ModId, String>,
-    pub json: Mutex<VersionDetails>,
+    pub version_json: Box<VersionDetails>,
     pub opened_mod: Option<usize>,
     pub latest_load: Instant,
     pub mods_download_in_progress: HashSet<ModId>,
@@ -429,7 +429,7 @@ pub enum State {
 
     InstallJava,
 
-    ModsDownload(Box<MenuModsDownload>),
+    ModsDownload(MenuModsDownload),
     LauncherSettings(MenuLauncherSettings),
     ServerCreate(MenuServerCreate),
     ManagePresets(MenuEditPresets),

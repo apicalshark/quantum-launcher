@@ -89,27 +89,12 @@ impl VersionDetails {
     /// - `dir`/`details.json` doesn't exist or isn't a file
     /// - `details.json` file couldn't be loaded
     /// - `details.json` couldn't be parsed into valid JSON
-    #[must_use]
-    pub fn load_s(instance_dir: &Path) -> Option<Self> {
+    pub fn load_s(instance_dir: &Path) -> Result<Self, JsonFileError> {
         let path = instance_dir.join("details.json");
+        let file = std::fs::read_to_string(&path).path(path)?;
+        let details: VersionDetails = serde_json::from_str(&file).json(file)?;
 
-        let file = match std::fs::read_to_string(&path) {
-            Ok(n) => n,
-            Err(err) => {
-                err!("Couldn't read details.json: {err}");
-                return None;
-            }
-        };
-
-        let details: VersionDetails = match serde_json::from_str(&file) {
-            Ok(n) => n,
-            Err(err) => {
-                err!("Couldn't parse details.json: {err}");
-                return None;
-            }
-        };
-
-        Some(details)
+        Ok(details)
     }
 
     pub async fn apply_tweaks(

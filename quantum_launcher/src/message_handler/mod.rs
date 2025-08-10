@@ -1,5 +1,15 @@
+use crate::{
+    get_entries,
+    state::{
+        ClientProcess, EditPresetsMessage, ManageModsMessage, MenuEditInstance, MenuEditMods,
+        MenuInstallForge, MenuLaunch, MenuLauncherUpdate, ProgressBar, SelectedState, State,
+        OFFLINE_ACCOUNT_NAME,
+    },
+    Launcher, Message, ServerProcess,
+};
 use iced::futures::executor::block_on;
 use iced::Task;
+use ql_core::json::VersionDetails;
 use ql_core::{
     err, json::instance_config::InstanceConfigJson, GenericProgress, InstanceSelection,
     IntoIoError, IntoJsonError, IntoStringError, JsonFileError,
@@ -17,16 +27,6 @@ use std::{
     },
 };
 use tokio::process::Child;
-
-use crate::{
-    get_entries,
-    state::{
-        ClientProcess, EditPresetsMessage, ManageModsMessage, MenuEditInstance, MenuEditMods,
-        MenuInstallForge, MenuLaunch, MenuLauncherUpdate, ProgressBar, SelectedState, State,
-        OFFLINE_ACCOUNT_NAME,
-    },
-    Launcher, Message, ServerProcess,
-};
 
 pub const SIDEBAR_DRAG_LEEWAY: f32 = 10.0;
 pub const SIDEBAR_LIMIT_RIGHT: u16 = 300;
@@ -169,37 +169,36 @@ impl Launcher {
     }
 
     pub fn go_to_edit_mods_menu_without_update_check(&mut self) -> Task<Message> {
-        let selected_instance = self.selected_instance.as_ref().unwrap();
-        let config_json = match block_on(InstanceConfigJson::read(selected_instance)) {
+        pub fn inner(this: &mut Launcher) -> Result<Task<Message>, JsonFileError> {
+            let instance = this.selected_instance.as_ref().unwrap();
+
+            let config_json = block_on(InstanceConfigJson::read(instance))?;
+            let version_json = Box::new(VersionDetails::load_s(&instance.get_instance_path())?);
+
+            let idx = ModIndex::get_s(instance)?;
+            let locally_installed_mods =
+                MenuEditMods::update_locally_installed_mods(&idx, instance);
+
+            this.state = State::EditMods(MenuEditMods {
+                config: config_json,
+                mods: idx,
+                selected_mods: HashSet::new(),
+                sorted_mods_list: Vec::new(),
+                selected_state: SelectedState::None,
+                available_updates: Vec::new(),
+                mod_update_progress: None,
+                locally_installed_mods: HashSet::new(),
+                drag_and_drop_hovered: false,
+                update_check_handle: None,
+                version_json,
+            });
+
+            Ok(locally_installed_mods)
+        }
+        match inner(self) {
             Ok(n) => n,
             Err(err) => {
-                self.set_error(format!("While opening mods screen:\n{err}"));
-                return Task::none();
-            }
-        };
-
-        match ModIndex::get_s(selected_instance).strerr() {
-            Ok(idx) => {
-                let locally_installed_mods =
-                    MenuEditMods::update_locally_installed_mods(&idx, selected_instance);
-
-                self.state = State::EditMods(MenuEditMods {
-                    config: config_json,
-                    mods: idx,
-                    selected_mods: HashSet::new(),
-                    sorted_mods_list: Vec::new(),
-                    selected_state: SelectedState::None,
-                    available_updates: Vec::new(),
-                    mod_update_progress: None,
-                    locally_installed_mods: HashSet::new(),
-                    drag_and_drop_hovered: false,
-                    update_check_handle: None,
-                });
-
-                locally_installed_mods
-            }
-            Err(err) => {
-                self.set_error(err);
+                self.set_error(format!("While opening Mods screen:\n{err}"));
                 Task::none()
             }
         }
@@ -213,44 +212,42 @@ impl Launcher {
         let config_json: InstanceConfigJson =
             serde_json::from_str(&config_json).json(config_json)?;
 
+        let version_json = Box::new(VersionDetails::load_s(
+            &selected_instance.get_instance_path(),
+        )?);
+
         let is_vanilla = config_json.mod_type == "Vanilla";
 
-        match ModIndex::get_s(selected_instance).strerr() {
-            Ok(idx) => {
-                let locally_installed_mods =
-                    MenuEditMods::update_locally_installed_mods(&idx, selected_instance);
+        let idx = ModIndex::get_s(selected_instance)?;
+        let locally_installed_mods =
+            MenuEditMods::update_locally_installed_mods(&idx, selected_instance);
 
-                let (update_cmd, update_check_handle) = if is_vanilla {
-                    (Task::none(), None)
-                } else {
-                    let (a, b) = Task::perform(
-                        ql_mod_manager::store::check_for_updates(selected_instance.clone()),
-                        |n| Message::ManageMods(ManageModsMessage::UpdateCheckResult(n.strerr())),
-                    )
-                    .abortable();
-                    (a, Some(b.abort_on_drop()))
-                };
+        let (update_cmd, update_check_handle) = if is_vanilla {
+            (Task::none(), None)
+        } else {
+            let (a, b) = Task::perform(
+                ql_mod_manager::store::check_for_updates(selected_instance.clone()),
+                |n| Message::ManageMods(ManageModsMessage::UpdateCheckResult(n.strerr())),
+            )
+            .abortable();
+            (a, Some(b.abort_on_drop()))
+        };
 
-                self.state = State::EditMods(MenuEditMods {
-                    config: config_json,
-                    mods: idx,
-                    selected_mods: HashSet::new(),
-                    sorted_mods_list: Vec::new(),
-                    selected_state: SelectedState::None,
-                    available_updates: Vec::new(),
-                    mod_update_progress: None,
-                    locally_installed_mods: HashSet::new(),
-                    drag_and_drop_hovered: false,
-                    update_check_handle,
-                });
+        self.state = State::EditMods(MenuEditMods {
+            config: config_json,
+            mods: idx,
+            selected_mods: HashSet::new(),
+            sorted_mods_list: Vec::new(),
+            selected_state: SelectedState::None,
+            available_updates: Vec::new(),
+            mod_update_progress: None,
+            locally_installed_mods: HashSet::new(),
+            drag_and_drop_hovered: false,
+            version_json,
+            update_check_handle,
+        });
 
-                return Ok(Task::batch([locally_installed_mods, update_cmd]));
-            }
-            Err(err) => {
-                self.set_error(err);
-            }
-        }
-        Ok(Task::none())
+        Ok(Task::batch([locally_installed_mods, update_cmd]))
     }
 
     pub fn set_game_crashed(&mut self, status: ExitStatus, name: &str) {
