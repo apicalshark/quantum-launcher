@@ -176,7 +176,7 @@ impl MenuEditMods {
 
             "Forge" => widget::column!(
                 tooltip(
-                    widget::button("Install OptiFine"),
+                    widget::button(widget::text("Install OptiFine with Forge").size(14)),
                     "Coming in a future launcher version..."
                 ),
                 Self::get_uninstall_panel(
@@ -187,7 +187,10 @@ impl MenuEditMods {
             .spacing(5)
             .into(),
             "OptiFine" => widget::column!(
-                widget::button("Install Forge"),
+                tooltip(
+                    widget::button(widget::text("Install Forge with OptiFine").size(14)),
+                    "Coming in a future launcher version..."
+                ),
                 Self::get_uninstall_panel(
                     &self.config.mod_type,
                     Message::UninstallLoaderOptiFineStart,
