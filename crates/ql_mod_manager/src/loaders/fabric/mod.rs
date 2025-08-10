@@ -3,7 +3,8 @@ use std::{path::Path, sync::mpsc::Sender};
 use ql_core::{
     file_utils, info,
     json::{FabricJSON, VersionDetails},
-    GenericProgress, InstanceSelection, IntoIoError, IntoJsonError, RequestError, LAUNCHER_DIR,
+    GenericProgress, InstanceSelection, IntoIoError, IntoJsonError, JsonDownloadError,
+    RequestError, LAUNCHER_DIR,
 };
 use serde::Deserialize;
 use version_compare::compare_versions;
@@ -22,7 +23,11 @@ const QUILT_URL: &str = "https://meta.quiltmc.org/v3";
 
 async fn download_file_to_string(url: &str, is_quilt: bool) -> Result<String, RequestError> {
     file_utils::download_file_to_string(
-        &format!("{}/{url}", if is_quilt { QUILT_URL } else { FABRIC_URL }),
+        &format!(
+            "{}{}{url}",
+            if url.starts_with('/') { "" } else { "/" },
+            if is_quilt { QUILT_URL } else { FABRIC_URL }
+        ),
         false,
     )
     .await
@@ -32,29 +37,39 @@ pub async fn get_list_of_versions(
     instance: InstanceSelection,
     is_quilt: bool,
 ) -> Result<Vec<FabricVersionListItem>, FabricInstallError> {
+    let version_json = VersionDetails::load(&instance).await?;
+
     async fn inner(
-        instance_name: &InstanceSelection,
+        version_json: &VersionDetails,
         is_quilt: bool,
-    ) -> Result<Vec<FabricVersionListItem>, FabricInstallError> {
-        let version_json = VersionDetails::load(instance_name).await?;
-        let version_list =
-            download_file_to_string(&format!("/versions/loader/{}", version_json.id), is_quilt)
-                .await?;
+    ) -> Result<Vec<FabricVersionListItem>, JsonDownloadError> {
+        let version_list = download_file_to_string(
+            &format!("/versions/loader/{}", version_json.get_id()),
+            is_quilt,
+        )
+        .await?;
         let versions = serde_json::from_str(&version_list).json(version_list)?;
         Ok(versions)
     }
 
-    let mut result = inner(&instance, is_quilt).await;
+    let mut result = inner(&version_json, is_quilt).await;
     if result.is_err() {
         for _ in 0..5 {
-            result = inner(&instance, is_quilt).await;
-            if result.is_ok() {
-                break;
+            result = inner(&version_json, is_quilt).await;
+            match &result {
+                Ok(_) => break,
+                Err(JsonDownloadError::RequestError(RequestError::DownloadError {
+                    code, ..
+                })) if code.as_u16() == 404 => {
+                    // Unsupported version
+                    return Ok(Vec::new());
+                }
+                Err(_) => {}
             }
         }
     }
 
-    result
+    result.map_err(FabricInstallError::from)
 }
 
 pub async fn install_server(
