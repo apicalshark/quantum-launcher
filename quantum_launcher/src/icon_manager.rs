@@ -12,15 +12,15 @@
 use crate::menu_renderer::Element;
 use paste::paste;
 
-const ICON_FONT2: iced::Font = iced::Font::with_name("QuantumLauncher");
+const ICON_FONT: iced::Font = iced::Font::with_name("QL_Icons_V1-2");
 
 pub fn icon<'a>(codepoint: char) -> Element<'a> {
-    iced::widget::text(codepoint).font(ICON_FONT2).into()
+    iced::widget::text(codepoint).font(ICON_FONT).into()
 }
 
 pub fn icon_with_size<'a>(codepoint: char, size: u16) -> Element<'a> {
     iced::widget::text(codepoint)
-        .font(ICON_FONT2)
+        .font(ICON_FONT)
         .size(size)
         .into()
 }
