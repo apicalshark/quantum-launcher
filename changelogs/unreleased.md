@@ -12,10 +12,15 @@
 - Added a new Teal color scheme!
 - Overhauled the Launcher Settings menu
 
-# [ely.by](https://ely.by)/[`littleskin`](https://littleskin.cn) integration
+# [`ely.by`](https://ely.by)/[`littleskin`](https://littleskin.cn) integration
 
-- You can now log in with [ely.by](https://ely.by) and [`littleskin`](https://littleskin.cn) accounts!
+- You can now log in with [`ely.by`](https://ely.by) and [`littleskin`](https://littleskin.cn) accounts!
 - Minecraft 1.21.5 and below support skins from both services (b)
+
+> **Note**:
+> You'll need to create a new instance for skins to work without mods.
+>
+> For existing instances, and for 1.21.6+, use the CustomSkinLoader mod
 
 # UI
 
