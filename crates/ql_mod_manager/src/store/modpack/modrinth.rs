@@ -48,10 +48,10 @@ pub async fn install(
     sender: Option<&Sender<GenericProgress>>,
 ) -> Result<(), PackError> {
     if let Some(version) = index.dependencies.get("minecraft") {
-        if json.id != *version {
+        if json.get_id() != *version {
             return Err(PackError::GameVersion {
                 expect: version.clone(),
-                got: json.id.clone(),
+                got: json.get_id().to_owned(),
             });
         }
     }

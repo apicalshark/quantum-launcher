@@ -182,6 +182,10 @@ impl VersionDetails {
                     .is_some_and(|n| n.contains("mcphackers/launchwrapper/1.1.2"))
             })
     }
+
+    pub fn get_id(&self) -> &str {
+        self.id.strip_suffix("-lwjgl3").unwrap_or(&self.id)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

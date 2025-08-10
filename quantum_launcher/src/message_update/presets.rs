@@ -248,7 +248,7 @@ impl Launcher {
         }
         let json = VersionDetails::load_s(&selected_instance.get_instance_path())?;
         let loader = Loader::try_from(mod_type.as_str()).ok()?;
-        let version = json.id.clone();
+        let version = json.get_id().to_owned();
         let ids = RECOMMENDED_MODS.to_owned();
 
         Some(Task::perform(
@@ -306,7 +306,7 @@ impl Launcher {
             return Task::none();
         };
 
-        let version = json.id.clone();
+        let version = json.get_id().to_owned();
         let ids = RECOMMENDED_MODS.to_owned();
         Task::perform(
             RecommendedMod::get_compatible_mods(ids, version, loader, sender),

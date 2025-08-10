@@ -36,7 +36,7 @@ pub async fn check_for_updates(
         loader.map_or("Vanilla".to_owned(), |n| format!("{n:?}"))
     );
 
-    let version = &version_json.id;
+    let version = version_json.get_id();
 
     let updated_mods: Result<Vec<Option<(ModId, String)>>, ModError> = do_jobs(
         index

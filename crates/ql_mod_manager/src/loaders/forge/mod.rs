@@ -69,7 +69,7 @@ impl ForgeInstaller {
         };
 
         let version_json = VersionDetails::load(&instance).await?;
-        let minecraft_version = &version_json.id;
+        let minecraft_version = version_json.get_id();
 
         create_mods_dir(&instance_dir).await?;
         create_lock_file(&instance_dir).await?;
@@ -94,7 +94,7 @@ impl ForgeInstaller {
             if number_of_full_stops == 1 {
                 format!("{minecraft_version}.0")
             } else {
-                minecraft_version.clone()
+                minecraft_version.to_owned()
             }
         };
         let short_version = format!("{minecraft_version}-{version}");
@@ -303,7 +303,7 @@ impl ForgeInstaller {
             };
         }
         Err(ForgeInstallError::NoInstallJson(
-            self.version_json.id.clone(),
+            self.version_json.get_id().to_owned(),
         ))
     }
 
@@ -545,7 +545,7 @@ pub async fn install_client(
 
     let (installer_file, installer_name, _) = installer.download_forge_installer().await?;
 
-    if installer.version_json.is_legacy_version() && installer.version_json.id != "1.5.2" {
+    if installer.version_json.is_legacy_version() && installer.version_json.get_id() != "1.5.2" {
         ql_core::jarmod::insert(
             InstanceSelection::Instance(instance_name.clone()),
             installer_file,

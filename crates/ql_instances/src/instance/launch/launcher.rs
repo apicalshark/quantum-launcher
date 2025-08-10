@@ -131,7 +131,7 @@ impl GameLauncher {
     ) -> Result<(), GameLaunchError> {
         for argument in game_arguments.iter_mut() {
             replace_var(argument, "auth_player_name", &self.username);
-            replace_var(argument, "version_name", &self.version_json.id);
+            replace_var(argument, "version_name", self.version_json.get_id());
             let Some(minecraft_dir_path) = self.minecraft_dir.to_str() else {
                 return Err(GameLaunchError::PathBufToString(self.minecraft_dir.clone()));
             };
@@ -352,7 +352,7 @@ impl GameLauncher {
         if self.config_json.mod_type != "Forge" && self.config_json.mod_type != "NeoForge" {
             return Ok(None);
         }
-        if self.version_json.is_legacy_version() && self.version_json.id != "1.5.2" {
+        if self.version_json.is_legacy_version() && self.version_json.get_id() != "1.5.2" {
             return Ok(None);
         }
 
@@ -433,7 +433,7 @@ impl GameLauncher {
             );
             // I think this argument is only used by forge? Not sure
             replace_var(argument, "library_directory", "../forge/libraries");
-            replace_var(argument, "version_name", &self.version_json.id);
+            replace_var(argument, "version_name", self.version_json.get_id());
         }
     }
 
@@ -743,7 +743,7 @@ impl GameLauncher {
             delete_junk_file(&forge_dir, "launcher_profiles.json").await?;
             delete_junk_file(&forge_dir, "launcher_profiles_microsoft_store.json").await?;
 
-            let versions_dir = forge_dir.join("versions").join(&self.version_json.id);
+            let versions_dir = forge_dir.join("versions").join(self.version_json.get_id());
             if versions_dir.is_dir() {
                 tokio::fs::remove_dir_all(&versions_dir)
                     .await

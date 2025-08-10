@@ -101,12 +101,12 @@ impl GameDownloader {
             .instance_dir
             .join(".minecraft")
             .join("versions")
-            .join(&self.version_json.id);
+            .join(self.version_json.get_id());
         tokio::fs::create_dir_all(&version_dir)
             .await
             .path(&version_dir)?;
 
-        let jar_path = version_dir.join(format!("{}.jar", self.version_json.id));
+        let jar_path = version_dir.join(format!("{}.jar", self.version_json.get_id()));
 
         file_utils::download_file_to_path(
             &self.version_json.downloads.client.url,

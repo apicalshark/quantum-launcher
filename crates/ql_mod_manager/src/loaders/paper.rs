@@ -82,10 +82,9 @@ pub async fn install(instance_name: String) -> Result<(), PaperInstallerError> {
 
     let json = VersionDetails::load(&ql_core::InstanceSelection::Server(instance_name)).await?;
 
-    let url = paper_version
-        .versions
-        .get(&json.id)
-        .ok_or(PaperInstallerError::NoMatchingVersionFound(json.id.clone()))?;
+    let url = paper_version.versions.get(json.get_id()).ok_or(
+        PaperInstallerError::NoMatchingVersionFound(json.get_id().to_owned()),
+    )?;
 
     pt!("Downloading jar");
     let jar_path = server_dir.join("paper_server.jar");

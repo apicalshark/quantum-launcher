@@ -186,7 +186,7 @@ impl PresetJson {
                 // Only sideload mods if the version is the same
                 let instance_type = get_instance_type(&instance).await?;
 
-                should_sideload = this.minecraft_version == version_json.id
+                should_sideload = this.minecraft_version == version_json.get_id()
                     && this.instance_type == instance_type;
 
                 // If sideloaded mods are of an incompatible version, remove them
@@ -262,7 +262,7 @@ fn add_downloaded_mod_to_entries(
 
 async fn get_minecraft_version(instance_name: &InstanceSelection) -> Result<String, ModError> {
     let version_json = VersionDetails::load(instance_name).await?;
-    let minecraft_version = version_json.id.clone();
+    let minecraft_version = version_json.get_id().to_owned();
     Ok(minecraft_version)
 }
 

@@ -63,7 +63,7 @@ impl MenuModsDownload {
 
         let query = Query {
             name: self.query.clone(),
-            version: self.json.lock().unwrap().id.clone(),
+            version: self.json.lock().unwrap().get_id().to_owned(),
             loader,
             server_side: is_server,
             // open_source: false, // TODO: Add Open Source filter

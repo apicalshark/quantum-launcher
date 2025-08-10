@@ -195,7 +195,7 @@ async fn get_version_json(
         }
     }
 
-    Err(ForgeInstallError::NoInstallJson(json.id.clone()))
+    Err(ForgeInstallError::NoInstallJson(json.get_id().to_owned()))
 }
 
 fn send_progress(f_progress: Option<&Sender<ForgeInstallProgress>>, message: ForgeInstallProgress) {
@@ -218,12 +218,13 @@ pub async fn get_versions(
         return Err(ForgeInstallError::NeoforgeOutdatedMinecraft);
     }
 
-    let start_pattern = if REGEX_SNAPSHOT.is_match(&version_json.id) {
+    let version = version_json.get_id();
+    let start_pattern = if REGEX_SNAPSHOT.is_match(version) {
         // Snapshot version
-        format!("0.{}", version_json.id)
+        format!("0.{version}")
     } else {
         // Release version
-        let mut start_pattern = version_json.id[2..].to_owned();
+        let mut start_pattern = version[2..].to_owned();
         if !start_pattern.contains('.') {
             // "20" (in 1.20) -> "20.0" (in 1.20.0)
             // Ensures there are a constant number of parts in the version.

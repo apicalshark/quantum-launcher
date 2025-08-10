@@ -110,7 +110,7 @@ async fn import_quantumlauncher(
     let instance = InstanceSelection::new(&instance_info.instance_name, instance_info.is_server);
 
     pt!("Name: {} ", instance_info.instance_name);
-    pt!("Version : {}", version_json.id);
+    pt!("Version : {}", version_json.get_id());
     pt!("Exceptions : {:?} ", instance_info.exceptions);
     let version = ListEntry {
         name: version_json.id.clone(),

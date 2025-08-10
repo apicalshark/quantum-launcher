@@ -48,7 +48,7 @@ impl ModDownloader {
         let loader = get_loader_type(instance).await?;
         let currently_installing_mods = HashSet::new();
         Ok(ModDownloader {
-            version: version_json.id,
+            version: version_json.get_id().to_owned(),
             index,
             loader,
             currently_installing_mods,

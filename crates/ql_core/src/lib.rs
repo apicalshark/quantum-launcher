@@ -421,7 +421,7 @@ pub enum OptifineUniqueVersion {
 impl OptifineUniqueVersion {
     #[must_use]
     pub fn get(instance: &InstanceSelection) -> Option<Self> {
-        VersionDetails::load_s(&instance.get_instance_path()).and_then(|n| match n.id.as_str() {
+        VersionDetails::load_s(&instance.get_instance_path()).and_then(|n| match n.get_id() {
             "1.5.2" => Some(OptifineUniqueVersion::V1_5_2),
             "1.2.5" => Some(OptifineUniqueVersion::V1_2_5),
             "b1.7.3" => Some(OptifineUniqueVersion::B1_7_3),
@@ -450,8 +450,8 @@ pub fn get_jar_path(
         || {
             instance_dir
                 .join(".minecraft/versions")
-                .join(&version_json.id)
-                .join(format!("{}.jar", version_json.id))
+                .join(version_json.get_id())
+                .join(format!("{}.jar", version_json.get_id()))
         },
         Path::to_owned,
     )

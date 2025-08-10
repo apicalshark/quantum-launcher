@@ -77,7 +77,8 @@ pub async fn install_server(
         .await
         .path(&libraries_dir)?;
 
-    let game_version = VersionDetails::load_from_path(&server_dir).await?.id;
+    let json = VersionDetails::load_from_path(&server_dir).await?;
+    let game_version = json.get_id();
 
     let json_url = format!("/versions/loader/{game_version}/{loader_version}/server/json");
     let json = download_file_to_string(&json_url, is_quilt).await?;
@@ -150,7 +151,8 @@ pub async fn install_client(
 
     let libraries_dir = instance_dir.join("libraries");
 
-    let game_version = VersionDetails::load_from_path(&instance_dir).await?.id;
+    let json = VersionDetails::load_from_path(&instance_dir).await?;
+    let game_version = json.get_id();
 
     let json_path = instance_dir.join("fabric.json");
     let json_url = format!("/versions/loader/{game_version}/{loader_version}/profile/json");
