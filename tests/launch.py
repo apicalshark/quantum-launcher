@@ -169,6 +169,11 @@ def _close_window_unix(result: bytes, pid: int) -> None:
     print(f"✅ Window found: {window_ids} for pid {pid}, killing")
     procs.kill_process(pid)
 
+def _is_xwayland():
+    # Check if running on Wayland with XWayland available
+    # If both WAYLAND_DISPLAY and DISPLAY are set, likely XWayland is running
+    return os.environ.get("WAYLAND_DISPLAY") is not None and os.environ.get("DISPLAY") is not None
+
 
 def _wait_for_window(pid: int, timeout: int, name: str) -> bool:
     start_time = time.time()
@@ -176,6 +181,7 @@ def _wait_for_window(pid: int, timeout: int, name: str) -> bool:
     print(f"\n\nChecking {name} ({pid}) with interval {check_interval} seconds")
 
     is_windows = sys.platform.startswith("win")
+    is_xwayland = _is_xwayland()
 
     while time.time() - start_time < timeout:
         if not _is_process_alive(pid):
@@ -185,9 +191,9 @@ def _wait_for_window(pid: int, timeout: int, name: str) -> bool:
         if is_windows:
             if _backend_windows(pid):
                 return True
-        else:
-            # xdotool backend
+        elif is_xwayland:
             try:
+                # Uses same logic as of x11
                 result = subprocess.check_output(["xdotool", "search", "--pid", str(pid)])
                 _close_window_unix(result, pid)
                 return True
@@ -199,12 +205,14 @@ def _wait_for_window(pid: int, timeout: int, name: str) -> bool:
                     return True
                 except subprocess.CalledProcessError:
                     pass  # No window yet
+        else:
+            print("Wayland without XWayland detected — no xdotool support")
 
         time.sleep(check_interval)
         print("    ...checking")
-    else:
-        print("Error: Timeout waiting for window!")
-        return False
+
+    print("Error: Timeout waiting for window!")
+    return False
 
 
 def test(name: str, timeout: int) -> bool:
