@@ -26,7 +26,7 @@ use super::{LaunchTabId, LauncherSettingsTab, LicenseTab, Res};
 
 #[derive(Debug, Clone)]
 pub enum InstallFabricMessage {
-    End(Res<bool>),
+    End(Res),
     VersionSelected(String),
     VersionsLoaded(Res<Vec<FabricVersionListItem>>),
     ButtonClicked,

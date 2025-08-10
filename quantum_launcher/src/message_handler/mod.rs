@@ -1,3 +1,11 @@
+use iced::futures::executor::block_on;
+use iced::Task;
+use ql_core::{
+    err, json::instance_config::InstanceConfigJson, GenericProgress, InstanceSelection,
+    IntoIoError, IntoJsonError, IntoStringError, JsonFileError,
+};
+use ql_instances::{auth::AccountData, ReadError};
+use ql_mod_manager::{loaders, store::ModIndex};
 use std::{
     collections::HashSet,
     ffi::OsStr,
@@ -8,14 +16,6 @@ use std::{
         Arc, Mutex,
     },
 };
-
-use iced::Task;
-use ql_core::{
-    err, json::instance_config::InstanceConfigJson, GenericProgress, InstanceSelection,
-    IntoIoError, IntoJsonError, IntoStringError, JsonFileError,
-};
-use ql_instances::{auth::AccountData, ReadError};
-use ql_mod_manager::{loaders, store::ModIndex};
 use tokio::process::Child;
 
 use crate::{
@@ -152,7 +152,7 @@ impl Launcher {
 
         let slider_value = f32::log2(config_json.ram_in_mb as f32);
         let memory_mb = config_json.ram_in_mb;
-        
+
         // Use this to check for performance impact
         // std::thread::sleep(std::time::Duration::from_millis(500));
 
@@ -168,15 +168,15 @@ impl Launcher {
         Ok(())
     }
 
-    pub fn go_to_edit_mods_menu_without_update_check(
-        &mut self,
-    ) -> Result<Task<Message>, JsonFileError> {
+    pub fn go_to_edit_mods_menu_without_update_check(&mut self) -> Task<Message> {
         let selected_instance = self.selected_instance.as_ref().unwrap();
-        let config_path = selected_instance.get_instance_path().join("config.json");
-
-        let config_json = std::fs::read_to_string(&config_path).path(config_path)?;
-        let config_json: InstanceConfigJson =
-            serde_json::from_str(&config_json).json(config_json)?;
+        let config_json = match block_on(InstanceConfigJson::read(selected_instance)) {
+            Ok(n) => n,
+            Err(err) => {
+                self.set_error(format!("While opening mods screen:\n{err}"));
+                return Task::none();
+            }
+        };
 
         match ModIndex::get_s(selected_instance).strerr() {
             Ok(idx) => {
@@ -196,11 +196,11 @@ impl Launcher {
                     update_check_handle: None,
                 });
 
-                Ok(locally_installed_mods)
+                locally_installed_mods
             }
             Err(err) => {
                 self.set_error(err);
-                Ok(Task::none())
+                Task::none()
             }
         }
     }

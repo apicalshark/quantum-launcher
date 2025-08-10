@@ -254,7 +254,7 @@ pub async fn install(
     instance: InstanceSelection,
     progress: Option<&Sender<GenericProgress>>,
     is_quilt: bool,
-) -> Result<bool, FabricInstallError> {
+) -> Result<(), FabricInstallError> {
     let loader_version = if let Some(n) = loader_version {
         n
     } else {
@@ -272,7 +272,6 @@ pub async fn install(
         }
         InstanceSelection::Server(n) => install_server(loader_version, n, progress, is_quilt).await,
     }
-    .map(|()| is_quilt)
 }
 
 #[derive(Deserialize, Clone, Debug)]

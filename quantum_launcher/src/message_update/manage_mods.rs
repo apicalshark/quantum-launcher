@@ -20,10 +20,7 @@ impl Launcher {
                 Err(err) => self.set_error(err),
             },
             ManageModsMessage::ScreenOpenWithoutUpdate => {
-                match self.go_to_edit_mods_menu_without_update_check() {
-                    Ok(command) => return command,
-                    Err(err) => self.set_error(err),
-                }
+                return self.go_to_edit_mods_menu_without_update_check();
             }
 
             ManageModsMessage::ToggleCheckbox((name, id), enable) => {
@@ -71,9 +68,8 @@ impl Launcher {
                                 unsupported,
                                 is_store: false,
                             });
-                    } else if let Err(err) = self.go_to_edit_mods_menu_without_update_check() {
-                        self.set_error(err);
                     }
+                    return self.go_to_edit_mods_menu_without_update_check();
                 }
                 Err(err) => self.set_error(err),
             },

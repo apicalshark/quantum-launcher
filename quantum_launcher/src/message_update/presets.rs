@@ -25,15 +25,12 @@ macro_rules! iflet_manage_preset {
 }
 
 impl Launcher {
-    pub fn update_edit_presets(
-        &mut self,
-        message: EditPresetsMessage,
-    ) -> Result<Task<Message>, String> {
+    pub fn update_edit_presets(&mut self, message: EditPresetsMessage) -> Task<Message> {
         match message {
-            EditPresetsMessage::Open => return Ok(self.go_to_edit_presets_menu()),
+            EditPresetsMessage::Open => return self.go_to_edit_presets_menu(),
             EditPresetsMessage::TabChange(tab) => {
                 if let Some(value) = self.preset_change_tab(&tab) {
-                    return Ok(value);
+                    return value;
                 }
             }
             EditPresetsMessage::ToggleCheckbox((name, id), enable) => {
@@ -64,19 +61,19 @@ impl Launcher {
                     *is_building = true;
                     let selected_instance = self.selected_instance.clone().unwrap();
                     let selected_mods = selected_mods.clone();
-                    return Ok(Task::perform(
+                    return Task::perform(
                         ql_mod_manager::PresetJson::generate(selected_instance, selected_mods),
                         |n| Message::EditPresets(EditPresetsMessage::BuildYourOwnEnd(n.strerr())),
-                    ));
+                    );
                 });
             }
             EditPresetsMessage::BuildYourOwnEnd(result) => match self.build_end(result) {
-                Ok(task) => return Ok(task),
+                Ok(task) => return task,
                 Err(err) => self.set_error(err),
             },
-            EditPresetsMessage::Load => return Ok(self.load_preset()),
+            EditPresetsMessage::Load => return self.load_preset(),
             EditPresetsMessage::LoadComplete(result) => {
-                return result.and_then(|not_allowed| {
+                match result.and_then(|not_allowed| {
                     if not_allowed.is_empty() {
                         self.go_to_edit_mods_menu().strerr()
                     } else {
@@ -87,7 +84,10 @@ impl Launcher {
                             });
                         Ok(Task::none())
                     }
-                });
+                }) {
+                    Ok(n) => return n,
+                    Err(err) => self.set_error(err),
+                };
             }
             EditPresetsMessage::RecommendedModCheck(result) => {
                 if let State::ManagePresets(MenuEditPresets {
@@ -115,15 +115,23 @@ impl Launcher {
                     }
                 }
             }
-            EditPresetsMessage::RecommendedDownload => {
-                return Ok(self.preset_download_recommended())
-            }
+            EditPresetsMessage::RecommendedDownload => return self.preset_download_recommended(),
             EditPresetsMessage::RecommendedDownloadEnd(result) => {
-                result?;
-                return self.go_to_edit_mods_menu_without_update_check().strerr();
+                match result {
+                    Ok(mods) => {
+                        // If any restrictive mods ended up in our
+                        // official download list, that would be a major
+                        // skill issue from our end.
+                        // No need for manual download UI, such mods
+                        // don't deserve to be recommended anyway.
+                        debug_assert!(mods.is_empty());
+                        return self.go_to_edit_mods_menu_without_update_check();
+                    }
+                    Err(err) => self.set_error(err),
+                }
             }
         }
-        Ok(Task::none())
+        Task::none()
     }
 
     fn preset_download_recommended(&mut self) -> Task<Message> {

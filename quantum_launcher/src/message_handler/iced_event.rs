@@ -303,14 +303,18 @@ impl Launcher {
                 return (true, self.go_to_launch_screen::<String>(None));
             }
             if should_return_to_mods_screen {
-                match self.go_to_edit_mods_menu_without_update_check() {
-                    Ok(cmd) => return (true, cmd),
-                    Err(err) => self.set_error(err),
-                }
+                return (true, self.go_to_edit_mods_menu_without_update_check());
             }
             if should_return_to_download_screen {
                 if let State::ModsDownload(menu) = &mut self.state {
                     menu.opened_mod = None;
+                    return (
+                        true,
+                        iced::widget::scrollable::scroll_to(
+                            iced::widget::scrollable::Id::new("MenuModsDownload:main:mods_list"),
+                            menu.scroll_offset,
+                        ),
+                    );
                 }
             }
         }

@@ -132,16 +132,13 @@ impl Launcher {
                 );
             }
             Message::UninstallLoaderEnd(Ok(())) => {
-                match self.go_to_edit_mods_menu_without_update_check() {
-                    Ok(n) => return n,
-                    Err(err) => self.set_error(err),
-                }
+                return self.go_to_edit_mods_menu_without_update_check();
             }
             Message::InstallForgeStart { is_neoforge } => {
                 return self.install_forge(is_neoforge);
             }
             Message::InstallForgeEnd(Ok(())) => {
-                return self.go_to_main_menu_with_message(Some("Installed Forge/NeoForge"));
+                return self.go_to_edit_mods_menu_without_update_check();
             }
             Message::LaunchEndedLog(Ok((status, name))) => {
                 info!("Game exited with status: {status}");
@@ -327,7 +324,7 @@ impl Launcher {
                 if let Err(err) = result {
                     self.set_error(err);
                 } else {
-                    return self.go_to_server_manage_menu(Some("Installed Paper".to_owned()));
+                    return self.go_to_edit_mods_menu_without_update_check();
                 }
             }
             Message::UninstallLoaderPaperStart => {
@@ -359,10 +356,7 @@ impl Launcher {
             Message::CoreOpenIntro => {
                 self.state = State::Welcome(MenuWelcome::P1InitialScreen);
             }
-            Message::EditPresets(msg) => match self.update_edit_presets(msg) {
-                Ok(n) => return n,
-                Err(err) => self.set_error(err),
-            },
+            Message::EditPresets(msg) => return self.update_edit_presets(msg),
             Message::UninstallLoaderConfirm(msg, name) => {
                 self.state = State::ConfirmAction {
                     msg1: format!("uninstall {name}?"),

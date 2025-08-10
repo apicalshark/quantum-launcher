@@ -29,13 +29,7 @@ impl Launcher {
     pub fn update_install_fabric(&mut self, message: InstallFabricMessage) -> Task<Message> {
         match message {
             InstallFabricMessage::End(result) => match result {
-                Ok(is_quilt) => {
-                    return self.go_to_main_menu_with_message(Some(if is_quilt {
-                        "Installed Quilt"
-                    } else {
-                        "Installed Fabric"
-                    }));
-                }
+                Ok(()) => return self.go_to_edit_mods_menu_without_update_check(),
                 Err(err) => self.set_error(err),
             },
             InstallFabricMessage::VersionSelected(selection) => {
@@ -407,7 +401,7 @@ impl Launcher {
                 if let Err(err) = result {
                     self.set_error(err);
                 } else {
-                    return self.go_to_launch_screen(Some("Installed OptiFine".to_owned()));
+                    return self.go_to_edit_mods_menu_without_update_check();
                 }
             }
         }
