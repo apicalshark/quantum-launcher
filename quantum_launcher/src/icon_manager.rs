@@ -41,6 +41,7 @@ macro_rules! icon_define {
     };
 }
 
+icon_define!(sort, '\u{e900}'); // A-Z, Version, Playtime, Date Created, etc...
 icon_define!(update, '\u{e901}');
 icon_define!(play, '\u{e902}');
 icon_define!(delete, '\u{e903}');
@@ -56,8 +57,6 @@ icon_define!(tick2, '\u{e90C}');
 icon_define!(discord, '\u{e90D}');
 icon_define!(arrow_down, '\u{e90E}');
 icon_define!(download, '\u{e90F}');
-icon_define!(edit, '\u{e923}');
-icon_define!(sort, '\u{e900}'); // A-Z, Version, Playtime, Date Created, etc...
 
 icon_define!(download_file, '\u{e910}');
 icon_define!(settings_file, '\u{e911}');
@@ -82,3 +81,8 @@ icon_define!(refresh_clock, '\u{e91F}'); // This should be an update icon
 icon_define!(chatbox_alt, '\u{e920}'); // This is experimental, I guess
 icon_define!(mode_dark, '\u{e921}');
 icon_define!(mode_light, '\u{e922}');
+icon_define!(edit, '\u{e923}');
+icon_define!(sort2, '\u{e924}');
+icon_define!(sort_ascending, '\u{e925}');
+icon_define!(sort_descending, '\u{e926}');
+icon_define!(cross, '\u{e927}');

@@ -491,7 +491,7 @@ pub fn view_confirm<'a>(
         msg2,
         widget::row![
             button_with_icon(icon_manager::tick(), "Yes", 16).on_press(yes.clone()),
-            button_with_icon(icon_manager::back(), "No", 16).on_press(no.clone()),
+            button_with_icon(icon_manager::cross(), "No", 16).on_press(no.clone()),
         ]
         .spacing(5)
         .wrap(),
