@@ -359,7 +359,7 @@ impl Launcher {
             Message::EditPresets(msg) => return self.update_edit_presets(msg),
             Message::UninstallLoaderConfirm(msg, name) => {
                 self.state = State::ConfirmAction {
-                    msg1: format!("uninstall {name}?"),
+                    msg1: format!("uninstall {name}"),
                     msg2: "This should be fine, you can always reinstall it later".to_owned(),
                     yes: (*msg).clone(),
                     no: Message::ManageMods(ManageModsMessage::ScreenOpenWithoutUpdate),

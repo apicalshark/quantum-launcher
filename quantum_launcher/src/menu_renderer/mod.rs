@@ -1,4 +1,4 @@
-use iced::{widget, Length};
+use iced::{widget, Alignment, Length};
 use ql_core::{InstanceSelection, Progress};
 
 use crate::{
@@ -486,11 +486,19 @@ pub fn view_confirm<'a>(
     no: &'a Message,
 ) -> Element<'a> {
     widget::column![
-        widget::text!("Are you SURE you want to {msg1}?").size(20),
+        widget::vertical_space(),
+        widget::text!("Are you sure you want to {msg1}?").size(20),
         msg2,
-        widget::button("Yes").on_press(yes.clone()),
-        widget::button("No").on_press(no.clone()),
+        widget::row![
+            button_with_icon(icon_manager::tick(), "Yes", 16).on_press(yes.clone()),
+            button_with_icon(icon_manager::back(), "No", 16).on_press(no.clone()),
+        ]
+        .spacing(5)
+        .wrap(),
+        widget::vertical_space(),
     ]
+    .align_x(Alignment::Center)
+    .width(Length::Fill)
     .padding(10)
     .spacing(10)
     .into()
