@@ -2,36 +2,39 @@
 
 # Switch to BetterJSONs and LaunchWrapper
 
-- the launcher now uses [BetterJSONs](https://github.com/MCPHackers/BetterJSONs/)
-  for downloading instances, and [LaunchWrapper](https://github.com/MCPHackers/LaunchWrapper)
-  for running old Minecraft versions
-- Many fixes and improvements have been made as a result,
-  they will be marked with (b).
+- The launcher now uses [BetterJSONs](https://github.com/MCPHackers/BetterJSONs/)
+  and [LaunchWrapper](https://github.com/MCPHackers/LaunchWrapper) internally for managing Minecraft versions
+- This one change has fixed **so much**, everything as a result of this will be marked with (b).
 
 ---
 
 - Overhauled portable dir system (see `docs/PORTABLE.md` for more info)
 - Added a new Teal color scheme!
-- Overhauled the Launcher Setings menu
+- Overhauled the Launcher Settings menu
 
-# Elyby/littleskin integration
+# [ely.by](https://ely.by)/[`littleskin`](https://littleskin.cn) integration
 
-- You can now log in with elyby and littleskin accounts!
-- Minecraft 1.21.5 and below support elyby and littleskin skins (b)
+- You can now log in with [ely.by](https://ely.by) and [`littleskin`](https://littleskin.cn) accounts!
+- Minecraft 1.21.5 and below support skins from both services (b)
 
 # UI
 
-- Revamped all icons in the launcher (thanks, [Aurlt](https://github.com/Aurlt) !)
-- Overhauled launcher settings menu
-- Cleaned instance edit menu
-- Made massive improvements to the log renderer
 - Added a licenses page
+
+## Revamped:
+
+- Launcher settings
+- Confirmation screen
+- All launcher icons (thanks, [Aurlt](https://github.com/Aurlt) !)
+
+## Improved:
+
+- Instance edit menu
 
 # Tweaks
 
 - You can now change antialiasing for the UI in settings
 - The launcher now remembers the last account selected upon opening
-- Many autosaving features has been slowed down, and disk accesses reduced
 
 # CLI
 
@@ -61,12 +64,16 @@ Added (incomplete) support for:
 - Fixed many formatting issues in game logs
 - Fixed welcome screen not working
 - Fixed arrow keys to switch instances, not updating the Edit menu
-- Fixed lag spikes on some systems when selecting instances
 
 - Old Minecraft versions are now in the correct order in the download list (b)
 - Snapshots of 1.0 to 1.5.2 are no longer missing for download (b)
-- Performance of loading the version list
-  (when clicking New button) is **way** better now (b)
 - Improved readability of a few errors
 - Improved support for weird character encodings in file paths
 - Missing libraries are now auto-downloaded
+
+## Performance
+
+- Fixed lag spikes on some systems when selecting instances
+- Many autosaving features has been slowed down, and disk accesses reduced
+- Optimized the log renderer (slightly worse scrolling as a tradeoff)
+- The "Create Instance" version list loads **way** faster now (b)
