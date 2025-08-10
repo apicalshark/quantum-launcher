@@ -1,4 +1,4 @@
-use iced::widget;
+use iced::{widget, Alignment};
 use ql_core::InstanceSelection;
 
 use crate::{
@@ -101,19 +101,27 @@ impl MenuInstallFabric {
                             ManageModsMessage::ScreenOpenWithoutUpdate
                         )),
                         widget::text!(
-                            "Install {loader_name} (instance: {})",
+                            "Install {loader_name} for \"{}\"",
                             selected_instance.get_name()
                         )
                         .size(20),
                         widget::column![
-                            widget::text!("{loader_name} version: (Ignore if you aren't sure)"),
-                            widget::pick_list(
+                            widget::text("Version:"),
+                            widget::row![widget::pick_list(
                                 fabric_versions.as_slice(),
                                 Some(fabric_version),
                                 |n| Message::InstallFabric(InstallFabricMessage::VersionSelected(
                                     n
                                 ))
-                            ),
+                            )]
+                            .push_maybe(
+                                fabric_versions
+                                    .first()
+                                    .filter(|n| *n == fabric_version)
+                                    .map(|_| { "(latest, recommended)" })
+                            )
+                            .spacing(5)
+                            .align_y(Alignment::Center),
                         ]
                         .spacing(5),
                         button_with_icon(icon_manager::download(), "Install", 16)
