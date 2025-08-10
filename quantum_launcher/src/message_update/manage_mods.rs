@@ -143,7 +143,8 @@ impl Launcher {
                     let (ids_downloaded, ids_local) = menu.get_kinds_of_ids();
                     let instance_name = self.selected_instance.clone().unwrap();
 
-                    menu.selected_mods.retain(|n| {
+                    menu.selected_mods.clear();
+                    /*menu.selected_mods.retain(|n| {
                         if let SelectedMod::Local { file_name } = n {
                             !ids_local.contains(file_name)
                         } else {
@@ -154,7 +155,7 @@ impl Launcher {
                     menu.selected_mods
                         .extend(ids_local.iter().map(|n| SelectedMod::Local {
                             file_name: ql_mod_manager::store::flip_filename(n),
-                        }));
+                        }));*/
 
                     let toggle_downloaded = Task::perform(
                         ql_mod_manager::store::toggle_mods(ids_downloaded, instance_name.clone()),
