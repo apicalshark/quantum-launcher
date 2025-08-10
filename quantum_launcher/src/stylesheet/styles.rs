@@ -419,13 +419,13 @@ impl LauncherTheme {
             widget::button::Status::Disabled => widget::button::Style {
                 background: Some(self.get_bg(
                     match style {
-                        StyleButton::Round | StyleButton::Flat => Color::SecondDark,
-                        StyleButton::FlatDark => Color::Dark,
+                        StyleButton::Flat => Color::SecondDark,
+                        StyleButton::Round | StyleButton::FlatDark => Color::Dark,
                         StyleButton::FlatExtraDark => Color::ExtraDark,
                     },
                     true,
                 )),
-                text_color: self.get(Color::Mid, true),
+                text_color: self.get(Color::ExtraDark, true),
                 border: self.get_border_style(&style, Color::SecondDark, true),
                 ..Default::default()
             },
