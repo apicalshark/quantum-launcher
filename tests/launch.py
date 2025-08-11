@@ -31,7 +31,7 @@ def _launch(instance: str) -> int | None:
         sys.exit(1)
 
     pid: str | None = None
-    pattern = re.compile(r'\[info\] Launched! PID: (\d+)')
+    pattern = re.compile(r'\[info] Launched! PID: (\d+)')
 
     for line in process.stdout:
         clean_line = _remove_ansi_colors(line)
@@ -85,23 +85,25 @@ if sys.platform.startswith("win"):
     g_found: List[Tuple[int, str]] = []
     g_pid: int = 0
 
+
     def _get_windows_for_pid(pid: int) -> List[Tuple[int, str]]:
         """Return list of (hwnd, title) for windows belonging to pid."""
         found: List[Tuple[int, str]] = []
 
         @EnumWindowsProc
-        def _enum(hwnd, lParam):
+        def _enum(hwnd, l_param):
             # Check visibility (optional; keeps parity with xdotool which finds top-level windows)
             try:
                 if not IsWindowVisible(hwnd):
                     return True  # continue
-            except Exception:
+            except:
                 # If any call fails, still continue enumeration
                 pass
 
-            lpdwProcessId = wintypes.DWORD()
-            GetWindowThreadProcessId(hwnd, ctypes.byref(lpdwProcessId))
-            window_pid = lpdwProcessId.value
+            # window_pid_raw = lpdwProcessId
+            window_pid_raw = wintypes.DWORD()
+            GetWindowThreadProcessId(hwnd, ctypes.byref(window_pid_raw))
+            window_pid = window_pid_raw.value
             if window_pid == pid:
                 length = GetWindowTextLengthW(hwnd)
                 buffer = ctypes.create_unicode_buffer(length + 1)
@@ -139,6 +141,7 @@ if sys.platform.startswith("win"):
                     print(f"    Could not send WM_CLOSE to hwnd {hwnd} ('{title}')")
         # Keep legacy behavior: kill process after closing windows
         procs.kill_process(pid)
+
 
     def _backend_windows(pid: int):
         # Windows backend: enumerate windows via ctypes, send WM_CLOSE if found
