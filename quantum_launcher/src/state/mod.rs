@@ -274,39 +274,50 @@ fn load_account(
     fn get_refresh_token_for_account_type(
         account_type: AccountType,
         username: &str,
+        keyring_identifier: Option<&str>,
     ) -> Result<String, String> {
-        let username_stripped = match account_type {
-            AccountType::ElyBy => username.strip_suffix(" (elyby)").unwrap_or(username),
-            AccountType::LittleSkin => username.strip_suffix(" (littleskin)").unwrap_or(username),
-            AccountType::Microsoft => username,
+        let keyring_username = if let Some(keyring_id) = keyring_identifier {
+            keyring_id
+        } else {
+            // Fallback to old behavior for backwards compatibility
+            match account_type {
+                AccountType::ElyBy => username.strip_suffix(" (elyby)").unwrap_or(username),
+                AccountType::LittleSkin => username.strip_suffix(" (littleskin)").unwrap_or(username),
+                AccountType::Microsoft => username,
+            }
         };
-        ql_instances::auth::read_refresh_token(username_stripped, account_type).strerr()
+        ql_instances::auth::read_refresh_token(keyring_username, account_type).strerr()
     }
 
     let (account_type, refresh_token) =
         if account.account_type.as_deref() == Some("ElyBy") || username.ends_with(" (elyby)") {
             (
                 AccountType::ElyBy,
-                get_refresh_token_for_account_type(AccountType::ElyBy, username),
+                get_refresh_token_for_account_type(AccountType::ElyBy, username, account.keyring_identifier.as_deref()),
             )
         } else if account.account_type.as_deref() == Some("LittleSkin")
             || username.ends_with(" (littleskin)")
         {
             (
                 AccountType::LittleSkin,
-                get_refresh_token_for_account_type(AccountType::LittleSkin, username),
+                get_refresh_token_for_account_type(AccountType::LittleSkin, username, account.keyring_identifier.as_deref()),
             )
         } else {
             (
                 AccountType::Microsoft,
-                get_refresh_token_for_account_type(AccountType::Microsoft, username),
+                get_refresh_token_for_account_type(AccountType::Microsoft, username, account.keyring_identifier.as_deref()),
             )
         };
 
-    let username_stripped = match account_type {
-        AccountType::ElyBy => username.strip_suffix(" (elyby)").unwrap_or(username),
-        AccountType::LittleSkin => username.strip_suffix(" (littleskin)").unwrap_or(username),
-        AccountType::Microsoft => username,
+    let keyring_username = if let Some(keyring_id) = &account.keyring_identifier {
+        keyring_id.clone()
+    } else {
+        // Fallback to old behavior for backwards compatibility
+        match account_type {
+            AccountType::ElyBy => username.strip_suffix(" (elyby)").unwrap_or(username).to_owned(),
+            AccountType::LittleSkin => username.strip_suffix(" (littleskin)").unwrap_or(username).to_owned(),
+            AccountType::Microsoft => username.to_owned(),
+        }
     };
 
     match refresh_token {
@@ -321,17 +332,17 @@ fn load_account(
                     needs_refresh: true,
                     account_type,
 
-                    username: username_stripped.to_owned(),
+                    username: keyring_username.clone(),
                     nice_username: account
                         .username_nice
                         .clone()
-                        .unwrap_or(username_stripped.to_owned()),
+                        .unwrap_or(keyring_username.clone()),
                 },
             );
         }
         Err(err) => {
             err!(
-                "Could not load account: {err}\nUsername: {username_stripped}, Account Type: {}",
+                "Could not load account: {err}\nUsername: {keyring_username}, Account Type: {}",
                 account_type.to_string()
             );
             accounts_to_remove.push(username.to_owned());

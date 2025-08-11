@@ -28,7 +28,7 @@ impl AccountData {
             AccountType::ElyBy => " (elyby)",
             AccountType::LittleSkin => " (littleskin)",
         };
-        format!("{}{suffix}", self.username)
+        format!("{}{suffix}", self.nice_username)
     }
 
     #[must_use]
