@@ -13,4 +13,4 @@ pub use optifine::{JsonOptifine, OptifineArguments, OptifineLibrary};
 pub use asset_index::AssetIndexMap;
 pub use instance_config::InstanceConfigJson;
 pub use manifest::Manifest;
-pub use version::VersionDetails;
+pub use version::{VersionDetails, V_1_5_2, V_FABRIC_UNSUPPORTED};

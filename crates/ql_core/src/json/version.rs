@@ -6,6 +6,9 @@ use serde_json::Value;
 
 use crate::{err, pt, InstanceSelection, IntoIoError, IntoJsonError, JsonFileError};
 
+pub const V_1_5_2: &str = "2013-04-25T15:45:00+00:00";
+pub const V_FABRIC_UNSUPPORTED: &str = "2018-10-24T10:52:16+00:00";
+
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct VersionDetails {
@@ -125,16 +128,26 @@ impl VersionDetails {
         // TODO: More fields in the future
     }
 
-    #[allow(clippy::missing_panics_doc)]
-    pub fn is_legacy_version(&self) -> bool {
-        let v1_5_2 = DateTime::parse_from_rfc3339("2013-04-25T15:45:00+00:00").unwrap();
-        match DateTime::parse_from_rfc3339(&self.releaseTime) {
-            Ok(dt) => dt <= v1_5_2,
-            Err(e) => {
-                err!("Could not parse instance date/time: {e}");
+    pub fn is_before_or_eq(&self, release_time: &str) -> bool {
+        match (
+            DateTime::parse_from_rfc3339(&self.releaseTime),
+            DateTime::parse_from_rfc3339(release_time),
+        ) {
+            (Ok(dt), Ok(rt)) => dt <= rt,
+            (Err(err), Ok(_)) | (Ok(_), Err(err)) => {
+                err!("Could not parse date/time: {err}");
+                false
+            }
+            (Err(err1), Err(err2)) => {
+                err!("Could not parse date/time\n(1): {err1}\n(2): {err2}");
                 false
             }
         }
+    }
+
+    #[allow(clippy::missing_panics_doc)]
+    pub fn is_legacy_version(&self) -> bool {
+        self.is_before_or_eq(V_1_5_2)
     }
 
     #[must_use]
