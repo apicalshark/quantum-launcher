@@ -187,6 +187,12 @@ pub struct ConfigAccount {
     /// - `"LittleSkin"`
     pub account_type: Option<String>,
 
+    /// The original login identifier used for keyring operations.
+    /// This is the email address or username that was used during login.
+    /// For email/password logins, this will be the email.
+    /// For username/password logins, this will be the username.
+    pub keyring_identifier: Option<String>,
+
     /// A game-readable "nice" username.
     ///
     /// This will be identical to the regular
