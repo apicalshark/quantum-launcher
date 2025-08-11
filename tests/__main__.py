@@ -5,15 +5,19 @@ import sys
 import time
 
 from . import launch, procs, create
+from .launch import IS_X11, IS_XWAYLAND, IS_WINDOWS
 
-IS_COMPATIBLE: bool = (os.getenv("XDG_SESSION_TYPE") != "x11"
-    or sys.platform.startswith("win"))
+IS_COMPATIBLE: bool = (IS_X11 or IS_XWAYLAND or IS_WINDOWS)
 
 if not IS_COMPATIBLE:
     print("""Unsupported platform!
 This test suite only currently supports:
 - Windows
-- x11 (Linux, etc)
+- X11 (Linux, etc)
+- XWayland under Wayland (Linux, etc)
+
+macOS and Wayland-without-XWayland systems
+aren't supported yet.
 
 For more info see tests/README.md
 """)

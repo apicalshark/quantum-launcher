@@ -9,6 +9,10 @@ from . import procs
 
 _ANSI_ESCAPE: re.Pattern[str] = re.compile(r'\x1b\[[0-9;]*[mK]')
 
+IS_XWAYLAND = os.environ.get("WAYLAND_DISPLAY") is not None and os.environ.get("DISPLAY") is not None
+IS_X11 = os.getenv("XDG_SESSION_TYPE") == "x11"
+IS_WINDOWS = sys.platform.startswith("win")
+
 
 def _remove_ansi_colors(text):
     return _ANSI_ESCAPE.sub('', text)
@@ -169,29 +173,21 @@ def _close_window_unix(result: bytes, pid: int) -> None:
     print(f"✅ Window found: {window_ids} for pid {pid}, killing")
     procs.kill_process(pid)
 
-def _is_xwayland():
-    # Check if running on Wayland with XWayland available
-    # If both WAYLAND_DISPLAY and DISPLAY are set, likely XWayland is running
-    return os.environ.get("WAYLAND_DISPLAY") is not None and os.environ.get("DISPLAY") is not None
-
 
 def _wait_for_window(pid: int, timeout: int, name: str) -> bool:
     start_time = time.time()
     check_interval = max(1, timeout // 30)
     print(f"\n\nChecking {name} ({pid}) with interval {check_interval} seconds")
 
-    is_windows = sys.platform.startswith("win")
-    is_xwayland = _is_xwayland()
-
     while time.time() - start_time < timeout:
         if not _is_process_alive(pid):
             print("Error: Game crashed!")
             return False
 
-        if is_windows:
+        if IS_WINDOWS:
             if _backend_windows(pid):
                 return True
-        elif is_xwayland:
+        elif IS_XWAYLAND or IS_X11:
             try:
                 # Uses same logic as of x11
                 result = subprocess.check_output(["xdotool", "search", "--pid", str(pid)])
