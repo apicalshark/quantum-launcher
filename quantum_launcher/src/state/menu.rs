@@ -434,6 +434,11 @@ pub enum State {
     ServerCreate(MenuServerCreate),
     ManagePresets(MenuEditPresets),
 
+    LogUploadResult {
+        url: String,
+        is_server: bool,
+    },
+
     License(MenuLicense),
 }
 

@@ -479,6 +479,51 @@ pub fn view_error(error: &str) -> Element {
     .into()
 }
 
+pub fn view_log_upload_result(url: &str, is_server: bool) -> Element {
+    widget::column![
+        widget::text(format!(
+            "{} log uploaded successfully!",
+            if is_server { "Server" } else { "Game" }
+        ))
+        .size(20),
+        widget::text("Your log has been uploaded to mclo.gs. You can share the link below:")
+            .size(14),
+        widget::container(
+            widget::row![
+                widget::text(url).size(12),
+                widget::button("Copy Link")
+                    .on_press(Message::CoreCopyText(url.to_string()))
+                    .style(|theme: &LauncherTheme, status| {
+                        theme.style_button(status, StyleButton::Flat)
+                    }),
+            ]
+            .spacing(10)
+            .align_y(iced::Alignment::Center)
+        )
+        .padding(10)
+        .style(|theme: &LauncherTheme| theme.style_container_box()),
+        widget::row![
+            widget::button("Back to Game")
+                .on_press(Message::LaunchScreenOpen {
+                    message: None,
+                    clear_selection: false,
+                })
+                .style(|theme: &LauncherTheme, status| {
+                    theme.style_button(status, StyleButton::FlatDark)
+                }),
+            widget::button("Open Link")
+                .on_press(Message::CoreOpenLink(url.to_string()))
+                .style(|theme: &LauncherTheme, status| {
+                    theme.style_button(status, StyleButton::Flat)
+                }),
+        ]
+        .spacing(10),
+    ]
+    .padding(20)
+    .spacing(15)
+    .into()
+}
+
 pub fn view_confirm<'a>(
     msg1: &'a str,
     msg2: &'a str,

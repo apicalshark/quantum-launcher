@@ -149,6 +149,7 @@ impl Launcher {
             | State::LoginMS(MenuLoginMS { .. })
             | State::GenericMessage(_)
             | State::CurseforgeManualDownload(_)
+            | State::LogUploadResult { .. }
             | State::InstallPaper => {}
         }
 

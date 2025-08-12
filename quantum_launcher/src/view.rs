@@ -5,7 +5,7 @@ use crate::{
     icon_manager,
     menu_renderer::{
         button_with_icon, changelog::changelog_0_4_1, view_account_login, view_confirm, view_error,
-        Element,
+        view_log_upload_result, Element,
     },
     state::{Launcher, Message, State},
     stylesheet::{color::Color, styles::LauncherTheme, widgets::StyleButton},
@@ -142,6 +142,9 @@ impl Launcher {
             State::LoginAlternate(menu) => menu.view(self.tick_timer),
             State::CurseforgeManualDownload(menu) => menu.view(),
             State::ExportInstance(menu) => menu.view(self.tick_timer),
+            State::LogUploadResult { url, is_server } => {
+                view_log_upload_result(url, *is_server)
+            }
             State::License(menu) => menu.view(),
         }
     }
