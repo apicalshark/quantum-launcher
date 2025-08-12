@@ -301,6 +301,8 @@ pub enum Message {
     LaunchLogScrollAbsolute(isize),
     LaunchEndedLog(Res<(ExitStatus, String)>),
     LaunchCopyLog,
+    LaunchUploadLog,
+    LaunchUploadLogResult(Res<String>),
 
     UpdateCheckResult(Res<UpdateCheckInfo>),
     UpdateDownloadStart,
@@ -316,6 +318,8 @@ pub enum Message {
     ServerManageKillServer(String),
     ServerManageEditCommand(String, String),
     ServerManageCopyLog,
+    ServerManageUploadLog,
+    ServerManageUploadLogResult(Res<String>),
     ServerManageSubmitCommand(String),
 
     ServerCreateScreenOpen,

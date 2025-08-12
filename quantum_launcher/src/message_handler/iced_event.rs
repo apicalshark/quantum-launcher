@@ -313,6 +313,7 @@ impl Launcher {
             | State::ImportModpack(_)
             | State::CurseforgeManualDownload(_)
             | State::LoginAlternate(_)
+            | State::LogUploadResult { .. }
             | State::Launch(_) => {}
         }
 

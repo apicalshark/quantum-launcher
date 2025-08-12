@@ -74,6 +74,8 @@ mod message_handler;
 mod message_update;
 /// Handles mod store
 mod mods_store;
+/// Handles mclo.gs log uploads
+mod mclog_upload;
 /// Stylesheet definitions (launcher themes)
 mod stylesheet;
 /// Code to tick every frame

@@ -3619,6 +3619,7 @@ dependencies = [
  "tabular",
  "terminal_size",
  "tokio",
+ "urlencoding",
  "windows 0.61.3",
 ]
 

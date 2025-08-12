@@ -153,6 +153,33 @@ impl Launcher {
                     return iced::clipboard::write(log.log.join(""));
                 }
             }
+            Message::LaunchUploadLog => {
+                if let Some(log) = self
+                    .client_logs
+                    .get(self.selected_instance.as_ref().unwrap().get_name())
+                {
+                    let log_content = log.log.join("");
+                    return Task::perform(
+                        crate::mclog_upload::upload_log(log_content),
+                        |result| Message::LaunchUploadLogResult(result.map_err(|e| e.to_string())),
+                    );
+                }
+            }
+            Message::LaunchUploadLogResult(result) => {
+                match result {
+                    Ok(url) => {
+                        self.state = State::LogUploadResult {
+                            url,
+                            is_server: false,
+                        };
+                    }
+                    Err(error) => {
+                        self.state = State::Error { 
+                            error: format!("Failed to upload log: {}", error) 
+                        };
+                    }
+                }
+            }
             Message::UpdateCheckResult(Ok(info)) => match info {
                 UpdateCheckInfo::UpToDate => {
                     info_no_log!("Launcher is latest version. No new updates");
@@ -305,6 +332,31 @@ impl Launcher {
                     return iced::clipboard::write(
                         logs.log.iter().fold(String::new(), |n, v| n + v + "\n"),
                     );
+                }
+            }
+            Message::ServerManageUploadLog => {
+                let name = self.selected_instance.as_ref().unwrap().get_name();
+                if let Some(logs) = self.server_logs.get(name) {
+                    let log_content = logs.log.iter().fold(String::new(), |n, v| n + v + "\n");
+                    return Task::perform(
+                        crate::mclog_upload::upload_log(log_content),
+                        |result| Message::ServerManageUploadLogResult(result.map_err(|e| e.to_string())),
+                    );
+                }
+            }
+            Message::ServerManageUploadLogResult(result) => {
+                match result {
+                    Ok(url) => {
+                        self.state = State::LogUploadResult {
+                            url,
+                            is_server: true,
+                        };
+                    }
+                    Err(error) => {
+                        self.state = State::Error { 
+                            error: format!("Failed to upload server log: {}", error) 
+                        };
+                    }
                 }
             }
             Message::InstallPaperStart => {
