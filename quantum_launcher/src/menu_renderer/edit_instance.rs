@@ -91,7 +91,7 @@ impl MenuEditInstance {
                             )
                             .on_input(|n| Message::EditInstance(EditInstanceMessage::WindowWidthChanged(n)))
                             .width(100),
-                            widget::text("Height:").width(50),
+                            widget::text("Height").width(50),
                             widget::text_input(
                                 "1080",
                                 &self.config.window_height.map_or(String::new(), |h| h.to_string())
