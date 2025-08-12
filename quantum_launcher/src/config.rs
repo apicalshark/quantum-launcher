@@ -90,6 +90,50 @@ pub struct LauncherConfig {
     /// Default: `true`
     // Since: v0.4.2
     pub antialiasing: Option<bool>,
+
+    /// The width of the window when the launcher was last closed.
+    /// Used to restore the window size between launches.
+    // Since: v0.4.3
+    pub window_width: Option<f32>,
+
+    /// The height of the window when the launcher was last closed.
+    /// Used to restore the window size between launches.
+    // Since: v0.4.3
+    pub window_height: Option<f32>,
+
+    /// **Global Default** - Custom window width for Minecraft instances.
+    ///
+    /// **Default: `None` (uses Minecraft's default)**
+    ///
+    /// When set, this will be used as the default window width for all new
+    /// instances and for instances that don't have their own width configured.
+    /// Individual instances can override this setting in their Edit Instance tab.
+    ///
+    /// This is useful for:
+    /// - Setting a consistent resolution across all instances
+    /// - Matching your monitor's resolution
+    /// - Setting up a preferred default window size
+    ///
+    /// Note: This only affects windowed mode, not fullscreen.
+    // Since: v0.4.4
+    pub default_minecraft_width: Option<u32>,
+
+    /// **Global Default** - Custom window height for Minecraft instances.
+    ///
+    /// **Default: `None` (uses Minecraft's default)**
+    ///
+    /// When set, this will be used as the default window height for all new
+    /// instances and for instances that don't have their own height configured.
+    /// Individual instances can override this setting in their Edit Instance tab.
+    ///
+    /// This is useful for:
+    /// - Setting a consistent resolution across all instances
+    /// - Matching your monitor's resolution
+    /// - Setting up a preferred default window size
+    ///
+    /// Note: This only affects windowed mode, not fullscreen.
+    // Since: v0.4.4
+    pub default_minecraft_height: Option<u32>,
 }
 
 impl Default for LauncherConfig {
@@ -106,6 +150,10 @@ impl Default for LauncherConfig {
             java_installs: Some(Vec::new()),
             antialiasing: Some(true),
             account_selected: None,
+            window_width: None,
+            window_height: None,
+            default_minecraft_width: None,
+            default_minecraft_height: None,
         }
     }
 }

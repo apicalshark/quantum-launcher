@@ -216,6 +216,8 @@ pub enum LauncherSettingsMessage {
     ClearJavaInstallsConfirm,
     ChangeTab(LauncherSettingsTab),
     ToggleAntialiasing(bool),
+    DefaultMinecraftWidthChanged(String),
+    DefaultMinecraftHeightChanged(String),
 }
 
 #[derive(Debug, Clone)]
