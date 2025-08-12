@@ -70,6 +70,8 @@ pub enum EditInstanceMessage {
     GameArgShiftDown(usize),
     RenameEdit(String),
     RenameApply,
+    WindowWidthChanged(String),
+    WindowHeightChanged(String),
 }
 
 #[derive(Debug, Clone)]

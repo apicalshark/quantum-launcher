@@ -80,6 +80,27 @@ impl MenuEditInstance {
                         widget::checkbox("Close launcher after game opens", self.config.close_on_start.unwrap_or(false))
                             .on_toggle(|t| Message::EditInstance(EditInstanceMessage::CloseLauncherToggle(t))),
                     ].spacing(5)))
+                    .push_maybe((!selected_instance.is_server()).then_some(widget::column![
+                        "Custom window resolution:",
+                        widget::text("Leave blank to use Minecraft's default window size").size(12).style(ts),
+                        widget::row![
+                            widget::text("Width:").width(50),
+                            widget::text_input(
+                                "1920",
+                                &self.config.window_width.map_or(String::new(), |w| w.to_string())
+                            )
+                            .on_input(|n| Message::EditInstance(EditInstanceMessage::WindowWidthChanged(n)))
+                            .width(100),
+                            widget::text("Height:").width(50),
+                            widget::text_input(
+                                "1080",
+                                &self.config.window_height.map_or(String::new(), |h| h.to_string())
+                            )
+                            .on_input(|n| Message::EditInstance(EditInstanceMessage::WindowHeightChanged(n)))
+                            .width(100),
+                        ].spacing(10).align_y(iced::alignment::Vertical::Center),
+                        widget::text("Common resolutions: 1920x1080, 1366x768, 2560x1440, 3840x2160").size(12).style(ts),
+                    ].spacing(5)))
                     .push(
                         widget::column![
                             widget::checkbox("DEBUG: Enable log system (recommended)", self.config.enable_logger.unwrap_or(true))

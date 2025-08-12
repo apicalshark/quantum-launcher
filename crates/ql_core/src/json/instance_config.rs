@@ -117,6 +117,38 @@ pub struct InstanceConfigJson {
     ///
     /// Ultimately if you want one less icon in your taskbar then go ahead.
     pub close_on_start: Option<bool>,
+    /// **Client Only**
+    ///
+    /// Custom window width for Minecraft.
+    ///
+    /// **Default: `None` (uses Minecraft's default)**
+    ///
+    /// When set, this will launch Minecraft with a specific window width
+    /// using the `--width` command line argument.
+    ///
+    /// This is useful for:
+    /// - Setting a specific resolution for consistent gameplay
+    /// - Matching your monitor's resolution
+    /// - Creating smaller windows for recording/streaming
+    ///
+    /// Note: This only affects windowed mode, not fullscreen.
+    pub window_width: Option<u32>,
+    /// **Client Only**
+    ///
+    /// Custom window height for Minecraft.
+    ///
+    /// **Default: `None` (uses Minecraft's default)**
+    ///
+    /// When set, this will launch Minecraft with a specific window height
+    /// using the `--height` command line argument.
+    ///
+    /// This is useful for:
+    /// - Setting a specific resolution for consistent gameplay
+    /// - Matching your monitor's resolution
+    /// - Creating smaller windows for recording/streaming
+    ///
+    /// Note: This only affects windowed mode, not fullscreen.
+    pub window_height: Option<u32>,
 }
 
 impl InstanceConfigJson {

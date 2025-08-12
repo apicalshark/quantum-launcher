@@ -121,6 +121,16 @@ impl GameLauncher {
             game_arguments.push("--disableSkinFix".to_owned());
         }
 
+        // Add custom resolution arguments if specified
+        if let Some(width) = self.config_json.window_width {
+            game_arguments.push("--width".to_owned());
+            game_arguments.push(width.to_string());
+        }
+        if let Some(height) = self.config_json.window_height {
+            game_arguments.push("--height".to_owned());
+            game_arguments.push(height.to_string());
+        }
+
         Ok(game_arguments)
     }
 
