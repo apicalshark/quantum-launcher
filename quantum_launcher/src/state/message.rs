@@ -70,6 +70,8 @@ pub enum EditInstanceMessage {
     GameArgShiftDown(usize),
     RenameEdit(String),
     RenameApply,
+    WindowWidthChanged(String),
+    WindowHeightChanged(String),
 }
 
 #[derive(Debug, Clone)]
@@ -214,6 +216,8 @@ pub enum LauncherSettingsMessage {
     ClearJavaInstallsConfirm,
     ChangeTab(LauncherSettingsTab),
     ToggleAntialiasing(bool),
+    DefaultMinecraftWidthChanged(String),
+    DefaultMinecraftHeightChanged(String),
 }
 
 #[derive(Debug, Clone)]

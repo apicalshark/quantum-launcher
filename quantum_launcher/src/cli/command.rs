@@ -170,6 +170,8 @@ pub fn launch_instance(
         username.clone(),
         None,
         account,
+        None,  // No global defaults in CLI mode
+        None,  // No global defaults in CLI mode
     ))?;
 
     if let (Some(stdout), Some(stderr)) = {

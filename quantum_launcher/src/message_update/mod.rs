@@ -498,6 +498,20 @@ impl Launcher {
             LauncherSettingsMessage::ToggleAntialiasing(t) => {
                 self.config.antialiasing = Some(t);
             }
+            LauncherSettingsMessage::DefaultMinecraftWidthChanged(input) => {
+                self.config.default_minecraft_width = if input.trim().is_empty() {
+                    None
+                } else {
+                    input.trim().parse::<u32>().ok()
+                };
+            }
+            LauncherSettingsMessage::DefaultMinecraftHeightChanged(input) => {
+                self.config.default_minecraft_height = if input.trim().is_empty() {
+                    None
+                } else {
+                    input.trim().parse::<u32>().ok()
+                };
+            }
         }
         Task::none()
     }

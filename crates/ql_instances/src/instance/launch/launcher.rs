@@ -45,6 +45,11 @@ pub struct GameLauncher {
 
     pub config_json: InstanceConfigJson,
     pub version_json: VersionDetails,
+
+    /// Global default window width from launcher settings
+    global_default_width: Option<u32>,
+    /// Global default window height from launcher settings
+    global_default_height: Option<u32>,
 }
 
 impl GameLauncher {
@@ -74,7 +79,15 @@ impl GameLauncher {
             minecraft_dir,
             config_json,
             version_json,
+            global_default_width: None,
+            global_default_height: None,
         })
+    }
+
+    /// Set global default resolution values from launcher settings
+    pub fn set_global_defaults(&mut self, width: Option<u32>, height: Option<u32>) {
+        self.global_default_width = width;
+        self.global_default_height = height;
     }
 
     pub fn init_game_arguments(
@@ -119,6 +132,20 @@ impl GameLauncher {
             // Thanks to [@Lassebq](https://github.com/Lassebq)
             // for pointing this out :)
             game_arguments.push("--disableSkinFix".to_owned());
+        }
+
+        // Add custom resolution arguments if specified
+        // Priority: Instance-specific setting > Global default > Minecraft default
+        let width_to_use = self.config_json.window_width.or(self.global_default_width);
+        let height_to_use = self.config_json.window_height.or(self.global_default_height);
+
+        if let Some(width) = width_to_use {
+            game_arguments.push("--width".to_owned());
+            game_arguments.push(width.to_string());
+        }
+        if let Some(height) = height_to_use {
+            game_arguments.push("--height".to_owned());
+            game_arguments.push(height.to_string());
         }
 
         Ok(game_arguments)

@@ -93,11 +93,32 @@ pub struct LauncherConfig {
 
     /// The width of the window when the launcher was last closed.
     /// Used to restore the window size between launches.
+    // Since: v0.4.2
     pub window_width: Option<f32>,
-
     /// The height of the window when the launcher was last closed.
     /// Used to restore the window size between launches.
+    // Since: v0.4.2
     pub window_height: Option<f32>,
+
+    /// **Global Default** - Custom window width for Minecraft instances
+    /// (Windowed Mode)
+    ///
+    /// **Default: `None` (uses Minecraft's default)**
+    ///
+    /// When set, will be used as the default window width for all instances.
+    /// Individual instances can override this setting in their Edit Instance tab.
+    // Since: v0.4.2
+    pub default_minecraft_width: Option<u32>,
+
+    /// **Global Default** - Custom window height for Minecraft instances
+    /// (Windowed Mode)
+    ///
+    /// **Default: `None` (uses Minecraft's default)**
+    ///
+    /// When set, will be used as the default window height for all instances.
+    /// Individual instances can override this setting in their Edit Instance tab.
+    // Since: v0.4.2
+    pub default_minecraft_height: Option<u32>,
 }
 
 impl Default for LauncherConfig {
@@ -116,6 +137,8 @@ impl Default for LauncherConfig {
             account_selected: None,
             window_width: None,
             window_height: None,
+            default_minecraft_width: None,
+            default_minecraft_height: None,
         }
     }
 }

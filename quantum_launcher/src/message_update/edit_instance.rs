@@ -91,6 +91,32 @@ impl Launcher {
             }
             EditInstanceMessage::RenameApply => return self.rename_instance(),
             EditInstanceMessage::ConfigSaved(res) => res?,
+            EditInstanceMessage::WindowWidthChanged(width_str) => {
+                if let State::Launch(MenuLaunch {
+                    edit_instance: Some(menu),
+                    ..
+                }) = &mut self.state
+                {
+                    if width_str.is_empty() {
+                        menu.config.window_width = None;
+                    } else if let Ok(width) = width_str.parse::<u32>() {
+                        menu.config.window_width = Some(width);
+                    }
+                }
+            }
+            EditInstanceMessage::WindowHeightChanged(height_str) => {
+                if let State::Launch(MenuLaunch {
+                    edit_instance: Some(menu),
+                    ..
+                }) = &mut self.state
+                {
+                    if height_str.is_empty() {
+                        menu.config.window_height = None;
+                    } else if let Ok(height) = height_str.parse::<u32>() {
+                        menu.config.window_height = Some(height);
+                    }
+                }
+            }
         }
         Ok(Task::none())
     }
