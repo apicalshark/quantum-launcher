@@ -93,46 +93,31 @@ pub struct LauncherConfig {
 
     /// The width of the window when the launcher was last closed.
     /// Used to restore the window size between launches.
-    // Since: v0.4.3
+    // Since: v0.4.2
     pub window_width: Option<f32>,
-
     /// The height of the window when the launcher was last closed.
     /// Used to restore the window size between launches.
-    // Since: v0.4.3
+    // Since: v0.4.2
     pub window_height: Option<f32>,
 
-    /// **Global Default** - Custom window width for Minecraft instances.
+    /// **Global Default** - Custom window width for Minecraft instances
+    /// (Windowed Mode)
     ///
     /// **Default: `None` (uses Minecraft's default)**
     ///
-    /// When set, this will be used as the default window width for all new
-    /// instances and for instances that don't have their own width configured.
+    /// When set, will be used as the default window width for all instances.
     /// Individual instances can override this setting in their Edit Instance tab.
-    ///
-    /// This is useful for:
-    /// - Setting a consistent resolution across all instances
-    /// - Matching your monitor's resolution
-    /// - Setting up a preferred default window size
-    ///
-    /// Note: This only affects windowed mode, not fullscreen.
-    // Since: v0.4.4
+    // Since: v0.4.2
     pub default_minecraft_width: Option<u32>,
 
-    /// **Global Default** - Custom window height for Minecraft instances.
+    /// **Global Default** - Custom window height for Minecraft instances
+    /// (Windowed Mode)
     ///
     /// **Default: `None` (uses Minecraft's default)**
     ///
-    /// When set, this will be used as the default window height for all new
-    /// instances and for instances that don't have their own height configured.
+    /// When set, will be used as the default window height for all instances.
     /// Individual instances can override this setting in their Edit Instance tab.
-    ///
-    /// This is useful for:
-    /// - Setting a consistent resolution across all instances
-    /// - Matching your monitor's resolution
-    /// - Setting up a preferred default window size
-    ///
-    /// Note: This only affects windowed mode, not fullscreen.
-    // Since: v0.4.4
+    // Since: v0.4.2
     pub default_minecraft_height: Option<u32>,
 }
 
