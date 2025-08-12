@@ -494,7 +494,7 @@ pub fn view_log_upload_result(url: &str, is_server: bool) -> Element {
                 widget::button("Copy Link")
                     .on_press(Message::CoreCopyText(url.to_string()))
                     .style(|theme: &LauncherTheme, status| {
-                        theme.style_button(status, StyleButton::Flat)
+                        theme.style_button(status, StyleButton::Round)
                     }),
             ]
             .spacing(10)
@@ -509,12 +509,12 @@ pub fn view_log_upload_result(url: &str, is_server: bool) -> Element {
                     clear_selection: false,
                 })
                 .style(|theme: &LauncherTheme, status| {
-                    theme.style_button(status, StyleButton::FlatDark)
+                    theme.style_button(status, StyleButton::Round)
                 }),
             widget::button("Open Link")
                 .on_press(Message::CoreOpenLink(url.to_string()))
                 .style(|theme: &LauncherTheme, status| {
-                    theme.style_button(status, StyleButton::Flat)
+                    theme.style_button(status, StyleButton::Round)
                 }),
         ]
         .spacing(10),
