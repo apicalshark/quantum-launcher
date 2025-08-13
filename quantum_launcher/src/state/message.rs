@@ -317,9 +317,6 @@ pub enum Message {
     ServerManageEndedLog(Res<(ExitStatus, String)>),
     ServerManageKillServer(String),
     ServerManageEditCommand(String, String),
-    ServerManageCopyLog,
-    ServerManageUploadLog,
-    ServerManageUploadLogResult(Res<String>),
     ServerManageSubmitCommand(String),
 
     ServerCreateScreenOpen,

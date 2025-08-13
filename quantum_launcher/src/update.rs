@@ -5,11 +5,13 @@ use ql_core::{
 };
 use ql_instances::UpdateCheckInfo;
 use ql_mod_manager::loaders;
+use std::collections::HashMap;
 use tokio::io::AsyncWriteExt;
 
 use crate::state::{
-    LaunchTabId, Launcher, ManageModsMessage, MenuExportInstance, MenuLaunch, MenuLauncherUpdate,
-    MenuLicense, MenuServerCreate, MenuWelcome, Message, ProgressBar, ServerProcess, State,
+    InstanceLog, LaunchTabId, Launcher, ManageModsMessage, MenuExportInstance, MenuLaunch,
+    MenuLauncherUpdate, MenuLicense, MenuServerCreate, MenuWelcome, Message, ProgressBar,
+    ServerProcess, State,
 };
 
 impl Launcher {
@@ -146,40 +148,35 @@ impl Launcher {
             }
             Message::LaunchKill => return self.kill_selected_instance(),
             Message::LaunchCopyLog => {
-                if let Some(log) = self
-                    .client_logs
-                    .get(self.selected_instance.as_ref().unwrap().get_name())
-                {
+                let (name, is_server) = self.selected_instance.as_ref().unwrap().get_pair();
+                let logs = self.get_logs(is_server);
+
+                if let Some(log) = logs.get(name) {
                     return iced::clipboard::write(log.log.join(""));
                 }
             }
             Message::LaunchUploadLog => {
-                if let Some(log) = self
-                    .client_logs
-                    .get(self.selected_instance.as_ref().unwrap().get_name())
-                {
+                let selected_instance = self.selected_instance.as_ref().unwrap();
+                let (name, is_server) = selected_instance.get_pair();
+                let logs = self.get_logs(is_server);
+
+                if let Some(log) = logs.get(name) {
                     let log_content = log.log.join("");
-                    return Task::perform(
-                        crate::mclog_upload::upload_log(log_content),
-                        |result| Message::LaunchUploadLogResult(result.map_err(|e| e.to_string())),
-                    );
+                    return Task::perform(crate::mclog_upload::upload_log(log_content), |res| {
+                        Message::LaunchUploadLogResult(res.strerr())
+                    });
                 }
             }
-            Message::LaunchUploadLogResult(result) => {
-                match result {
-                    Ok(url) => {
-                        self.state = State::LogUploadResult {
-                            url,
-                            is_server: false,
-                        };
-                    }
-                    Err(error) => {
-                        self.state = State::Error { 
-                            error: format!("Failed to upload log: {}", error) 
-                        };
-                    }
+            Message::LaunchUploadLogResult(result) => match result {
+                Ok(url) => {
+                    self.state = State::LogUploadResult { url };
                 }
-            }
+                Err(error) => {
+                    self.state = State::Error {
+                        error: format!("Failed to upload log: {error}"),
+                    };
+                }
+            },
             Message::UpdateCheckResult(Ok(info)) => match info {
                 UpdateCheckInfo::UpToDate => {
                     info_no_log!("Launcher is latest version. No new updates");
@@ -324,39 +321,6 @@ impl Launcher {
 
                     log.command.clear();
                     _ = block_on(future);
-                }
-            }
-            Message::ServerManageCopyLog => {
-                let name = self.selected_instance.as_ref().unwrap().get_name();
-                if let Some(logs) = self.server_logs.get(name) {
-                    return iced::clipboard::write(
-                        logs.log.iter().fold(String::new(), |n, v| n + v + "\n"),
-                    );
-                }
-            }
-            Message::ServerManageUploadLog => {
-                let name = self.selected_instance.as_ref().unwrap().get_name();
-                if let Some(logs) = self.server_logs.get(name) {
-                    let log_content = logs.log.iter().fold(String::new(), |n, v| n + v + "\n");
-                    return Task::perform(
-                        crate::mclog_upload::upload_log(log_content),
-                        |result| Message::ServerManageUploadLogResult(result.map_err(|e| e.to_string())),
-                    );
-                }
-            }
-            Message::ServerManageUploadLogResult(result) => {
-                match result {
-                    Ok(url) => {
-                        self.state = State::LogUploadResult {
-                            url,
-                            is_server: true,
-                        };
-                    }
-                    Err(error) => {
-                        self.state = State::Error { 
-                            error: format!("Failed to upload server log: {}", error) 
-                        };
-                    }
                 }
             }
             Message::InstallPaperStart => {
@@ -605,5 +569,13 @@ impl Launcher {
             selected_tab,
             content: iced::widget::text_editor::Content::with_text(selected_tab.get_text()),
         });
+    }
+
+    pub fn get_logs(&self, is_server: bool) -> &HashMap<String, InstanceLog> {
+        if is_server {
+            &self.server_logs
+        } else {
+            &self.client_logs
+        }
     }
 }

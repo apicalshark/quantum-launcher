@@ -117,38 +117,8 @@ pub struct InstanceConfigJson {
     ///
     /// Ultimately if you want one less icon in your taskbar then go ahead.
     pub close_on_start: Option<bool>,
-    /// **Client Only**
-    ///
-    /// Custom window width for Minecraft.
-    ///
-    /// **Default: `None` (uses Minecraft's default)**
-    ///
-    /// When set, this will launch Minecraft with a specific window width
-    /// using the `--width` command line argument.
-    ///
-    /// This is useful for:
-    /// - Setting a specific resolution for consistent gameplay
-    /// - Matching your monitor's resolution
-    /// - Creating smaller windows for recording/streaming
-    ///
-    /// Note: This only affects windowed mode, not fullscreen.
-    pub window_width: Option<u32>,
-    /// **Client Only**
-    ///
-    /// Custom window height for Minecraft.
-    ///
-    /// **Default: `None` (uses Minecraft's default)**
-    ///
-    /// When set, this will launch Minecraft with a specific window height
-    /// using the `--height` command line argument.
-    ///
-    /// This is useful for:
-    /// - Setting a specific resolution for consistent gameplay
-    /// - Matching your monitor's resolution
-    /// - Creating smaller windows for recording/streaming
-    ///
-    /// Note: This only affects windowed mode, not fullscreen.
-    pub window_height: Option<u32>,
+
+    pub global_settings: Option<GlobalSettings>,
 }
 
 impl InstanceConfigJson {
@@ -207,4 +177,37 @@ impl InstanceConfigJson {
     pub async fn save(&self, instance: &InstanceSelection) -> Result<(), JsonFileError> {
         self.save_to_dir(&instance.get_instance_path()).await
     }
+
+    pub fn get_window_size(&self, global: Option<&GlobalSettings>) -> (Option<u32>, Option<u32>) {
+        (
+            self.global_settings
+                .as_ref()
+                .and_then(|n| n.window_width)
+                .or(global.and_then(|n| n.window_width)),
+            self.global_settings
+                .as_ref()
+                .and_then(|n| n.window_height)
+                .or(global.and_then(|n| n.window_height)),
+        )
+    }
+}
+
+/// Settings that can both be set on a per-instance basis
+/// and also have a global default.
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct GlobalSettings {
+    /// **Client Only**
+    ///
+    /// Custom window **width** for Minecraft (in windowed mode).
+    ///
+    /// When set, this will launch Minecraft with a specific window width
+    /// using the `--width` command line argument.
+    pub window_width: Option<u32>,
+    /// **Client Only**
+    ///
+    /// Custom window **height** for Minecraft (in windowed mode).
+    ///
+    /// When set, this will launch Minecraft with a specific window height
+    /// using the `--height` command line argument.
+    pub window_height: Option<u32>,
 }

@@ -271,6 +271,10 @@ impl InstanceSelection {
             Self::Instance(ref mut n) | Self::Server(ref mut n) => name.clone_into(n),
         }
     }
+
+    pub fn get_pair(&self) -> (&str, bool) {
+        (self.get_name(), self.is_server())
+    }
 }
 
 /// An enum representing a Minecraft version.

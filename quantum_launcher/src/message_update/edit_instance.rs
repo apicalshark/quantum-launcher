@@ -91,29 +91,37 @@ impl Launcher {
             }
             EditInstanceMessage::RenameApply => return self.rename_instance(),
             EditInstanceMessage::ConfigSaved(res) => res?,
-            EditInstanceMessage::WindowWidthChanged(width_str) => {
+            EditInstanceMessage::WindowWidthChanged(width) => {
                 if let State::Launch(MenuLaunch {
                     edit_instance: Some(menu),
                     ..
                 }) = &mut self.state
                 {
-                    if width_str.is_empty() {
-                        menu.config.window_width = None;
-                    } else if let Ok(width) = width_str.parse::<u32>() {
-                        menu.config.window_width = Some(width);
+                    menu.config
+                        .global_settings
+                        .get_or_insert_default()
+                        .window_width = if width.is_empty() {
+                        None
+                    } else {
+                        // TODO: Error handling
+                        width.parse::<u32>().ok()
                     }
                 }
             }
-            EditInstanceMessage::WindowHeightChanged(height_str) => {
+            EditInstanceMessage::WindowHeightChanged(height) => {
                 if let State::Launch(MenuLaunch {
                     edit_instance: Some(menu),
                     ..
                 }) = &mut self.state
                 {
-                    if height_str.is_empty() {
-                        menu.config.window_height = None;
-                    } else if let Ok(height) = height_str.parse::<u32>() {
-                        menu.config.window_height = Some(height);
+                    menu.config
+                        .global_settings
+                        .get_or_insert_default()
+                        .window_height = if height.is_empty() {
+                        None
+                    } else {
+                        // TODO: Error handling
+                        height.parse::<u32>().ok()
                     }
                 }
             }

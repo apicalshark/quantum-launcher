@@ -1,12 +1,12 @@
-use iced::{widget, Length};
-use ql_core::InstanceSelection;
-
 use crate::{
     icon_manager,
     menu_renderer::{button_with_icon, FONT_MONO},
     state::{EditInstanceMessage, MenuEditInstance, Message},
     stylesheet::{color::Color, styles::LauncherTheme},
 };
+use iced::{widget, Length};
+use ql_core::json::GlobalSettings;
+use ql_core::InstanceSelection;
 
 use super::Element;
 
@@ -80,27 +80,13 @@ impl MenuEditInstance {
                         widget::checkbox("Close launcher after game opens", self.config.close_on_start.unwrap_or(false))
                             .on_toggle(|t| Message::EditInstance(EditInstanceMessage::CloseLauncherToggle(t))),
                     ].spacing(5)))
-                    .push_maybe((!selected_instance.is_server()).then_some(widget::column![
-                        "Custom window resolution:",
-                        widget::text("Leave blank to use Minecraft's default window size").size(12).style(ts),
-                        widget::row![
-                            widget::text("Width:").width(50),
-                            widget::text_input(
-                                "1920",
-                                &self.config.window_width.map_or(String::new(), |w| w.to_string())
-                            )
-                            .on_input(|n| Message::EditInstance(EditInstanceMessage::WindowWidthChanged(n)))
-                            .width(100),
-                            widget::text("Height").width(50),
-                            widget::text_input(
-                                "1080",
-                                &self.config.window_height.map_or(String::new(), |h| h.to_string())
-                            )
-                            .on_input(|n| Message::EditInstance(EditInstanceMessage::WindowHeightChanged(n)))
-                            .width(100),
-                        ].spacing(10).align_y(iced::alignment::Vertical::Center),
-                        widget::text("Common resolutions: 1920x1080, 1366x768, 2560x1440, 3840x2160").size(12).style(ts),
-                    ].spacing(5)))
+                    .push_maybe((!selected_instance.is_server()).then_some(
+                        resolution_dialog(
+                            self.config.global_settings.as_ref(),
+                            |n| Message::EditInstance(EditInstanceMessage::WindowWidthChanged(n)),
+                            |n| Message::EditInstance(EditInstanceMessage::WindowHeightChanged(n)),
+                        )
+                    ))
                     .push(
                         widget::column![
                             widget::checkbox("DEBUG: Enable log system (recommended)", self.config.enable_logger.unwrap_or(true))
@@ -195,4 +181,45 @@ impl MenuEditInstance {
         }))
         .into()
     }
+}
+
+pub fn resolution_dialog<'a>(
+    global_settings: Option<&GlobalSettings>,
+    width: impl Fn(String) -> Message + 'a,
+    height: impl Fn(String) -> Message + 'a,
+) -> widget::Column<'a, Message, LauncherTheme> {
+    let ts = |n: &LauncherTheme| n.style_text(Color::SecondLight);
+
+    widget::column![
+        "Custom window resolution:",
+        widget::text("Leave blank to use Minecraft's default window size")
+            .size(12)
+            .style(ts),
+        widget::row![
+            widget::text("Width:").width(50),
+            widget::text_input(
+                "1920",
+                &global_settings
+                    .and_then(|n| n.window_width)
+                    .map_or(String::new(), |w| w.to_string())
+            )
+            .on_input(width)
+            .width(100),
+            widget::text("Height").width(50),
+            widget::text_input(
+                "1080",
+                &global_settings
+                    .and_then(|n| n.window_height)
+                    .map_or(String::new(), |h| h.to_string())
+            )
+            .on_input(height)
+            .width(100),
+        ]
+        .spacing(10)
+        .align_y(iced::alignment::Vertical::Center),
+        widget::text("Common resolutions: 1920x1080, 1366x768, 2560x1440, 3840x2160")
+            .size(12)
+            .style(ts),
+    ]
+    .spacing(5)
 }

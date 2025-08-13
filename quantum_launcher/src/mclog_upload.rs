@@ -1,19 +1,20 @@
-use ql_core::CLIENT;
+use ql_core::file_utils::check_for_success;
+use ql_core::{IntoJsonError, IntoStringError, CLIENT};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct MclogsResponse {
     pub success: bool,
-    pub id: Option<String>,
+    // pub id: Option<String>,
     pub url: Option<String>,
-    pub raw: Option<String>,
+    // pub raw: Option<String>,
     pub error: Option<String>,
 }
 
-/// Uploads log content to mclo.gs and returns the URL if successful
+/// Uploads log content to <https://mclo.gs> and returns the URL if successful
 pub async fn upload_log(content: String) -> Result<String, String> {
     if content.trim().is_empty() {
-        return Err("Cannot upload empty log".to_string());
+        return Err("Cannot upload empty log".to_owned());
     }
 
     // Use form encoding instead of multipart
@@ -25,19 +26,22 @@ pub async fn upload_log(content: String) -> Result<String, String> {
         .body(form_data)
         .send()
         .await
-        .map_err(|e| format!("Failed to upload log: {}", e))?;
+        .strerr()?;
 
-    let response_text = response
-        .text()
-        .await
-        .map_err(|e| format!("Failed to read response: {}", e))?;
+    check_for_success(&response).await.strerr()?;
+    let response_text = response.text().await.strerr()?;
 
     let mclog_response: MclogsResponse = serde_json::from_str(&response_text)
-        .map_err(|e| format!("Failed to parse response: {}", e))?;
+        .json(response_text)
+        .strerr()?;
 
     if mclog_response.success {
-        mclog_response.url.ok_or_else(|| "No URL in response".to_string())
+        mclog_response
+            .url
+            .ok_or_else(|| "No URL in response".to_string())
     } else {
-        Err(mclog_response.error.unwrap_or_else(|| "Unknown error".to_string()))
+        Err(mclog_response
+            .error
+            .unwrap_or_else(|| "Unknown error".to_string()))
     }
 }

@@ -5,6 +5,12 @@ use std::{
     sync::mpsc::Sender,
 };
 
+use crate::{
+    auth::{ms::CLIENT_ID, AccountData, AccountType},
+    download::GameDownloader,
+    jarmod,
+};
+use ql_core::json::GlobalSettings;
 use ql_core::{
     err, file_utils, info,
     json::{
@@ -17,12 +23,6 @@ use ql_core::{
 };
 use ql_java_handler::{get_java_binary, JavaVersion};
 use tokio::process::Command;
-
-use crate::{
-    auth::{ms::CLIENT_ID, AccountData, AccountType},
-    download::GameDownloader,
-    jarmod,
-};
 
 use super::{error::GameLaunchError, replace_var};
 
@@ -45,11 +45,7 @@ pub struct GameLauncher {
 
     pub config_json: InstanceConfigJson,
     pub version_json: VersionDetails,
-
-    /// Global default window width from launcher settings
-    global_default_width: Option<u32>,
-    /// Global default window height from launcher settings
-    global_default_height: Option<u32>,
+    global_settings: Option<GlobalSettings>,
 }
 
 impl GameLauncher {
@@ -57,6 +53,7 @@ impl GameLauncher {
         instance_name: String,
         username: String,
         java_install_progress_sender: Option<Sender<GenericProgress>>,
+        global_settings: Option<GlobalSettings>,
     ) -> Result<Self, GameLaunchError> {
         let instance_dir = get_instance_dir(&instance_name).await?;
 
@@ -79,15 +76,8 @@ impl GameLauncher {
             minecraft_dir,
             config_json,
             version_json,
-            global_default_width: None,
-            global_default_height: None,
+            global_settings,
         })
-    }
-
-    /// Set global default resolution values from launcher settings
-    pub fn set_global_defaults(&mut self, width: Option<u32>, height: Option<u32>) {
-        self.global_default_width = width;
-        self.global_default_height = height;
     }
 
     pub fn init_game_arguments(
@@ -136,8 +126,9 @@ impl GameLauncher {
 
         // Add custom resolution arguments if specified
         // Priority: Instance-specific setting > Global default > Minecraft default
-        let width_to_use = self.config_json.window_width.or(self.global_default_width);
-        let height_to_use = self.config_json.window_height.or(self.global_default_height);
+        let (width_to_use, height_to_use) = self
+            .config_json
+            .get_window_size(self.global_settings.as_ref());
 
         if let Some(width) = width_to_use {
             game_arguments.push("--width".to_owned());

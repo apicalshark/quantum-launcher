@@ -1,6 +1,10 @@
 use iced::{widget, Length};
 use ql_core::LAUNCHER_DIR;
 
+use super::{
+    back_button, button_with_icon, get_theme_selector, sidebar_button, Element, DISCORD, GITHUB,
+};
+use crate::menu_renderer::edit_instance::resolution_dialog;
 use crate::{
     config::LauncherConfig,
     icon_manager,
@@ -10,10 +14,6 @@ use crate::{
         styles::{LauncherTheme, LauncherThemeColor},
         widgets::StyleButton,
     },
-};
-
-use super::{
-    back_button, button_with_icon, get_theme_selector, sidebar_button, Element, DISCORD, GITHUB,
 };
 
 const SETTINGS_SPACING: f32 = 7.0;
@@ -162,7 +162,7 @@ impl LauncherSettingsTab {
             LauncherSettingsTab::UserInterface => menu.view_ui_tab(config),
             LauncherSettingsTab::Internal => widget::column![
                 widget::column![
-                    widget::text("Advanced").size(20),
+                    widget::text("Game").size(20),
                     button_with_icon(icon_manager::folder(), "Open Launcher Folder", 16)
                         .on_press(Message::CoreOpenPath(LAUNCHER_DIR.clone()))
                 ]
@@ -170,26 +170,13 @@ impl LauncherSettingsTab {
                 .padding(10),
                 widget::horizontal_rule(1),
                 widget::column![
-                    widget::text("Default Minecraft Resolution").size(16),
-                    widget::text("Set default window size for all new instances. Individual instances can override these settings.").size(12),
-                    widget::column![
-                        widget::text("Width:"),
-                        widget::text_input(
-                            "e.g. 1920 (leave empty for Minecraft default)",
-                            &config.default_minecraft_width.map(|w| w.to_string()).unwrap_or_default()
-                        )
-                        .on_input(|input| Message::LauncherSettings(LauncherSettingsMessage::DefaultMinecraftWidthChanged(input)))
-                        .width(Length::Fixed(200.0)),
-                    ].spacing(5),
-                    widget::column![
-                        widget::text("Height"),
-                        widget::text_input(
-                            "e.g. 1080 (leave empty for Minecraft default)",
-                            &config.default_minecraft_height.map(|h| h.to_string()).unwrap_or_default()
-                        )
-                        .on_input(|input| Message::LauncherSettings(LauncherSettingsMessage::DefaultMinecraftHeightChanged(input)))
-                        .width(Length::Fixed(200.0)),
-                    ].spacing(5),
+                    widget::text("Default Game Window Size").size(16),
+                    widget::text("The default size the Minecraft window will open in. Individual instances can override these settings. (Leave empty for default)").size(12),
+                    resolution_dialog(
+                        config.global_settings.as_ref(),
+                        |n| Message::LauncherSettings(LauncherSettingsMessage::DefaultMinecraftWidthChanged(n)),
+                        |n| Message::LauncherSettings(LauncherSettingsMessage::DefaultMinecraftHeightChanged(n)),
+                    )
                 ]
                 .padding(10)
                 .spacing(10),

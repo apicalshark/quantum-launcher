@@ -1,3 +1,4 @@
+use ql_core::json::GlobalSettings;
 use ql_core::{
     err, IntoIoError, IntoJsonError, JsonFileError, LAUNCHER_DIR, LAUNCHER_VERSION_NAME,
 };
@@ -100,25 +101,9 @@ pub struct LauncherConfig {
     // Since: v0.4.2
     pub window_height: Option<f32>,
 
-    /// **Global Default** - Custom window width for Minecraft instances
-    /// (Windowed Mode)
-    ///
-    /// **Default: `None` (uses Minecraft's default)**
-    ///
-    /// When set, will be used as the default window width for all instances.
-    /// Individual instances can override this setting in their Edit Instance tab.
+    /// Settings that apply both on a per-instance basis and with global overrides.
     // Since: v0.4.2
-    pub default_minecraft_width: Option<u32>,
-
-    /// **Global Default** - Custom window height for Minecraft instances
-    /// (Windowed Mode)
-    ///
-    /// **Default: `None` (uses Minecraft's default)**
-    ///
-    /// When set, will be used as the default window height for all instances.
-    /// Individual instances can override this setting in their Edit Instance tab.
-    // Since: v0.4.2
-    pub default_minecraft_height: Option<u32>,
+    pub global_settings: Option<GlobalSettings>,
 }
 
 impl Default for LauncherConfig {
@@ -137,8 +122,7 @@ impl Default for LauncherConfig {
             account_selected: None,
             window_width: None,
             window_height: None,
-            default_minecraft_width: None,
-            default_minecraft_height: None,
+            global_settings: None,
         }
     }
 }

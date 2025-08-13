@@ -142,8 +142,8 @@ impl Launcher {
             State::LoginAlternate(menu) => menu.view(self.tick_timer),
             State::CurseforgeManualDownload(menu) => menu.view(),
             State::ExportInstance(menu) => menu.view(self.tick_timer),
-            State::LogUploadResult { url, is_server } => {
-                view_log_upload_result(url, *is_server)
+            State::LogUploadResult { url } => {
+                view_log_upload_result(url, self.selected_instance.as_ref().unwrap().is_server())
             }
             State::License(menu) => menu.view(),
         }

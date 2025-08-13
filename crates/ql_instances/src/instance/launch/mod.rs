@@ -7,36 +7,24 @@ use tokio::process::Child;
 pub(super) mod error;
 mod launcher;
 pub use launcher::GameLauncher;
+use ql_core::json::GlobalSettings;
 
 /// Launches a Minecraft instance.
 ///
 /// # Arguments
 /// - `instance_name` - The name of the instance to launch.
 /// - `username` - The username to use in the game.
-/// - `java_install_progress_sender` - Used to send progress
-///   updates for Java installation. If you want to track Java installation
-///   progress in a progress bar, create a progress bar receiver to this
-///   sender to this function and polling the receiver frequently.
-/// Launches a Minecraft instance.
-///
-/// # Arguments
-/// - `instance_name` - The name of the instance to launch.
-/// - `username` - The username to use in the game.
-/// - `java_install_progress_sender` - Used to send progress
-///   updates for Java installation. If you want to track Java installation
-///   progress in a progress bar, create a progress bar receiver to this
-///   sender to this function and polling the receiver frequently.
-///   If not needed, simply pass `None` to the function.
-/// - `auth` - Account authentication data. Pass `None` for offline play.
-/// - `global_default_width` - Global default window width. Used when instance doesn't have its own width set.
-/// - `global_default_height` - Global default window height. Used when instance doesn't have its own height set.
+/// - `java_install_progress_sender` - (Optional) Sends progress updates for Java installation.
+///   To track progress, connect a progress bar receiver and poll it frequently.
+/// - `auth` - (Optional) Account authentication data. Pass `None` for offline play.
+/// - `global_settings` - (Optional) Global launcher-level settings that apply to instance
+///   like window width/height, etc.
 pub async fn launch(
     instance_name: String,
     username: String,
     java_install_progress_sender: Option<Sender<GenericProgress>>,
     auth: Option<AccountData>,
-    global_default_width: Option<u32>,
-    global_default_height: Option<u32>,
+    global_settings: Option<GlobalSettings>,
 ) -> Result<Arc<Mutex<Child>>, GameLaunchError> {
     if username.is_empty() {
         return Err(GameLaunchError::UsernameIsEmpty);
@@ -45,10 +33,13 @@ pub async fn launch(
         return Err(GameLaunchError::UsernameHasSpaces);
     }
 
-    let mut game_launcher =
-        GameLauncher::new(instance_name, username, java_install_progress_sender).await?;
-
-    game_launcher.set_global_defaults(global_default_width, global_default_height);
+    let mut game_launcher = GameLauncher::new(
+        instance_name,
+        username,
+        java_install_progress_sender,
+        global_settings,
+    )
+    .await?;
 
     game_launcher.migrate_old_instances().await?;
     game_launcher.create_mods_dir().await?;

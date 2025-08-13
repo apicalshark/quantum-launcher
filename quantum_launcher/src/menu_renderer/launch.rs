@@ -178,18 +178,9 @@ impl Launcher {
             );
 
             widget::column![widget::row!(
-                widget::button(widget::text("Copy Log").size(14)).on_press(if is_server {
-                    Message::ServerManageCopyLog
-                } else {
-                    Message::LaunchCopyLog
-                }),
-                widget::button(widget::text("Upload Log").size(14)).on_press_maybe(
-                    (!log_data.is_empty()).then(|| if is_server {
-                        Message::ServerManageUploadLog
-                    } else {
-                        Message::LaunchUploadLog
-                    })
-                ),
+                widget::button(widget::text("Copy Log").size(14)).on_press(Message::LaunchCopyLog),
+                widget::button(widget::text("Upload Log").size(14))
+                    .on_press_maybe((!log_data.is_empty()).then_some(Message::LaunchUploadLog)),
                 widget::button(widget::text("Join Discord").size(14))
                     .on_press(Message::CoreOpenLink(DISCORD.to_owned())),
                 widget::text("Having issues? Copy and send the game log for support").size(12),

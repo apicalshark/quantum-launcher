@@ -294,7 +294,7 @@ impl std::fmt::Display for LauncherSettingsTab {
             "{}",
             match self {
                 LauncherSettingsTab::UserInterface => "Appearance",
-                LauncherSettingsTab::Internal => "Advanced",
+                LauncherSettingsTab::Internal => "Game",
                 LauncherSettingsTab::About => "About",
             }
         )
@@ -436,7 +436,6 @@ pub enum State {
 
     LogUploadResult {
         url: String,
-        is_server: bool,
     },
 
     License(MenuLicense),

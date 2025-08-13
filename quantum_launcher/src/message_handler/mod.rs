@@ -53,14 +53,19 @@ impl Launcher {
             log.log.clear();
         }
 
+        let global_settings = self.config.global_settings.clone();
         let instance_name = selected_instance.to_owned();
-        let global_width = self.config.default_minecraft_width;
-        let global_height = self.config.default_minecraft_height;
         Task::perform(
             async move {
-                ql_instances::launch(instance_name, username, Some(sender), account_data, global_width, global_height)
-                    .await
-                    .strerr()
+                ql_instances::launch(
+                    instance_name,
+                    username,
+                    Some(sender),
+                    account_data,
+                    global_settings,
+                )
+                .await
+                .strerr()
             },
             Message::LaunchEnd,
         )
