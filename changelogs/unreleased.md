@@ -21,17 +21,19 @@
 >
 > For existing instances, and for 1.21.6+, use the CustomSkinLoader mod
 
-# UI
+# Other
 
-## Revamped:
+- Logs can now be uploaded to <https://mclo.gs> for easy sharing (from within the launcher).
+
+- You can now set Minecraft's window size both globally and per-instance.
+- The launcher now retains its own window size from the previous session
+  (this feature can be disabled)
+
+# Revamped Menus
 
 - Launcher settings (redesign + licenses page + UI antialiasing option)
 - Confirmation screen
 - All launcher icons (thanks, [Aurlt](https://github.com/Aurlt) !)
-
-## Improved:
-
-- Instance edit menu
 - OptiFine install menu (now with Drag & Drop, delete installer option)
 
 # CLI
