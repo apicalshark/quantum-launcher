@@ -169,15 +169,16 @@ impl LauncherSettingsTab {
                 .spacing(10)
                 .padding(10),
                 widget::horizontal_rule(1),
-                widget::column![
-                    widget::text("Default Game Window Size").size(16),
-                    widget::text("The default size the Minecraft window will open in. Individual instances can override these settings. (Leave empty for default)").size(12),
-                    resolution_dialog(
-                        config.global_settings.as_ref(),
-                        |n| Message::LauncherSettings(LauncherSettingsMessage::DefaultMinecraftWidthChanged(n)),
-                        |n| Message::LauncherSettings(LauncherSettingsMessage::DefaultMinecraftHeightChanged(n)),
-                    )
-                ]
+                widget::column![resolution_dialog(
+                    config.global_settings.as_ref(),
+                    |n| Message::LauncherSettings(
+                        LauncherSettingsMessage::DefaultMinecraftWidthChanged(n)
+                    ),
+                    |n| Message::LauncherSettings(
+                        LauncherSettingsMessage::DefaultMinecraftHeightChanged(n)
+                    ),
+                    true
+                )]
                 .padding(10)
                 .spacing(10),
                 widget::horizontal_rule(1),

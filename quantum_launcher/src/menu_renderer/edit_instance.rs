@@ -80,13 +80,6 @@ impl MenuEditInstance {
                         widget::checkbox("Close launcher after game opens", self.config.close_on_start.unwrap_or(false))
                             .on_toggle(|t| Message::EditInstance(EditInstanceMessage::CloseLauncherToggle(t))),
                     ].spacing(5)))
-                    .push_maybe((!selected_instance.is_server()).then_some(
-                        resolution_dialog(
-                            self.config.global_settings.as_ref(),
-                            |n| Message::EditInstance(EditInstanceMessage::WindowWidthChanged(n)),
-                            |n| Message::EditInstance(EditInstanceMessage::WindowHeightChanged(n)),
-                        )
-                    ))
                     .push(
                         widget::column![
                             widget::checkbox("DEBUG: Enable log system (recommended)", self.config.enable_logger.unwrap_or(true))
@@ -112,10 +105,6 @@ impl MenuEditInstance {
                             button_with_icon(icon_manager::create(), "Add", 16)
                                 .on_press(Message::EditInstance(EditInstanceMessage::JavaArgsAdd))
                         ),
-                    ).padding(10).spacing(10).width(Length::Fill)
-                ).style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::ExtraDark)),
-                widget::container(
-                    widget::column!(
                         "Game arguments:",
                         widget::column!(
                             Self::get_java_args_list(
@@ -129,7 +118,20 @@ impl MenuEditInstance {
                                 .on_press(Message::EditInstance(EditInstanceMessage::GameArgsAdd))
                         ),
                     ).padding(10).spacing(10).width(Length::Fill)
-                ).style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::Dark)),
+                ).style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::ExtraDark)),
+                widget::container(
+                    widget::Column::new()
+                        .push_maybe((!selected_instance.is_server()).then_some(
+                            resolution_dialog(
+                                self.config.global_settings.as_ref(),
+                                |n| Message::EditInstance(EditInstanceMessage::WindowWidthChanged(n)),
+                                |n| Message::EditInstance(EditInstanceMessage::WindowHeightChanged(n)),
+                                false
+                        )))
+                )
+                .style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::Dark))
+                .padding(10)
+                .width(Length::Fill),
                 widget::container(
                     button_with_icon(icon_manager::delete(), "Delete Instance", 16)
                         .on_press(Message::DeleteInstanceMenu)
@@ -187,27 +189,35 @@ pub fn resolution_dialog<'a>(
     global_settings: Option<&GlobalSettings>,
     width: impl Fn(String) -> Message + 'a,
     height: impl Fn(String) -> Message + 'a,
+    global: bool,
 ) -> widget::Column<'a, Message, LauncherTheme> {
     let ts = |n: &LauncherTheme| n.style_text(Color::SecondLight);
 
     widget::column![
-        "Custom window resolution:",
-        widget::text("Leave blank to use Minecraft's default window size")
-            .size(12)
-            .style(ts),
+        "Custom Game Window Size (px):",
+        widget::text!(
+            "The default size the Minecraft window will open in{}\n(Leave empty for default)",
+            if global {
+                "\nIndividual instances can override these settings."
+            } else {
+                ""
+            }
+        )
+        .size(12)
+        .style(ts),
         widget::row![
-            widget::text("Width:").width(50),
+            widget::text("Width:").size(14),
             widget::text_input(
-                "1920",
+                "854",
                 &global_settings
                     .and_then(|n| n.window_width)
                     .map_or(String::new(), |w| w.to_string())
             )
             .on_input(width)
             .width(100),
-            widget::text("Height").width(50),
+            widget::text("Height:").size(14),
             widget::text_input(
-                "1080",
+                "480",
                 &global_settings
                     .and_then(|n| n.window_height)
                     .map_or(String::new(), |h| h.to_string())
@@ -217,7 +227,7 @@ pub fn resolution_dialog<'a>(
         ]
         .spacing(10)
         .align_y(iced::alignment::Vertical::Center),
-        widget::text("Common resolutions: 1920x1080, 1366x768, 2560x1440, 3840x2160")
+        widget::text("Common resolutions: 854x480, 1366x768, 1920x1080, 2560x1440, 3840x2160")
             .size(12)
             .style(ts),
     ]
