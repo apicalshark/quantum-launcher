@@ -1,10 +1,3 @@
-use std::{
-    collections::HashSet,
-    path::{Path, PathBuf},
-    process::Stdio,
-    sync::mpsc::Sender,
-};
-
 use crate::{
     auth::{ms::CLIENT_ID, AccountData, AccountType},
     download::GameDownloader,
@@ -22,6 +15,12 @@ use ql_core::{
     CLASSPATH_SEPARATOR, LAUNCHER_DIR,
 };
 use ql_java_handler::{get_java_binary, JavaVersion};
+use std::{
+    collections::HashSet,
+    path::{Path, PathBuf},
+    process::Stdio,
+    sync::mpsc::Sender,
+};
 use tokio::process::Command;
 
 use super::{error::GameLaunchError, replace_var};
@@ -30,10 +29,9 @@ pub struct GameLauncher {
     username: String,
     instance_name: String,
 
-    /// If the required Java version isn't installed,
-    /// and it has to be installed before launching game,
-    /// then you can use this to send *download progress updates*
-    /// to the GUI for the **progress bar**.
+    /// If Java isn't installed, it will be auto-installed by the launcher.
+    /// This field allows you to send progress updates
+    /// to the GUI during installation.
     java_install_progress_sender: Option<Sender<GenericProgress>>,
 
     /// Client: `QuantumLauncher/instances/NAME/`
@@ -45,6 +43,8 @@ pub struct GameLauncher {
 
     pub config_json: InstanceConfigJson,
     pub version_json: VersionDetails,
+    /// Launcher-wide instance settings. These
+    /// can be overridden by `config_json.global_settings`.
     global_settings: Option<GlobalSettings>,
 }
 
@@ -138,6 +138,8 @@ impl GameLauncher {
             game_arguments.push("--height".to_owned());
             game_arguments.push(height.to_string());
         }
+
+        game_arguments.extend(self.config_json.game_args.iter().flatten().cloned());
 
         Ok(game_arguments)
     }
@@ -250,15 +252,22 @@ impl GameLauncher {
             .ok_or(GameLaunchError::PathBufToString(natives_path.clone()))?;
 
         // TODO: deal with self.version_json.arguments.jvm (currently ignored)
-        let mut args = vec![
-            "-Dminecraft.launcher.brand=minecraft-launcher".to_owned(),
-            "-Dminecraft.launcher.version=2.1.1349".to_owned(),
-            format!("-Djava.library.path={natives_path}"),
-            format!("-Djna.tmpdir={natives_path}"),
-            format!("-Dorg.lwjgl.system.SharedLibraryExtractPath={natives_path}"),
-            format!("-Dio.netty.native.workdir={natives_path}"),
-            self.config_json.get_ram_argument(),
-        ];
+        let mut args: Vec<String> = self
+            .config_json
+            .java_args
+            .iter()
+            .cloned()
+            .flatten()
+            .chain([
+                "-Dminecraft.launcher.brand=minecraft-launcher".to_owned(),
+                "-Dminecraft.launcher.version=2.1.1349".to_owned(),
+                format!("-Djava.library.path={natives_path}"),
+                format!("-Djna.tmpdir={natives_path}"),
+                format!("-Dorg.lwjgl.system.SharedLibraryExtractPath={natives_path}"),
+                format!("-Dio.netty.native.workdir={natives_path}"),
+                self.config_json.get_ram_argument(),
+            ])
+            .collect();
 
         // I've disabled these for now because they make the
         // FPS slightly worse (!) from my testing?
@@ -382,7 +391,8 @@ impl GameLauncher {
             }
             game_arguments.extend(arguments.game.clone());
         } else if let Some(arguments) = &json.minecraftArguments {
-            *game_arguments = arguments.split(' ').map(str::to_owned).collect();
+            let new: Vec<String> = arguments.split(' ').map(str::to_owned).collect();
+            *game_arguments = deduplicate_game_args(game_arguments.clone(), new);
         }
         Ok(Some(json))
     }
@@ -436,7 +446,8 @@ impl GameLauncher {
         if let Some(arguments) = &optifine_json.arguments {
             game_arguments.extend(arguments.game.clone());
         } else if let Some(arguments) = &optifine_json.minecraftArguments {
-            *game_arguments = arguments.split(' ').map(str::to_owned).collect();
+            let new: Vec<String> = arguments.split(' ').map(str::to_owned).collect();
+            *game_arguments = deduplicate_game_args(game_arguments.clone(), new);
         }
 
         Ok(Some((optifine_json, jar)))
@@ -779,13 +790,9 @@ impl GameLauncher {
     ) -> Result<Command, GameLaunchError> {
         let mut command = self.get_java_command().await?;
         command.args(
-            self.config_json
-                .java_args
+            java_arguments
                 .iter()
-                .flatten()
-                .chain(java_arguments.iter())
                 .chain(game_arguments.iter())
-                .chain(self.config_json.game_args.iter().flatten())
                 .filter(|n| !n.is_empty()),
         );
         command.current_dir(&self.minecraft_dir);
@@ -929,4 +936,33 @@ fn remove_substring(original: &str, to_remove: &str) -> Option<String> {
     } else {
         None
     }
+}
+
+fn deduplicate_game_args(arr1: Vec<String>, arr2: Vec<String>) -> Vec<String> {
+    let mut result = Vec::new();
+    let mut seen_keys = HashSet::new();
+
+    // Helper function to insert key-value pairs in order
+    fn insert_pairs(arr: &[String], result: &mut Vec<String>, seen_keys: &mut HashSet<String>) {
+        for i in (0..arr.len()).step_by(2) {
+            let key = arr[i].clone();
+            let value = arr[i + 1].clone();
+            if !seen_keys.contains(&key) {
+                result.push(key.clone());
+                result.push(value.clone());
+                seen_keys.insert(key);
+            } else {
+                // Update value if the key already exists in result (i.e., in case of conflict, overwrite)
+                let pos = result.iter().position(|x| x == &key).unwrap();
+                result[pos + 1] = value; // Update the value for this key
+            }
+        }
+    }
+
+    insert_pairs(&arr1, &mut result, &mut seen_keys);
+    // Second array overwrites first
+    insert_pairs(&arr2, &mut result, &mut seen_keys);
+
+    // HashMap -> Vec<String> (key, value, key, value, ...)
+    result
 }
