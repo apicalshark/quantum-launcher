@@ -119,7 +119,7 @@ impl Launcher {
                             &self.client_logs
                         },
                         selected_instance_s,
-                        menu.is_viewing_server,
+                        menu,
                     )
                     .into(),
                 LaunchTabId::Edit => {
@@ -151,7 +151,7 @@ impl Launcher {
         &'element self,
         logs: &'element HashMap<String, InstanceLog>,
         selected_instance: Option<&'element str>,
-        is_server: bool,
+        menu: &'element MenuLaunch,
     ) -> widget::Column<'element, Message, LauncherTheme> {
         let scroll = if let State::Launch(MenuLaunch { log_scroll, .. }) = &self.state {
             *log_scroll
@@ -179,8 +179,10 @@ impl Launcher {
 
             widget::column![widget::row!(
                 widget::button(widget::text("Copy Log").size(14)).on_press(Message::LaunchCopyLog),
-                widget::button(widget::text("Upload Log").size(14))
-                    .on_press_maybe((!log_data.is_empty()).then_some(Message::LaunchUploadLog)),
+                widget::button(widget::text("Upload Log").size(14)).on_press_maybe(
+                    (!log_data.is_empty() && !menu.is_uploading_mclogs)
+                        .then_some(Message::LaunchUploadLog)
+                ),
                 widget::button(widget::text("Join Discord").size(14))
                     .on_press(Message::CoreOpenLink(DISCORD.to_owned())),
                 widget::text("Having issues? Copy and send the game log for support").size(12),
@@ -190,13 +192,17 @@ impl Launcher {
                 has_crashed.then_some(
                     widget::text!(
                         "The {} has crashed!",
-                        if is_server { "server" } else { "game" }
+                        if menu.is_viewing_server {
+                            "server"
+                        } else {
+                            "game"
+                        }
                     )
                     .size(18),
                 ),
             )
             .push_maybe(
-                is_server.then_some(
+                menu.is_viewing_server.then_some(
                     widget::text_input("Enter command...", command)
                         .on_input(move |n| {
                             Message::ServerManageEditCommand(

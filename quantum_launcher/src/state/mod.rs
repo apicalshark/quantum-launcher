@@ -288,7 +288,9 @@ fn load_account(
             // Fallback to old behavior for backwards compatibility
             match account_type {
                 AccountType::ElyBy => username.strip_suffix(" (elyby)").unwrap_or(username),
-                AccountType::LittleSkin => username.strip_suffix(" (littleskin)").unwrap_or(username),
+                AccountType::LittleSkin => {
+                    username.strip_suffix(" (littleskin)").unwrap_or(username)
+                }
                 AccountType::Microsoft => username,
             }
         };
@@ -299,19 +301,31 @@ fn load_account(
         if account.account_type.as_deref() == Some("ElyBy") || username.ends_with(" (elyby)") {
             (
                 AccountType::ElyBy,
-                get_refresh_token_for_account_type(AccountType::ElyBy, username, account.keyring_identifier.as_deref()),
+                get_refresh_token_for_account_type(
+                    AccountType::ElyBy,
+                    username,
+                    account.keyring_identifier.as_deref(),
+                ),
             )
         } else if account.account_type.as_deref() == Some("LittleSkin")
             || username.ends_with(" (littleskin)")
         {
             (
                 AccountType::LittleSkin,
-                get_refresh_token_for_account_type(AccountType::LittleSkin, username, account.keyring_identifier.as_deref()),
+                get_refresh_token_for_account_type(
+                    AccountType::LittleSkin,
+                    username,
+                    account.keyring_identifier.as_deref(),
+                ),
             )
         } else {
             (
                 AccountType::Microsoft,
-                get_refresh_token_for_account_type(AccountType::Microsoft, username, account.keyring_identifier.as_deref()),
+                get_refresh_token_for_account_type(
+                    AccountType::Microsoft,
+                    username,
+                    account.keyring_identifier.as_deref(),
+                ),
             )
         };
 
@@ -320,8 +334,14 @@ fn load_account(
     } else {
         // Fallback to old behavior for backwards compatibility
         match account_type {
-            AccountType::ElyBy => username.strip_suffix(" (elyby)").unwrap_or(username).to_owned(),
-            AccountType::LittleSkin => username.strip_suffix(" (littleskin)").unwrap_or(username).to_owned(),
+            AccountType::ElyBy => username
+                .strip_suffix(" (elyby)")
+                .unwrap_or(username)
+                .to_owned(),
+            AccountType::LittleSkin => username
+                .strip_suffix(" (littleskin)")
+                .unwrap_or(username)
+                .to_owned(),
             AccountType::Microsoft => username.to_owned(),
         }
     };

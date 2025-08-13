@@ -156,15 +156,22 @@ impl Launcher {
                 }
             }
             Message::LaunchUploadLog => {
+                if let State::Launch(menu) = &mut self.state {
+                    menu.is_uploading_mclogs = true;
+                }
+
                 let selected_instance = self.selected_instance.as_ref().unwrap();
                 let (name, is_server) = selected_instance.get_pair();
                 let logs = self.get_logs(is_server);
 
                 if let Some(log) = logs.get(name) {
                     let log_content = log.log.join("");
-                    return Task::perform(crate::mclog_upload::upload_log(log_content), |res| {
-                        Message::LaunchUploadLogResult(res.strerr())
-                    });
+                    if !log_content.trim().is_empty() {
+                        return Task::perform(
+                            crate::mclog_upload::upload_log(log_content),
+                            |res| Message::LaunchUploadLogResult(res.strerr()),
+                        );
+                    }
                 }
             }
             Message::LaunchUploadLogResult(result) => match result {

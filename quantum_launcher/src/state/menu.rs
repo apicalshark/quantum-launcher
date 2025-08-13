@@ -54,6 +54,7 @@ pub struct MenuLaunch {
     pub sidebar_dragging: bool,
 
     pub is_viewing_server: bool,
+    pub is_uploading_mclogs: bool,
     pub log_scroll: isize,
 }
 
@@ -75,6 +76,7 @@ impl MenuLaunch {
             sidebar_dragging: false,
             is_viewing_server: false,
             log_scroll: 0,
+            is_uploading_mclogs: false
         }
     }
 }
