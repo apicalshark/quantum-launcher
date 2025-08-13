@@ -149,24 +149,24 @@ impl GameLauncher {
         game_arguments: &mut [String],
         account_details: Option<&AccountData>,
     ) -> Result<(), GameLaunchError> {
-        for argument in game_arguments.iter_mut() {
-            replace_var(argument, "auth_player_name", &self.username);
-            replace_var(argument, "version_name", self.version_json.get_id());
+        for arg in game_arguments.iter_mut() {
+            replace_var(arg, "auth_player_name", &self.username);
+            replace_var(arg, "version_name", self.version_json.get_id());
             let Some(minecraft_dir_path) = self.minecraft_dir.to_str() else {
                 return Err(GameLaunchError::PathBufToString(self.minecraft_dir.clone()));
             };
-            replace_var(argument, "game_directory", minecraft_dir_path);
+            replace_var(arg, "game_directory", minecraft_dir_path);
 
-            self.set_assets_argument(argument).await?;
-            replace_var(argument, "auth_xuid", "0");
+            self.set_assets_argument(arg).await?;
+            replace_var(arg, "auth_xuid", "0");
 
             let uuid = if let Some(account_details) = account_details {
                 &account_details.uuid
             } else {
                 "00000000-0000-0000-0000-000000000000"
             };
-            replace_var(argument, "auth_uuid", uuid);
-            replace_var(argument, "uuid", uuid);
+            replace_var(arg, "auth_uuid", uuid);
+            replace_var(arg, "uuid", uuid);
 
             let access_token = if let Some(account_details) = account_details {
                 account_details
@@ -176,13 +176,13 @@ impl GameLauncher {
             } else {
                 "0"
             };
-            replace_var(argument, "auth_access_token", access_token);
-            replace_var(argument, "auth_session", access_token);
-            replace_var(argument, "accessToken", access_token);
+            replace_var(arg, "auth_access_token", access_token);
+            replace_var(arg, "auth_session", access_token);
+            replace_var(arg, "accessToken", access_token);
 
-            replace_var(argument, "clientid", CLIENT_ID);
+            replace_var(arg, "clientid", CLIENT_ID);
             replace_var(
-                argument,
+                arg,
                 "user_type",
                 if account_details.is_some() {
                     "msa"
@@ -190,13 +190,9 @@ impl GameLauncher {
                     "legacy"
                 },
             );
-            replace_var(argument, "version_type", "release");
-            replace_var(
-                argument,
-                "assets_index_name",
-                &self.version_json.assetIndex.id,
-            );
-            replace_var(argument, "user_properties", "{}");
+            replace_var(arg, "version_type", "release");
+            replace_var(arg, "assets_index_name", &self.version_json.assetIndex.id);
+            replace_var(arg, "user_properties", "{}");
         }
         Ok(())
     }
@@ -256,8 +252,8 @@ impl GameLauncher {
             .config_json
             .java_args
             .iter()
-            .cloned()
             .flatten()
+            .cloned()
             .chain([
                 "-Dminecraft.launcher.brand=minecraft-launcher".to_owned(),
                 "-Dminecraft.launcher.version=2.1.1349".to_owned(),

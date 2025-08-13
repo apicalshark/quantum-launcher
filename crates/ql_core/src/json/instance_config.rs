@@ -179,13 +179,12 @@ impl InstanceConfigJson {
     }
 
     pub fn get_window_size(&self, global: Option<&GlobalSettings>) -> (Option<u32>, Option<u32>) {
+        let local = self.global_settings.as_ref();
         (
-            self.global_settings
-                .as_ref()
+            local
                 .and_then(|n| n.window_width)
                 .or(global.and_then(|n| n.window_width)),
-            self.global_settings
-                .as_ref()
+            local
                 .and_then(|n| n.window_height)
                 .or(global.and_then(|n| n.window_height)),
         )
