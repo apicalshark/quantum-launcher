@@ -28,6 +28,16 @@ pub const FONT_MONO: iced::Font = iced::Font::with_name("JetBrains Mono");
 
 pub type Element<'a> = iced::Element<'a, Message, LauncherTheme>;
 
+pub fn link<'a>(
+    e: impl Into<Element<'a>>,
+    url: String,
+) -> widget::Button<'a, Message, LauncherTheme> {
+    widget::button(e.into())
+        .on_press(Message::CoreOpenLink(url))
+        .padding(0)
+        .style(|n: &LauncherTheme, status| n.style_button(status, StyleButton::Flat))
+}
+
 pub fn center_x<'a>(e: impl Into<Element<'a>>) -> Element<'a> {
     widget::row![
         widget::horizontal_space(),

@@ -4,7 +4,7 @@ use ql_core::LOGGER;
 use crate::{
     icon_manager,
     menu_renderer::{
-        button_with_icon, changelog::changelog_0_4_1, view_account_login, view_confirm, view_error,
+        button_with_icon, changelog, view_account_login, view_confirm, view_error,
         view_log_upload_result, Element,
     },
     state::{Launcher, Message, State},
@@ -118,7 +118,7 @@ impl Launcher {
                             clear_selection: true
                         }
                     ),
-                    changelog_0_4_1(), // changelog_0_4(), // changelog_0_3_1(),
+                    changelog::changelog_0_4_2(),
                     button_with_icon(icon_manager::back(), "Continue", 16).on_press(
                         Message::LaunchScreenOpen {
                             message: None,

@@ -47,7 +47,8 @@ The following commands have been added:
 # System & Platform
 
 - Overhauled portable/custom directory system (see `docs/PORTABLE.md` for more info)
-- New (incomplete) support for: FreeBSD, Windows 7, Linux ARM 32-bit
+- Linux ARM 32-bit is now supported!
+- Experimental FreeBSD support is also available
 
 # Fixes
 
@@ -66,6 +67,7 @@ The following commands have been added:
 
 - Fixed Fabric API being missing for some curseforge mods
 - Fixed getting stuck in an infinite loop when downloading some curseforge mods
+- Fixed modrinth mods repeating infinitely in the store list
 
 ## Versions
 
