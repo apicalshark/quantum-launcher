@@ -453,12 +453,22 @@ pub fn get_jar_path(
     instance_dir: &Path,
     optifine_jar: Option<&Path>,
 ) -> PathBuf {
+    fn get_path_from_id(instance_dir: &Path, id: &str) -> PathBuf {
+        instance_dir
+            .join(".minecraft/versions")
+            .join(id)
+            .join(format!("{id}.jar"))
+    }
+
     optifine_jar.map_or_else(
         || {
-            instance_dir
-                .join(".minecraft/versions")
-                .join(version_json.get_id())
-                .join(format!("{}.jar", version_json.get_id()))
+            let id = version_json.get_id();
+            let path1 = get_path_from_id(instance_dir, id);
+            if path1.exists() {
+                path1
+            } else {
+                get_path_from_id(instance_dir, &version_json.id)
+            }
         },
         Path::to_owned,
     )

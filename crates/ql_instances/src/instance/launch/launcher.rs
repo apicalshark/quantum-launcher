@@ -534,6 +534,7 @@ impl GameLauncher {
 
         let instance = InstanceSelection::Instance(self.instance_name.clone());
         let jar_path = jarmod::build(&instance).await?;
+        debug_assert!(jar_path.is_file(), "Minecraft JAR file should exist");
         let jar_path = jar_path
             .to_str()
             .ok_or(GameLaunchError::PathBufToString(jar_path.clone()))?;
@@ -768,12 +769,9 @@ impl GameLauncher {
             delete_junk_file(&forge_dir, "launcher_profiles.json").await?;
             delete_junk_file(&forge_dir, "launcher_profiles_microsoft_store.json").await?;
 
-            let versions_dir = forge_dir.join("versions").join(self.version_json.get_id());
-            if versions_dir.is_dir() {
-                tokio::fs::remove_dir_all(&versions_dir)
-                    .await
-                    .path(versions_dir)?;
-            }
+            let versions_dir = forge_dir.join("versions");
+            delete_junk_dir(&versions_dir.join(self.version_json.get_id())).await?;
+            delete_junk_dir(&versions_dir.join(&self.version_json.id)).await?;
         }
 
         Ok(())
@@ -846,6 +844,13 @@ async fn delete_junk_file(forge_dir: &Path, path: &str) -> Result<(), GameLaunch
     let path = forge_dir.join(path);
     if path.exists() {
         tokio::fs::remove_file(&path).await.path(path)?;
+    }
+    Ok(())
+}
+
+async fn delete_junk_dir(dir: &Path) -> Result<(), GameLaunchError> {
+    if dir.is_dir() {
+        tokio::fs::remove_dir_all(&dir).await.path(dir)?;
     }
     Ok(())
 }
