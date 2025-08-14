@@ -36,6 +36,12 @@ pub const SOURCE_ID_CURSEFORGE: &str = "curseforge";
 
 #[allow(async_fn_in_trait)]
 pub trait Backend {
+    /// # Takes in
+    /// - Query information,
+    /// - Offset from the start (how far you scrolled down)
+    /// - Query type (Mod/Resource Pack/Shader/...)
+    ///
+    /// Returns a search result containing a list of matching items
     async fn search(
         query: Query,
         offset: usize,
@@ -236,6 +242,7 @@ pub struct SearchResult {
     pub backend: StoreBackendType,
     pub start_time: Instant,
     pub offset: usize,
+    pub reached_end: bool,
 }
 
 #[derive(Debug, Clone)]

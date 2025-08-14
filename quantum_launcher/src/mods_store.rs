@@ -34,6 +34,7 @@ impl Launcher {
             mods_download_in_progress: HashMap::new(),
             mod_index,
             is_loading_continuation: false,
+            has_continuation_ended: false,
 
             backend: StoreBackendType::Modrinth,
             query_type: QueryType::Mods,

@@ -29,10 +29,11 @@ impl Backend for ModrinthBackend {
         let _lock = RATE_LIMITER.lock().await;
         let instant = Instant::now();
 
-        let text = search::do_request(&query, offset, query_type).await?;
+        let res = search::do_request(&query, offset, query_type).await?;
+        let reached_end = res.hits.len() < res.limit;
 
         let res = SearchResult {
-            mods: text
+            mods: res
                 .hits
                 .into_iter()
                 .map(|entry| SearchMod {
@@ -48,6 +49,7 @@ impl Backend for ModrinthBackend {
             start_time: instant,
             backend: StoreBackendType::Modrinth,
             offset,
+            reached_end,
         };
 
         Ok(res)

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use ql_core::{IntoJsonError, JsonDownloadError};
 use serde::Deserialize;
@@ -12,7 +12,7 @@ pub async fn do_request(
 ) -> Result<Search, JsonDownloadError> {
     const SEARCH_URL: &str = "https://api.modrinth.com/v2/search";
 
-    let mut params = HashMap::from([
+    let mut params = BTreeMap::from([
         ("index", "relevance".to_owned()),
         ("limit", "100".to_owned()),
         ("offset", offset.to_string()),
@@ -52,7 +52,7 @@ pub async fn do_request(
 pub struct Search {
     pub hits: Vec<Entry>,
     // pub offset: usize,
-    // pub limit: usize,
+    pub limit: usize,
     // pub total_hits: usize,
 }
 

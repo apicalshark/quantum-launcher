@@ -122,6 +122,7 @@ impl Launcher {
             InstallModsMessage::SearchResult(Ok(search)) => {
                 if let State::ModsDownload(menu) = &mut self.state {
                     menu.is_loading_continuation = false;
+                    menu.has_continuation_ended = search.reached_end;
 
                     if search.start_time > menu.latest_load {
                         menu.latest_load = search.start_time;
@@ -141,8 +142,15 @@ impl Launcher {
                 let scroll_px = absolute_offset.y;
 
                 if let State::ModsDownload(menu) = &mut self.state {
+                    if menu.results.is_none() {
+                        menu.has_continuation_ended = false;
+                    }
+
                     menu.scroll_offset = absolute_offset;
-                    if (scroll_px > total_height) && !menu.is_loading_continuation {
+                    if (scroll_px > total_height)
+                        && !menu.is_loading_continuation
+                        && !menu.has_continuation_ended
+                    {
                         menu.is_loading_continuation = true;
 
                         let offset = if let Some(results) = &menu.results {

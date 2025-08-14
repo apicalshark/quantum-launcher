@@ -276,6 +276,7 @@ pub struct MenuModsDownload {
     /// This is for the loading of continuation of the search,
     /// i.e. when you scroll down and more stuff appears
     pub is_loading_continuation: bool,
+    pub has_continuation_ended: bool,
 }
 
 pub struct MenuLauncherSettings {

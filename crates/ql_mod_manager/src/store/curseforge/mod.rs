@@ -214,6 +214,8 @@ impl Backend for CurseforgeBackend {
             start_time: instant,
             backend: ql_core::StoreBackendType::Curseforge,
             offset,
+            // TODO: Check whether curseforge results have hit bottom
+            reached_end: false,
         })
     }
 
