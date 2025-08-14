@@ -4,6 +4,7 @@ use ql_core::{
 };
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::Path};
+use crate::{WINDOW_HEIGHT, WINDOW_WIDTH};
 
 pub const SIDEBAR_WIDTH_DEFAULT: u32 = 190;
 
@@ -83,23 +84,18 @@ pub struct LauncherConfig {
     /// - `(0.x-1.0)` A lower number means zoomed out UI elements.
     // Since: v0.4
     pub ui_scale: Option<f64>,
+
     /// Whether to enable antialiasing or not.
-    /// Smooths out UI rendering and makes it a bit
-    /// crisper, but not by much. Also fixes the UI
-    /// being jittery on KDE Wayland.
+    /// Minor improvement in visual quality,
+    /// also nudges launcher to use dedicated GPU
+    /// for the interface.
     ///
     /// Default: `true`
     // Since: v0.4.2
     pub antialiasing: Option<bool>,
-
-    /// The width of the window when the launcher was last closed.
-    /// Used to restore the window size between launches.
+    /// Many launcher window related config options.
     // Since: v0.4.2
-    pub window_width: Option<f32>,
-    /// The height of the window when the launcher was last closed.
-    /// Used to restore the window size between launches.
-    // Since: v0.4.2
-    pub window_height: Option<f32>,
+    pub window: Option<WindowProperties>,
 
     /// Settings that apply both on a per-instance basis and with global overrides.
     // Since: v0.4.2
@@ -120,8 +116,7 @@ impl Default for LauncherConfig {
             java_installs: Some(Vec::new()),
             antialiasing: Some(true),
             account_selected: None,
-            window_width: None,
-            window_height: None,
+            window: None,
             global_settings: None,
         }
     }
@@ -179,6 +174,20 @@ impl LauncherConfig {
         std::fs::write(path, serde_json::to_string(&config).json_to()?.as_bytes()).path(path)?;
         Ok(config)
     }
+
+    pub fn read_window_size(&mut self) -> (f32, f32) {
+        let window = self.window.get_or_insert_default();
+        let scale = self.ui_scale.unwrap_or(1.0) as f32;
+        let window_width = window
+            .width
+            .filter(|_| window.save_window_size)
+            .unwrap_or(WINDOW_WIDTH * scale);
+        let window_height = window
+            .height
+            .filter(|_| window.save_window_size)
+            .unwrap_or(WINDOW_HEIGHT * scale);
+        (window_width, window_height)
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -220,4 +229,30 @@ pub struct ConfigAccount {
     /// username while the regular "username"
     /// would be an email.
     pub username_nice: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct WindowProperties {
+    /// Whether to retain window size in the first place.
+    // Since: v0.4.2
+    pub save_window_size: bool,
+
+    /// The width of the window when the launcher was last closed.
+    /// Used to restore the window size between launches.
+    // Since: v0.4.2
+    pub width: Option<f32>,
+    /// The height of the window when the launcher was last closed.
+    /// Used to restore the window size between launches.
+    // Since: v0.4.2
+    pub height: Option<f32>,
+}
+
+impl Default for WindowProperties {
+    fn default() -> Self {
+        Self {
+            save_window_size: true,
+            width: None,
+            height: None,
+        }
+    }
 }

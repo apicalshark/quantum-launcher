@@ -19,7 +19,6 @@ use tokio::process::{Child, ChildStdin};
 use crate::{
     config::LauncherConfig,
     stylesheet::styles::{LauncherTheme, LauncherThemeColor, LauncherThemeLightness},
-    WINDOW_HEIGHT, WINDOW_WIDTH,
 };
 
 mod menu;
@@ -161,8 +160,7 @@ impl Launcher {
                 .unwrap_or_else(|| OFFLINE_ACCOUNT_NAME.to_owned()),
         );
 
-        let window_width = config.window_width.unwrap_or(WINDOW_WIDTH);
-        let window_height = config.window_height.unwrap_or(WINDOW_HEIGHT);
+        let (window_width, window_height) = config.read_window_size();
 
         Ok(Self {
             client_list: None,
@@ -200,7 +198,7 @@ impl Launcher {
             Some(LAUNCHER_DIR.clone())
         };
 
-        let (config, theme) = launcher_dir
+        let (mut config, theme) = launcher_dir
             .as_ref()
             .and_then(|_| {
                 match LauncherConfig::load_s().map(|n| {
@@ -216,8 +214,7 @@ impl Launcher {
             })
             .unwrap_or((LauncherConfig::default(), LauncherTheme::default()));
 
-        let window_width = config.window_width.unwrap_or(WINDOW_WIDTH);
-        let window_height = config.window_height.unwrap_or(WINDOW_HEIGHT);
+        let (window_width, window_height) = config.read_window_size();
 
         Self {
             state: State::Error { error },

@@ -30,8 +30,6 @@ use std::{
 use tokio::process::Child;
 
 pub const SIDEBAR_DRAG_LEEWAY: f32 = 10.0;
-pub const SIDEBAR_LIMIT_RIGHT: u16 = 300;
-pub const SIDEBAR_LIMIT_LEFT: f32 = 135.0;
 
 mod iced_event;
 

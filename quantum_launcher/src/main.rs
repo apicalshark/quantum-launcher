@@ -61,6 +61,8 @@ mod view;
 /// (called by [`view`]).
 mod menu_renderer;
 
+/// Handles mclo.gs log uploads
+mod mclog_upload;
 /// Child functions of the
 /// [`Launcher::update`] function.
 mod message_handler;
@@ -74,8 +76,6 @@ mod message_handler;
 mod message_update;
 /// Handles mod store
 mod mods_store;
-/// Handles mclo.gs log uploads
-mod mclog_upload;
 /// Stylesheet definitions (launcher themes)
 mod stylesheet;
 /// Code to tick every frame
@@ -170,7 +170,12 @@ fn main() {
     info_no_log!("Starting up the launcher... (OS: {OS_NAME})");
 
     let icon = load_icon();
-    let (scale, config) = load_ui_scale(launcher_dir.is_some());
+    let (scale, mut config) = load_ui_scale(launcher_dir.is_some());
+    let (width, height) = config
+        .as_mut()
+        .ok()
+        .map(|n| n.read_window_size())
+        .unwrap_or((WINDOW_WIDTH * scale, WINDOW_HEIGHT * scale));
 
     iced::application("QuantumLauncher", Launcher::update, Launcher::view)
         .subscription(Launcher::subscription)
@@ -189,18 +194,7 @@ fn main() {
         .window(iced::window::Settings {
             icon,
             exit_on_close_request: false,
-            size: iced::Size {
-                width: config
-                    .as_ref()
-                    .ok()
-                    .and_then(|c| c.window_width)
-                    .unwrap_or(WINDOW_WIDTH * scale),
-                height: config
-                    .as_ref()
-                    .ok()
-                    .and_then(|c| c.window_height)
-                    .unwrap_or(WINDOW_HEIGHT * scale),
-            },
+            size: iced::Size { width, height },
             min_size: Some(iced::Size {
                 width: 420.0,
                 height: 300.0,

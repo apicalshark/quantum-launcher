@@ -498,6 +498,9 @@ impl Launcher {
             LauncherSettingsMessage::ToggleAntialiasing(t) => {
                 self.config.antialiasing = Some(t);
             }
+            LauncherSettingsMessage::ToggleWindowSize(t) => {
+                self.config.window.get_or_insert_default().save_window_size = t;
+            }
             LauncherSettingsMessage::DefaultMinecraftWidthChanged(input) => {
                 self.config
                     .global_settings
