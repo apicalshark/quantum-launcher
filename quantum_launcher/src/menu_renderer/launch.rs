@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use iced::advanced::text::Wrapping;
 use iced::{widget, Length};
 use ql_core::{InstanceSelection, LAUNCHER_VERSION_NAME};
 
@@ -462,6 +463,7 @@ fn get_tab_selector<'a>(selected_instance_s: Option<&'a str>, menu: &'a MenuLaun
         .align_y(iced::Alignment::Center),
     )
     .width(TAB_HEIGHT)
+    .height(TAB_HEIGHT)
     .style(|n, status| n.style_button(status, StyleButton::FlatExtraDark))
     .on_press(Message::LauncherSettings(LauncherSettingsMessage::Open));
 
@@ -470,14 +472,15 @@ fn get_tab_selector<'a>(selected_instance_s: Option<&'a str>, menu: &'a MenuLaun
             selected_instance_s.map(|instance| {
                 // The top-right corner tiny text showing which instance you selected.
                 widget::column!(
-                    widget::vertical_space(),
-                    widget::text!("{instance}  ").size(14),
-                    widget::vertical_space()
+                    widget::Space::with_height(7),
+                    widget::text!("{instance}  ")
+                        .size(14)
+                        .wrapping(Wrapping::None),
                 )
+                .height(TAB_HEIGHT)
             }),
         ),
     )
-    .height(TAB_HEIGHT)
     .style(|n| n.style_container_sharp_box(0.0, Color::ExtraDark))
     .into()
 }
