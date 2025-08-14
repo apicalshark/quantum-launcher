@@ -191,7 +191,7 @@ pub async fn download_file_to_string(url: &str, user_agent: bool) -> Result<Stri
             );
         }
         let response = get.send().await?;
-        check_for_success(&response).await?;
+        check_for_success(&response)?;
         Ok(response.text().await?)
     }
 
@@ -249,7 +249,7 @@ pub async fn download_file_to_bytes(url: &str, user_agent: bool) -> Result<Vec<u
             get = get.header("User-Agent", "quantumlauncher");
         }
         let response = get.send().await?;
-        check_for_success(&response).await?;
+        check_for_success(&response)?;
         Ok(response.bytes().await?.to_vec())
     }
 
@@ -284,7 +284,7 @@ pub async fn download_file_to_path(
             get = get.header("User-Agent", "quantumlauncher");
         }
         let response = get.send().await?;
-        check_for_success(&response).await?;
+        check_for_success(&response)?;
 
         let stream = response
             .bytes_stream()
@@ -329,14 +329,14 @@ pub async fn download_file_to_bytes_with_agent(
             .header("User-Agent", user_agent)
             .send()
             .await?;
-        check_for_success(&response).await?;
+        check_for_success(&response)?;
         Ok(response.bytes().await?.to_vec())
     }
 
     retry(async || inner(url, user_agent).await).await
 }
 
-pub async fn check_for_success(response: &Response) -> Result<(), RequestError> {
+pub fn check_for_success(response: &Response) -> Result<(), RequestError> {
     if response.status().is_success() {
         Ok(())
     } else {

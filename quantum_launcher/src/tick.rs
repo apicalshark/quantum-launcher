@@ -110,16 +110,14 @@ impl Launcher {
                 }
             }
             State::InstallOptifine(menu) => match menu {
-                MenuInstallOptifine::Choosing { .. } => {}
+                MenuInstallOptifine::Choosing { .. } | MenuInstallOptifine::InstallingB173 => {}
                 MenuInstallOptifine::Installing {
                     optifine_install_progress,
                     java_install_progress,
                     is_java_being_installed,
                     ..
                 } => {
-                    if let Some(optifine_progress) = optifine_install_progress {
-                        optifine_progress.tick();
-                    }
+                    optifine_install_progress.tick();
                     if let Some(java_progress) = java_install_progress {
                         if java_progress.tick() {
                             *is_java_being_installed = true;

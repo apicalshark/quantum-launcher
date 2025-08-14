@@ -37,8 +37,6 @@ pub async fn get_list_of_versions(
     instance: InstanceSelection,
     is_quilt: bool,
 ) -> Result<Vec<FabricVersionListItem>, FabricInstallError> {
-    let version_json = VersionDetails::load(&instance).await?;
-
     async fn inner(
         version_json: &VersionDetails,
         is_quilt: bool,
@@ -52,6 +50,8 @@ pub async fn get_list_of_versions(
         Ok(versions)
     }
 
+    let version_json = VersionDetails::load(&instance).await?;
+    
     let mut result = inner(&version_json, is_quilt).await;
     if result.is_err() {
         for _ in 0..5 {

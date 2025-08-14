@@ -76,7 +76,7 @@ impl MenuLaunch {
             sidebar_dragging: false,
             is_viewing_server: false,
             log_scroll: 0,
-            is_uploading_mclogs: false
+            is_uploading_mclogs: false,
         }
     }
 }
@@ -134,8 +134,9 @@ pub struct MenuEditMods {
     pub mod_update_progress: Option<ProgressBar<GenericProgress>>,
 
     pub config: InstanceConfigJson,
-    pub version_json: Box<VersionDetails>,
     pub mods: ModIndex,
+    // TODO: Use this for dynamically adjusting installable loader buttons
+    pub version_json: Box<VersionDetails>,
 
     pub locally_installed_mods: HashSet<String>,
     pub sorted_mods_list: Vec<ModListEntry>,
@@ -525,11 +526,11 @@ pub enum MenuInstallOptifine {
         drag_and_drop_hovered: bool,
     },
     Installing {
-        optifine_install_progress: Option<ProgressBar<OptifineInstallProgress>>,
+        optifine_install_progress: ProgressBar<OptifineInstallProgress>,
         java_install_progress: Option<ProgressBar<GenericProgress>>,
         is_java_being_installed: bool,
-        is_b173_being_installed: bool,
     },
+    InstallingB173,
 }
 
 impl MenuInstallOptifine {

@@ -14,19 +14,18 @@ use crate::{
 impl MenuInstallOptifine {
     pub fn view(&self) -> Element {
         match self {
+            MenuInstallOptifine::InstallingB173 => {
+                widget::column![widget::text("Installing OptiFine for Beta 1.7.3...").size(20)]
+                    .padding(10)
+            }
             MenuInstallOptifine::Installing {
-                is_b173_being_installed: true,
-                ..
-            } => widget::column![widget::text("Installing OptiFine for Beta 1.7.3...").size(20)]
-                .padding(10),
-            MenuInstallOptifine::Installing {
-                optifine_install_progress: Some(optifine),
+                optifine_install_progress,
                 java_install_progress,
                 is_java_being_installed,
                 ..
             } => widget::column!(
                 widget::text("Installing OptiFine").size(20),
-                optifine.view()
+                optifine_install_progress.view()
             )
             .push_maybe(
                 java_install_progress
@@ -56,7 +55,6 @@ impl MenuInstallOptifine {
                     menu
                 }
             }
-            _ => self.install_optifine_screen(false).padding(10).spacing(10),
         }
         .into()
     }

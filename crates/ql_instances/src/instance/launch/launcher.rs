@@ -388,7 +388,7 @@ impl GameLauncher {
             game_arguments.extend(arguments.game.clone());
         } else if let Some(arguments) = &json.minecraftArguments {
             let new: Vec<String> = arguments.split(' ').map(str::to_owned).collect();
-            *game_arguments = deduplicate_game_args(game_arguments.clone(), new);
+            *game_arguments = deduplicate_game_args(game_arguments, &new);
         }
         Ok(Some(json))
     }
@@ -443,7 +443,7 @@ impl GameLauncher {
             game_arguments.extend(arguments.game.clone());
         } else if let Some(arguments) = &optifine_json.minecraftArguments {
             let new: Vec<String> = arguments.split(' ').map(str::to_owned).collect();
-            *game_arguments = deduplicate_game_args(game_arguments.clone(), new);
+            *game_arguments = deduplicate_game_args(game_arguments, &new);
         }
 
         Ok(Some((optifine_json, jar)))
@@ -939,30 +939,30 @@ fn remove_substring(original: &str, to_remove: &str) -> Option<String> {
     }
 }
 
-fn deduplicate_game_args(arr1: Vec<String>, arr2: Vec<String>) -> Vec<String> {
-    let mut result = Vec::new();
-    let mut seen_keys = HashSet::new();
-
+fn deduplicate_game_args(arr1: &[String], arr2: &[String]) -> Vec<String> {
     // Helper function to insert key-value pairs in order
     fn insert_pairs(arr: &[String], result: &mut Vec<String>, seen_keys: &mut HashSet<String>) {
         for i in (0..arr.len()).step_by(2) {
             let key = arr[i].clone();
             let value = arr[i + 1].clone();
-            if !seen_keys.contains(&key) {
-                result.push(key.clone());
-                result.push(value.clone());
-                seen_keys.insert(key);
-            } else {
+            if seen_keys.contains(&key) {
                 // Update value if the key already exists in result (i.e., in case of conflict, overwrite)
                 let pos = result.iter().position(|x| x == &key).unwrap();
                 result[pos + 1] = value; // Update the value for this key
+            } else {
+                result.push(key.clone());
+                result.push(value.clone());
+                seen_keys.insert(key);
             }
         }
     }
 
-    insert_pairs(&arr1, &mut result, &mut seen_keys);
+    let mut result = Vec::new();
+    let mut seen_keys = HashSet::new();
+
+    insert_pairs(arr1, &mut result, &mut seen_keys);
     // Second array overwrites first
-    insert_pairs(&arr2, &mut result, &mut seen_keys);
+    insert_pairs(arr2, &mut result, &mut seen_keys);
 
     // HashMap -> Vec<String> (key, value, key, value, ...)
     result

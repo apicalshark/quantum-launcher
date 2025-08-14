@@ -171,11 +171,10 @@ fn main() {
 
     let icon = load_icon();
     let (scale, mut config) = load_ui_scale(launcher_dir.is_some());
-    let (width, height) = config
-        .as_mut()
-        .ok()
-        .map(|n| n.read_window_size())
-        .unwrap_or((WINDOW_WIDTH * scale, WINDOW_HEIGHT * scale));
+    let (width, height) = config.as_mut().ok().map_or(
+        (WINDOW_WIDTH * scale, WINDOW_HEIGHT * scale),
+        LauncherConfig::read_window_size,
+    );
 
     iced::application("QuantumLauncher", Launcher::update, Launcher::view)
         .subscription(Launcher::subscription)

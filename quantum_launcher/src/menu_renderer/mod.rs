@@ -638,6 +638,6 @@ fn style_button_color(
         background: Some(iced::Background::Color(color)),
         text_color: iced::Color::WHITE,
         border,
-        shadow: Default::default(),
+        ..Default::default()
     }
 }

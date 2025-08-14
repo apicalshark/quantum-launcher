@@ -128,6 +128,7 @@ impl VersionDetails {
         // TODO: More fields in the future
     }
 
+    #[must_use]
     pub fn is_before_or_eq(&self, release_time: &str) -> bool {
         match (
             DateTime::parse_from_rfc3339(&self.releaseTime),
@@ -145,7 +146,7 @@ impl VersionDetails {
         }
     }
 
-    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
     pub fn is_legacy_version(&self) -> bool {
         self.is_before_or_eq(V_1_5_2)
     }
@@ -163,6 +164,7 @@ impl VersionDetails {
             })
     }
 
+    #[must_use]
     pub fn get_id(&self) -> &str {
         self.id.strip_suffix("-lwjgl3").unwrap_or(&self.id)
     }

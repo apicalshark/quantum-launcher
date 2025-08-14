@@ -43,46 +43,7 @@ impl MenuLoginAlternate {
         };
 
         if let Some(oauth) = &self.oauth {
-            let time_left = {
-                let now = std::time::Instant::now();
-                if oauth.device_code_expires_at > now {
-                    (oauth.device_code_expires_at - now).as_secs()
-                } else {
-                    0
-                }
-            };
-
-            let code_row = widget::row![
-                widget::text!("Code: {}", oauth.user_code).size(18),
-                widget::button("Copy").on_press(Message::CoreCopyText(oauth.user_code.clone())),
-            ]
-            .spacing(10);
-            let url_row = widget::row![
-                widget::text!("Link: {}", oauth.verification_uri).size(14),
-                widget::button("Open")
-                    .on_press(Message::CoreOpenLink(oauth.verification_uri.clone())),
-            ]
-            .spacing(10);
-            widget::column![
-                widget::vertical_space(),
-                widget::text("LittleSkin Device Login").size(20),
-                widget::text("Open this link and enter the code:").size(14),
-                code_row,
-                url_row,
-                widget::text!("Expires in: {}s", time_left).size(12),
-                widget::vertical_space(),
-                widget::text("Waiting for login...").size(14),
-                widget::vertical_space(),
-            ]
-            .width(Length::Fill)
-            .push_maybe(
-                self.device_code_error
-                    .as_ref()
-                    .map(|err| widget::text(err).size(14)),
-            )
-            .spacing(5)
-            .align_x(iced::Alignment::Center)
-            .into()
+            self.view_oauth(oauth)
         } else {
             widget::column![
                 back_button().on_press(if self.is_from_welcome_screen {
@@ -146,6 +107,48 @@ impl MenuLoginAlternate {
             .padding(10)
             .into()
         }
+    }
+
+    fn view_oauth(&self, oauth: &crate::state::LittleSkinOauth) -> Element {
+        let time_left = {
+            let now = std::time::Instant::now();
+            if oauth.device_code_expires_at > now {
+                (oauth.device_code_expires_at - now).as_secs()
+            } else {
+                0
+            }
+        };
+
+        let code_row = widget::row![
+            widget::text!("Code: {}", oauth.user_code).size(18),
+            widget::button("Copy").on_press(Message::CoreCopyText(oauth.user_code.clone())),
+        ]
+        .spacing(10);
+        let url_row = widget::row![
+            widget::text!("Link: {}", oauth.verification_uri).size(14),
+            widget::button("Open").on_press(Message::CoreOpenLink(oauth.verification_uri.clone())),
+        ]
+        .spacing(10);
+        widget::column![
+            widget::vertical_space(),
+            widget::text("LittleSkin Device Login").size(20),
+            widget::text("Open this link and enter the code:").size(14),
+            code_row,
+            url_row,
+            widget::text!("Expires in: {}s", time_left).size(12),
+            widget::vertical_space(),
+            widget::text("Waiting for login...").size(14),
+            widget::vertical_space(),
+        ]
+        .width(Length::Fill)
+        .push_maybe(
+            self.device_code_error
+                .as_ref()
+                .map(|err| widget::text(err).size(14)),
+        )
+        .spacing(5)
+        .align_x(iced::Alignment::Center)
+        .into()
     }
 }
 

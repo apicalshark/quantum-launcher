@@ -272,6 +272,7 @@ impl InstanceSelection {
         }
     }
 
+    #[must_use]
     pub fn get_pair(&self) -> (&str, bool) {
         (self.get_name(), self.is_server())
     }

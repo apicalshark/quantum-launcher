@@ -133,13 +133,10 @@ impl Launcher {
                     Message::UninstallLoaderEnd,
                 );
             }
-            Message::UninstallLoaderEnd(Ok(())) => {
-                return self.go_to_edit_mods_menu_without_update_check();
-            }
             Message::InstallForgeStart { is_neoforge } => {
                 return self.install_forge(is_neoforge);
             }
-            Message::InstallForgeEnd(Ok(())) => {
+            Message::InstallForgeEnd(Ok(())) | Message::UninstallLoaderEnd(Ok(())) => {
                 return self.go_to_edit_mods_menu_without_update_check();
             }
             Message::LaunchEndedLog(Ok((status, name))) => {
@@ -552,7 +549,7 @@ impl Launcher {
         }) = &mut self.state
         {
             if let (LaunchTabId::Edit, Some(selected_instance)) =
-                (new_tab.unwrap_or(*tab), self.selected_instance.clone())
+                (new_tab.unwrap_or(*tab), self.selected_instance.as_ref())
             {
                 if let Err(err) = Self::load_edit_instance_inner(edit_instance, selected_instance) {
                     err!("Could not open edit instance menu: {err}");

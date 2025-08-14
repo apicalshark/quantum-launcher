@@ -28,7 +28,7 @@ pub async fn upload_log(content: String) -> Result<String, String> {
         .await
         .strerr()?;
 
-    check_for_success(&response).await.strerr()?;
+    check_for_success(&response).strerr()?;
     let response_text = response.text().await.strerr()?;
 
     let mclog_response: MclogsResponse = serde_json::from_str(&response_text)

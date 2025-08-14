@@ -148,7 +148,7 @@ impl Launcher {
 
     pub fn load_edit_instance_inner(
         edit_instance: &mut Option<MenuEditInstance>,
-        selected_instance: InstanceSelection,
+        selected_instance: &InstanceSelection,
     ) -> Result<(), JsonFileError> {
         let config_path = selected_instance.get_instance_path().join("config.json");
 

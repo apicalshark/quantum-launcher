@@ -334,12 +334,7 @@ impl Launcher {
                 ));
 
                 if let Some(version @ OptifineUniqueVersion::B1_7_3) = optifine_unique_version {
-                    self.state = State::InstallOptifine(MenuInstallOptifine::Installing {
-                        optifine_install_progress: None,
-                        java_install_progress: None,
-                        is_java_being_installed: false,
-                        is_b173_being_installed: true,
-                    });
+                    self.state = State::InstallOptifine(MenuInstallOptifine::InstallingB173);
 
                     let selected_instance = self.selected_instance.clone().unwrap();
                     let url = version.get_url().0;
@@ -402,10 +397,9 @@ impl Launcher {
         };
 
         self.state = State::InstallOptifine(MenuInstallOptifine::Installing {
-            optifine_install_progress: Some(ProgressBar::with_recv(p_recv)),
+            optifine_install_progress: ProgressBar::with_recv(p_recv),
             java_install_progress: Some(ProgressBar::with_recv(j_recv)),
             is_java_being_installed: false,
-            is_b173_being_installed: false,
         });
 
         let get_name = self
@@ -440,7 +434,7 @@ impl Launcher {
                     _ = tokio::fs::remove_file(installer_path).await;
                 }
             },
-            |_| Message::Nothing,
+            |()| Message::Nothing,
         ))
     }
 

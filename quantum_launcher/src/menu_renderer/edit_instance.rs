@@ -12,11 +12,6 @@ use super::Element;
 
 impl MenuEditInstance {
     pub fn view(&self, selected_instance: &InstanceSelection) -> Element {
-        // 2 ^ 8 = 256 MB
-        const MEM_256_MB_IN_TWOS_EXPONENT: f32 = 8.0;
-        // 2 ^ 13 = 8192 MB
-        const MEM_8192_MB_IN_TWOS_EXPONENT: f32 = 13.0;
-
         let ts = |n: &LauncherTheme| n.style_text(Color::SecondLight);
 
         widget::scrollable(
@@ -48,31 +43,10 @@ impl MenuEditInstance {
                 .style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::ExtraDark)),
 
                 widget::container(
-                    widget::column![
-                        "Custom Java executable (full path)",
-                        widget::text_input(
-                            "Leave blank if none",
-                            self.config
-                                .java_override
-                                .as_deref()
-                                .unwrap_or_default()
-                        )
-                        .on_input(|t| Message::EditInstance(EditInstanceMessage::JavaOverride(t)))
-                    ]
-                    .padding(10)
-                    .spacing(10)
+                    self.item_java_override()
                 ).style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::Dark)),
                 widget::container(
-                    widget::column![
-                        "Allocated memory",
-                        widget::text("For normal Minecraft, allocate 2 - 3 GB").size(12).style(ts),
-                        widget::text("For old versions, allocate 512 MB - 1 GB").size(12).style(ts),
-                        widget::text("For heavy modpacks/very high render distances, allocate 4 - 8 GB").size(12).style(ts),
-                        widget::slider(MEM_256_MB_IN_TWOS_EXPONENT..=MEM_8192_MB_IN_TWOS_EXPONENT, self.slider_value, |n| Message::EditInstance(EditInstanceMessage::MemoryChanged(n))).step(0.1),
-                        widget::text(&self.slider_text),
-                    ]
-                    .padding(10)
-                    .spacing(5),
+                    self.item_mem_alloc(),
                 ).style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::ExtraDark)),
                 widget::container(
                     widget::Column::new()
@@ -93,32 +67,7 @@ impl MenuEditInstance {
                     .spacing(10)
                 ).style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::Dark)),
                 widget::container(
-                    widget::column!(
-                        "Java arguments:",
-                        widget::column!(
-                            Self::get_java_args_list(
-                                self.config.java_args.as_ref(),
-                                |n| Message::EditInstance(EditInstanceMessage::JavaArgDelete(n)),
-                                |n| Message::EditInstance(EditInstanceMessage::JavaArgShiftUp(n)),
-                                |n| Message::EditInstance(EditInstanceMessage::JavaArgShiftDown(n)),
-                                &|n, i| Message::EditInstance(EditInstanceMessage::JavaArgEdit(n, i))
-                            ),
-                            button_with_icon(icon_manager::create(), "Add", 16)
-                                .on_press(Message::EditInstance(EditInstanceMessage::JavaArgsAdd))
-                        ),
-                        "Game arguments:",
-                        widget::column!(
-                            Self::get_java_args_list(
-                                self.config.game_args.as_ref(),
-                                |n| Message::EditInstance(EditInstanceMessage::GameArgDelete(n)),
-                                |n| Message::EditInstance(EditInstanceMessage::GameArgShiftUp(n)),
-                                |n| Message::EditInstance(EditInstanceMessage::GameArgShiftDown(n)),
-                                &|n, i| Message::EditInstance(EditInstanceMessage::GameArgEdit(n, i))
-                            ),
-                            button_with_icon(icon_manager::create(), "Add", 16)
-                                .on_press(Message::EditInstance(EditInstanceMessage::GameArgsAdd))
-                        ),
-                    ).padding(10).spacing(10).width(Length::Fill)
+                    self.item_args()
                 ).style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::ExtraDark)),
                 widget::container(
                     widget::Column::new()
@@ -142,6 +91,82 @@ impl MenuEditInstance {
                 .style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::ExtraDark)),
             ]
         ).style(LauncherTheme::style_scrollable_flat_extra_dark).into()
+    }
+
+    fn item_args(&self) -> widget::Column<'_, Message, LauncherTheme> {
+        widget::column!(
+            "Java arguments:",
+            widget::column!(
+                Self::get_java_args_list(
+                    self.config.java_args.as_ref(),
+                    |n| Message::EditInstance(EditInstanceMessage::JavaArgDelete(n)),
+                    |n| Message::EditInstance(EditInstanceMessage::JavaArgShiftUp(n)),
+                    |n| Message::EditInstance(EditInstanceMessage::JavaArgShiftDown(n)),
+                    &|n, i| Message::EditInstance(EditInstanceMessage::JavaArgEdit(n, i))
+                ),
+                button_with_icon(icon_manager::create(), "Add", 16)
+                    .on_press(Message::EditInstance(EditInstanceMessage::JavaArgsAdd))
+            ),
+            "Game arguments:",
+            widget::column!(
+                Self::get_java_args_list(
+                    self.config.game_args.as_ref(),
+                    |n| Message::EditInstance(EditInstanceMessage::GameArgDelete(n)),
+                    |n| Message::EditInstance(EditInstanceMessage::GameArgShiftUp(n)),
+                    |n| Message::EditInstance(EditInstanceMessage::GameArgShiftDown(n)),
+                    &|n, i| Message::EditInstance(EditInstanceMessage::GameArgEdit(n, i))
+                ),
+                button_with_icon(icon_manager::create(), "Add", 16)
+                    .on_press(Message::EditInstance(EditInstanceMessage::GameArgsAdd))
+            ),
+        )
+        .padding(10)
+        .spacing(10)
+        .width(Length::Fill)
+    }
+
+    fn item_mem_alloc(&self) -> widget::Column<'_, Message, LauncherTheme> {
+        // 2 ^ 8 = 256 MB
+        const MEM_256_MB_IN_TWOS_EXPONENT: f32 = 8.0;
+        // 2 ^ 13 = 8192 MB
+        const MEM_8192_MB_IN_TWOS_EXPONENT: f32 = 13.0;
+
+        let ts = |n: &LauncherTheme| n.style_text(Color::SecondLight);
+
+        widget::column![
+            "Allocated memory",
+            widget::text("For normal Minecraft, allocate 2 - 3 GB")
+                .size(12)
+                .style(ts),
+            widget::text("For old versions, allocate 512 MB - 1 GB")
+                .size(12)
+                .style(ts),
+            widget::text("For heavy modpacks/very high render distances, allocate 4 - 8 GB")
+                .size(12)
+                .style(ts),
+            widget::slider(
+                MEM_256_MB_IN_TWOS_EXPONENT..=MEM_8192_MB_IN_TWOS_EXPONENT,
+                self.slider_value,
+                |n| Message::EditInstance(EditInstanceMessage::MemoryChanged(n))
+            )
+            .step(0.1),
+            widget::text(&self.slider_text),
+        ]
+        .padding(10)
+        .spacing(5)
+    }
+
+    fn item_java_override(&self) -> widget::Column<'_, Message, LauncherTheme> {
+        widget::column![
+            "Custom Java executable (full path)",
+            widget::text_input(
+                "Leave blank if none",
+                self.config.java_override.as_deref().unwrap_or_default()
+            )
+            .on_input(|t| Message::EditInstance(EditInstanceMessage::JavaOverride(t)))
+        ]
+        .padding(10)
+        .spacing(10)
     }
 
     fn get_java_args_list<'a>(

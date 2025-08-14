@@ -143,7 +143,7 @@ impl MenuLauncherSettings {
                     )),
                 widget::text("Makes text/menus crisper. Also nudges the launcher into using your dedicated GPU for the User Interface.\nRequires restarting the launcher.").size(12),
                 widget::Space::with_height(5),
-                widget::checkbox("Remember window size", config.window.as_ref().map(|n| n.save_window_size).unwrap_or(true))
+                widget::checkbox("Remember window size", config.window.as_ref().is_none_or(|n| n.save_window_size))
                     .on_toggle(|n| Message::LauncherSettings(LauncherSettingsMessage::ToggleWindowSize(n))),
                 widget::text("If enabled, the launcher window will retain its size from the last session.").size(12),
             ]

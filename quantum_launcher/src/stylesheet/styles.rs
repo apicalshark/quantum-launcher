@@ -195,9 +195,9 @@ impl LauncherTheme {
             },
             true,
         );
-        let vertical_rail = self.s_scrollable_rail(&style, border, is_vertical_scrollbar_hovered);
+        let vertical_rail = self.s_scrollable_rail(style, border, is_vertical_scrollbar_hovered);
         let horizontal_rail =
-            self.s_scrollable_rail(&style, border, is_horizontal_scrollbar_hovered);
+            self.s_scrollable_rail(style, border, is_horizontal_scrollbar_hovered);
         widget::scrollable::Style {
             container: self.s_scrollable_get_container(style, border),
             vertical_rail,
@@ -206,13 +206,13 @@ impl LauncherTheme {
         }
     }
 
-    fn s_scrollable_rail(&self, style: &StyleScrollable, border: Border, hovered: bool) -> Rail {
+    fn s_scrollable_rail(&self, style: StyleScrollable, border: Border, hovered: bool) -> Rail {
         Rail {
             background: Some(self.get_bg(Color::ExtraDark, true)),
             border,
             scroller: widget::scrollable::Scroller {
                 color: self.get(if hovered { Color::Light } else { Color::Mid }, true),
-                border: self.get_border_style(style, Color::Light, true),
+                border: self.get_border_style(&style, Color::Light, true),
             },
         }
     }

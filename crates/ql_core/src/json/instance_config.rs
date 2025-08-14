@@ -178,6 +178,7 @@ impl InstanceConfigJson {
         self.save_to_dir(&instance.get_instance_path()).await
     }
 
+    #[must_use]
     pub fn get_window_size(&self, global: Option<&GlobalSettings>) -> (Option<u32>, Option<u32>) {
         let local = self.global_settings.as_ref();
         (
