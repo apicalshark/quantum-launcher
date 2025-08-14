@@ -13,13 +13,15 @@ use crate::{
     stylesheet::{color::Color, styles::LauncherTheme, widgets::StyleButton},
 };
 
-pub mod changelog;
 mod edit_instance;
 mod launch;
 mod log;
 mod login;
 mod mods;
+mod onboarding;
 mod settings;
+
+pub use onboarding::changelog;
 
 pub const DISCORD: &str = "https://discord.gg/bWqRaSXar5";
 pub const GITHUB: &str = "https://github.com/Mrmayman/quantumlauncher";

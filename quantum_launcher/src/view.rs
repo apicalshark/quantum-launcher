@@ -110,27 +110,25 @@ impl Launcher {
                     .into()
             }
             State::ManagePresets(menu) => menu.view(self.window_size),
-            State::ChangeLog => widget::scrollable(
-                widget::column!(
-                    button_with_icon(icon_manager::back(), "Skip", 16).on_press(
-                        Message::LaunchScreenOpen {
-                            message: None,
-                            clear_selection: true
-                        }
-                    ),
-                    changelog::changelog_0_4_2(),
-                    button_with_icon(icon_manager::back(), "Continue", 16).on_press(
-                        Message::LaunchScreenOpen {
-                            message: None,
-                            clear_selection: true
-                        }
-                    ),
+            State::ChangeLog => {
+                let back_msg = Message::LaunchScreenOpen {
+                    message: None,
+                    clear_selection: true,
+                };
+                widget::scrollable(
+                    widget::column!(
+                        button_with_icon(icon_manager::back(), "Skip", 16)
+                            .on_press(back_msg.clone()),
+                        changelog(),
+                        button_with_icon(icon_manager::back(), "Continue", 16).on_press(back_msg),
+                    )
+                    .padding(10)
+                    .spacing(10),
                 )
-                .padding(10)
-                .spacing(10),
-            )
-            .height(Length::Fill)
-            .into(),
+                .style(LauncherTheme::style_scrollable_flat_extra_dark)
+                .height(Length::Fill)
+                .into()
+            }
             State::Welcome(menu) => menu.view(&self.config),
             State::EditJarMods(menu) => menu.view(self.selected_instance.as_ref().unwrap()),
             State::ImportModpack(progress) => {
