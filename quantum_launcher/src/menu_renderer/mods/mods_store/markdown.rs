@@ -19,9 +19,11 @@ use comrak::nodes::NodeValue;
 use iced::widget;
 
 use crate::{
-    menu_renderer::{Element, FONT_MONO},
+    menu_renderer::{link, Element},
     state::{ImageState, MenuModsDownload, Message},
 };
+
+use super::codeblock;
 
 macro_rules! todoh {
     ($desc:expr) => {
@@ -82,11 +84,15 @@ impl MenuModsDownload {
                 } as u16)
                 .into(),
             NodeValue::Paragraph => render_children(md, 0, images, window_size).into(),
-            NodeValue::Link(node_link) => render_link(md, images, node_link, window_size),
+            NodeValue::Link(node_link) => {
+                render_link(md, heading_size, images, node_link, window_size)
+            }
             NodeValue::FrontMatter(matter) => widget::text(matter.clone()).into(),
             NodeValue::BlockQuote => {
                 force_newline = true;
-                widget::container(render_children(md, 0, images, window_size)).into()
+                widget::container(render_children(md, 0, images, window_size))
+                    .padding(10)
+                    .into()
             }
             NodeValue::List(_list) => {
                 force_newline = true;
@@ -102,15 +108,10 @@ impl MenuModsDownload {
             NodeValue::DescriptionItem(_) => todoh!("description item"),
             NodeValue::DescriptionTerm => todoh!("description term"),
             NodeValue::DescriptionDetails => todoh!("description details"),
-            NodeValue::CodeBlock(block) => widget::container(
-                widget::column!(
-                    widget::button(widget::text("Copy").size(12))
-                        .on_press(Message::CoreCopyText(block.literal.clone())),
-                    widget::text(block.literal.clone()).font(FONT_MONO),
-                )
-                .spacing(5),
-            )
-            .into(),
+            NodeValue::CodeBlock(block) => {
+                force_newline = true;
+                codeblock(block.literal.clone()).padding(10).into()
+            }
             NodeValue::HtmlBlock(node_html_block) => {
                 Self::render_html(&node_html_block.literal, images, window_size)
             }
@@ -121,14 +122,7 @@ impl MenuModsDownload {
             NodeValue::TableCell => todoh!("table cell"),
             NodeValue::TaskItem(_) => todoh!("task item"),
             NodeValue::SoftBreak | NodeValue::LineBreak => widget::column!().into(),
-            NodeValue::Code(code) => widget::row![
-                widget::text(code.literal.clone()).font(FONT_MONO),
-                widget::button(widget::text("Copy").size(12))
-                    .on_press(Message::CoreCopyText(code.literal.clone())),
-            ]
-            .spacing(5)
-            .wrap()
-            .into(),
+            NodeValue::Code(code) => codeblock(code.literal.clone()).into(),
             NodeValue::HtmlInline(html) => Self::render_html(html, images, window_size),
             NodeValue::Strong | NodeValue::Emph => render_children(md, 4, images, window_size)
                 .spacing(10)
@@ -207,7 +201,11 @@ fn render_children<'arena, 'element>(
     let mut is_newline = false;
 
     for item in md.children() {
-        if is_newline {
+        let force_newline = {
+            let data = item.data.borrow();
+            matches!(data.value, NodeValue::CodeBlock(_))
+        };
+        if is_newline | force_newline {
             column = column.push(row.wrap());
             row = widget::row![];
         }
@@ -244,26 +242,20 @@ fn render_list_item<'a, 'elem>(
 
 fn render_link<'a, 'elem>(
     md: &'a comrak::arena_tree::Node<'a, RefCell<comrak::nodes::Ast>>,
+    heading_size: usize,
     images: &'elem ImageState,
     node_link: &comrak::nodes::NodeLink,
     window_size: (f32, f32),
 ) -> Element<'elem> {
-    let mut i = 0;
-    let mut children = widget::column(md.children().map(|n| {
-        i += 1;
-        let mut element = widget::column!().into();
-        // TODO: Add proper layout calculation
-        _ = MenuModsDownload::render_element(n, 0, &mut element, images, window_size);
-        element
-    }));
-    if i == 0 {
-        children = widget::column!(widget::text(if node_link.title.is_empty() {
+    let is_empty = md.children().count() == 0;
+    let children = if is_empty {
+        widget::column!(widget::text(if node_link.title.is_empty() {
             node_link.url.clone()
         } else {
             node_link.title.clone()
-        }));
-    }
-    widget::button(children)
-        .on_press(Message::CoreOpenLink(node_link.url.clone()))
-        .into()
+        }))
+    } else {
+        render_children(md, heading_size, images, window_size)
+    };
+    link(children, node_link.url.clone()).into()
 }

@@ -4,9 +4,9 @@ use ql_mod_manager::store::{QueryType, SearchMod};
 
 use crate::{
     icon_manager,
-    menu_renderer::{back_button, button_with_icon, Element},
+    menu_renderer::{back_button, button_with_icon, Element, FONT_MONO},
     state::{ImageState, InstallModsMessage, ManageModsMessage, MenuModsDownload, Message},
-    stylesheet::{color::Color, styles::LauncherTheme},
+    stylesheet::{color::Color, styles::LauncherTheme, widgets::StyleButton},
 };
 
 mod helpers;
@@ -328,4 +328,11 @@ fn safe_slice(s: &str, max_len: usize) -> &str {
     } else {
         &s[..end]
     }
+}
+
+pub fn codeblock<'a>(e: String) -> widget::Button<'a, Message, LauncherTheme> {
+    widget::button(widget::text(e.clone()).font(FONT_MONO))
+        .on_press(Message::CoreCopyText(e))
+        .padding(0)
+        .style(|n: &LauncherTheme, status| n.style_button(status, StyleButton::FlatDark))
 }
