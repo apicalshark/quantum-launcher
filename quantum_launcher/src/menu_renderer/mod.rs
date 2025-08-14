@@ -1,3 +1,4 @@
+use iced::widget::tooltip::Position;
 use iced::{widget, Alignment, Length};
 use ql_core::{InstanceSelection, Progress};
 
@@ -25,7 +26,7 @@ pub const GITHUB: &str = "https://github.com/Mrmayman/quantumlauncher";
 
 pub const FONT_MONO: iced::Font = iced::Font::with_name("JetBrains Mono");
 
-pub type Element<'a> = iced::Element<'a, Message, LauncherTheme, iced::Renderer>;
+pub type Element<'a> = iced::Element<'a, Message, LauncherTheme>;
 
 pub fn center_x<'a>(e: impl Into<Element<'a>>) -> Element<'a> {
     widget::row![
@@ -36,13 +37,16 @@ pub fn center_x<'a>(e: impl Into<Element<'a>>) -> Element<'a> {
     .into()
 }
 
-pub fn tooltip<'a>(e: impl Into<Element<'a>>, tooltip: impl Into<Element<'a>>) -> Element<'a> {
-    widget::tooltip(e, tooltip, widget::tooltip::Position::Bottom)
+pub fn tooltip<'a>(
+    e: impl Into<Element<'a>>,
+    tooltip: impl Into<Element<'a>>,
+    position: Position,
+) -> widget::Tooltip<'a, Message, LauncherTheme> {
+    widget::tooltip(e, tooltip, position)
         .style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::ExtraDark))
-        .into()
 }
 
-pub fn back_button<'a>() -> widget::Button<'a, Message, LauncherTheme, iced::Renderer> {
+pub fn back_button<'a>() -> widget::Button<'a, Message, LauncherTheme> {
     button_with_icon(icon_manager::back_with_size(14), "Back", 14)
 }
 
@@ -50,7 +54,7 @@ pub fn button_with_icon<'element>(
     icon: impl Into<Element<'element>>,
     text: &'element str,
     size: u16,
-) -> widget::Button<'element, Message, LauncherTheme, iced::Renderer> {
+) -> widget::Button<'element, Message, LauncherTheme> {
     widget::button(
         widget::row![icon.into(), widget::text(text).size(size)]
             .align_y(iced::alignment::Vertical::Center)
@@ -88,7 +92,7 @@ fn sidebar_button<'a, A: PartialEq>(
 }
 
 impl MenuCreateInstance {
-    pub fn view(&self) -> Element {
+    pub fn view(&self, list: Option<&Vec<String>>) -> Element {
         match self {
             MenuCreateInstance::LoadingList { .. } => widget::column![
                 widget::row![
@@ -109,6 +113,43 @@ impl MenuCreateInstance {
                 combo_state,
                 ..
             } => {
+                let already_exists = list.is_some_and(|n| n.contains(instance_name));
+
+                let create_button = widget::button(
+                    widget::row![icon_manager::create(), "Create Instance"]
+                        .spacing(10)
+                        .padding(5),
+                )
+                .on_press_maybe(
+                    (selected_version.is_some() && !instance_name.is_empty() && !already_exists)
+                        .then(|| Message::CreateInstance(CreateInstanceMessage::Start)),
+                );
+
+                let create_button: Element = if selected_version.is_none() {
+                    tooltip(
+                        create_button,
+                        "Select a version first!",
+                        Position::FollowCursor,
+                    )
+                    .into()
+                } else if instance_name.is_empty() {
+                    tooltip(
+                        create_button,
+                        "Enter a name for your instance.",
+                        Position::FollowCursor,
+                    )
+                    .into()
+                } else if already_exists {
+                    tooltip(
+                        create_button,
+                        "An instance with that name already exists!",
+                        Position::FollowCursor,
+                    )
+                    .into()
+                } else {
+                    create_button.into()
+                };
+
                 widget::scrollable(
                     widget::column![
                         widget::row![
@@ -130,12 +171,10 @@ impl MenuCreateInstance {
                         tooltip(
                             widget::checkbox("Download assets?", *download_assets).on_toggle(|t| Message::CreateInstance(CreateInstanceMessage::ChangeAssetToggle(t))),
                             widget::text("If disabled, creating instance will be MUCH faster, but no sound or music will play in-game").size(12),
+                            Position::Bottom
                         ),
-                        widget::button(widget::row![icon_manager::create(), "Create Instance"]
-                                .spacing(10)
-                                .padding(5)
-                        ).on_press_maybe((selected_version.is_some() && !instance_name.is_empty()).then(|| Message::CreateInstance(CreateInstanceMessage::Start))),
-                        widget::text("To install Fabric/Forge/OptiFine/Quilt, click on Mods after installing the instance").size(12),
+                        create_button,
+                        widget::text("To install Fabric/Forge/OptiFine/etc and mods, click on Mods after installing the instance").size(12),
                     ].push_maybe(
                         {
                             let real_platform = if cfg!(target_arch = "x86") { "x86_64" } else { "aarch64" };
@@ -151,10 +190,10 @@ impl MenuCreateInstance {
                         .spacing(10)
                         .padding(10),
                 )
-                    .style(LauncherTheme::style_scrollable_flat_dark)
-                    .width(Length::Fill)
-                    .height(Length::Fill)
-                    .into()
+                .style(LauncherTheme::style_scrollable_flat_dark)
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .into()
             }
             MenuCreateInstance::DownloadingInstance(progress) => widget::column![
                 widget::text("Downloading Instance..").size(20),

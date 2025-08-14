@@ -1,3 +1,4 @@
+use iced::widget::tooltip::Position;
 use iced::{widget, Length};
 use ql_core::{InstanceSelection, SelectedMod};
 
@@ -177,7 +178,8 @@ impl MenuEditMods {
             "Forge" => widget::column!(
                 tooltip(
                     widget::button(widget::text("Install OptiFine with Forge").size(14)),
-                    "Coming in a future launcher version..."
+                    "Coming in a future launcher version...",
+                    Position::Bottom
                 ),
                 Self::get_uninstall_panel(
                     &self.config.mod_type,
@@ -189,7 +191,8 @@ impl MenuEditMods {
             "OptiFine" => widget::column!(
                 tooltip(
                     widget::button(widget::text("Install Forge with OptiFine").size(14)),
-                    "Coming in a future launcher version..."
+                    "Coming in a future launcher version...",
+                    Position::Bottom
                 ),
                 Self::get_uninstall_panel(
                     &self.config.mod_type,

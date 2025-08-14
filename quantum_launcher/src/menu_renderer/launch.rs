@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use iced::advanced::text::Wrapping;
+use iced::widget::tooltip::Position;
 use iced::{widget, Length};
 use ql_core::{InstanceSelection, LAUNCHER_VERSION_NAME};
 
@@ -369,9 +370,9 @@ impl Launcher {
         let is_account_selected = self.is_account_selected();
 
         if self.config.username.is_empty() && !is_account_selected {
-            tooltip(play_button, "Username is empty!")
+            tooltip(play_button, "Username is empty!", Position::Bottom).into()
         } else if self.config.username.contains(' ') && !is_account_selected {
-            tooltip(play_button, "Username contains spaces!")
+            tooltip(play_button, "Username contains spaces!", Position::Bottom).into()
         } else if let Some(selected_instance) = selected_instance {
             if self.client_processes.contains_key(selected_instance) {
                 tooltip(
@@ -379,20 +380,23 @@ impl Launcher {
                         .on_press(Message::LaunchKill)
                         .width(98),
                     shortcut_ctrl("Backspace"),
+                    Position::Bottom,
                 )
+                .into()
             } else if self.is_launching_game {
-                tooltip(
-                    button_with_icon(icon_manager::play(), "...", 16).width(98),
-                    shortcut_ctrl("Please wait..."),
-                )
+                button_with_icon(icon_manager::play(), "...", 16)
+                    .width(98)
+                    .into()
             } else {
                 tooltip(
                     play_button.on_press(Message::LaunchStart),
                     shortcut_ctrl("Enter"),
+                    Position::Bottom,
                 )
+                .into()
             }
         } else {
-            tooltip(play_button, "Select an instance first!")
+            tooltip(play_button, "Select an instance first!", Position::Bottom).into()
         }
     }
 
@@ -415,7 +419,9 @@ impl Launcher {
                         Message::ServerManageKillServer(selected_server.unwrap().to_owned())
                     })),
                 shortcut_ctrl("Escape"),
+                Position::Bottom,
             )
+            .into()
         } else {
             tooltip(
                 button_with_icon(icon_manager::play(), "Start", 16)
@@ -424,7 +430,9 @@ impl Launcher {
                         Message::ServerManageStartServer(selected_server.unwrap().to_owned())
                     })),
                 "By starting the server, you agree to the EULA",
+                Position::Bottom,
             )
+            .into()
         }
     }
 }

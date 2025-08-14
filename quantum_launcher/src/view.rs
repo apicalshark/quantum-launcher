@@ -78,7 +78,7 @@ impl Launcher {
             State::EditMods(menu) => {
                 menu.view(self.selected_instance.as_ref().unwrap(), self.tick_timer)
             }
-            State::Create(menu) => menu.view(),
+            State::Create(menu) => menu.view(self.client_list.as_ref()),
             State::ConfirmAction {
                 msg1,
                 msg2,
