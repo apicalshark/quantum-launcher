@@ -8,12 +8,11 @@ use crate::{
 
 #[allow(unused)]
 pub fn changelog<'a>() -> Element<'a> {
-    const INDENT: u16 = 50;
     const FS: u16 = 14;
 
     widget::column![
         widget::text("Welcome to QuantumLauncher v0.4.2!").size(40),
-        tldr(),
+        e_tldr(),
         widget::Space::with_height(5),
 
         e_login(),
@@ -39,29 +38,7 @@ pub fn changelog<'a>() -> Element<'a> {
         ].wrap(),
         "- OptiFine install menu (now with Drag & Drop, delete installer option)",
 
-        widget::horizontal_rule(1),
-        widget::text("CLI:").size(32),
-        "The following terminal commands have been added:",
-
-        widget::column![
-            widget::container(widget::text("quantum_launcher create <NAME> <VERSION>").font(FONT_MONO)).padding(2),
-            widget::row![
-                widget::Space::with_width(INDENT),
-                "Add -s to skip downloading assets (music/sound)"
-            ].wrap(),
-
-            widget::container(widget::text("quantum_launcher launch <INSTANCE> <USERNAME>").font(FONT_MONO)).padding(2),
-            widget::row![
-                widget::Space::with_width(INDENT),
-                "Add -s for account authentication"
-            ].wrap(),
-
-            widget::container(widget::text("quantum_launcher delete <INSTANCE>").font(FONT_MONO)).padding(2),
-            widget::row![
-                widget::Space::with_width(INDENT),
-                "Add -f to skip confirmation"
-            ].wrap(),
-        ].spacing(5),
+        e_cli(),
 
         widget::horizontal_rule(1),
         widget::text("System & Platform").size(32),
@@ -73,9 +50,8 @@ pub fn changelog<'a>() -> Element<'a> {
         ].spacing(5),
 
         widget::horizontal_rule(1),
-        widget::text("Fixes").size(32),
-
         widget::column![
+            widget::text("Fixes").size(32),
             widget::text("- Fixed many crashes on Linux ARM and macOS `(b)`").size(FS),
             widget::text("- Fixed game crashes in portable mode").size(FS),
             widget::text("- Fixed many formatting issues in game logs").size(FS),
@@ -88,12 +64,76 @@ pub fn changelog<'a>() -> Element<'a> {
             widget::text("- Last account selected is now remembered").size(FS),
         ].spacing(5),
 
-        widget::text("- Modding").size(32),
+        widget::column![
+            widget::text("Modding:").size(20),
+            widget::text("- Fixed Fabric API being missing for some curseforge mods").size(FS),
+            widget::text("- Fixed getting stuck in an infinite loop when downloading some curseforge mods").size(FS),
+            widget::text("- Fixed modrinth mods repeating infinitely in the store list").size(FS),
+            widget::text("- Improved mod description rendering in the store").size(FS),
+        ].spacing(5),
 
+        widget::column![
+            widget::text("Versions:").size(20),
+            widget::text("- Fixed Minecraft Indev and early Infdev being unplayable (b)").size(FS),
+            widget::text("- Fixed broken colors in old versions on M-series Macs (b)").size(FS),
+            widget::text("- Old Minecraft versions are now in the correct order in the download list (b)").size(FS),
+            widget::text("- Snapshots of 1.0 to 1.5.2 are no longer missing for download (b)").size(FS),
+        ].spacing(5),
+
+        widget::column![
+            widget::text("Performance:").size(20),
+            widget::text("- Fixed lag spikes on some systems when selecting instances").size(FS),
+            widget::text("- Many autosaving features has been slowed down, and disk accesses reduced").size(FS),
+            widget::text("- Optimized the log renderer (slightly worse scrolling as a tradeoff)").size(FS),
+            widget::text("- The \"Create Instance\" version list loads WAY faster now (b)").size(FS),
+        ].spacing(5),
+
+        widget::horizontal_rule(1),
+        widget::text("...and it's all here!"),
+        widget::text("Ready to experience it now? Hit continue!").size(20),
     ]
     .padding(10)
     .spacing(10)
     .into()
+}
+
+fn e_cli<'a>() -> widget::Column<'a, Message, LauncherTheme> {
+    const INDENT: u16 = 50;
+
+    widget::column![
+        widget::horizontal_rule(1),
+        widget::text("CLI:").size(32),
+        "The following terminal commands have been added:",
+        widget::column![
+            widget::container(
+                widget::text("quantum_launcher create <NAME> <VERSION>").font(FONT_MONO)
+            )
+            .padding(2),
+            widget::row![
+                widget::Space::with_width(INDENT),
+                "Add -s to skip downloading assets (music/sound)"
+            ]
+            .wrap(),
+            widget::container(
+                widget::text("quantum_launcher launch <INSTANCE> <USERNAME>").font(FONT_MONO)
+            )
+            .padding(2),
+            widget::row![
+                widget::Space::with_width(INDENT),
+                "Add -s for account authentication"
+            ]
+            .wrap(),
+            widget::container(widget::text("quantum_launcher delete <INSTANCE>").font(FONT_MONO))
+                .padding(2),
+            widget::row![
+                widget::Space::with_width(INDENT),
+                "Add -f to skip confirmation"
+            ]
+            .wrap(),
+        ]
+        .spacing(5)
+    ]
+    .spacing(10)
 }
 
 fn e_login<'a>() -> widget::Column<'a, Message, LauncherTheme> {
@@ -125,7 +165,7 @@ fn e_login<'a>() -> widget::Column<'a, Message, LauncherTheme> {
     .spacing(10)
 }
 
-fn tldr<'a>() -> widget::Container<'a, Message, LauncherTheme> {
+fn e_tldr<'a>() -> widget::Container<'a, Message, LauncherTheme> {
     widget::container(
         widget::column![
             widget::text("Revamped and improved many menus, plus a new Teal theme!"),
