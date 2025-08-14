@@ -18,60 +18,13 @@ impl MenuModsDownload {
     /// back button and list of searched mods.
     fn view_main<'a>(&'a self, images: &'a ImageState, tick_timer: usize) -> Element<'a> {
         let mods_list = self.get_mods_list(images, tick_timer);
+
         widget::row!(
             widget::scrollable(
                 widget::column!(
                     widget::text_input("Search...", &self.query)
                         .on_input(|n| Message::InstallMods(InstallModsMessage::SearchInput(n))),
-                    if self.mods_download_in_progress.is_empty() {
-                        widget::column!(
-                            back_button()
-                                .on_press(Message::ManageMods(ManageModsMessage::ScreenOpen)),
-                            widget::Space::with_height(5.0),
-                            widget::text("Select store:").size(18),
-                            widget::radio(
-                                "Modrinth",
-                                StoreBackendType::Modrinth,
-                                Some(self.backend),
-                                |v| { Message::InstallMods(InstallModsMessage::ChangeBackend(v)) }
-                            )
-                            .text_size(14)
-                            .size(14),
-                            widget::radio(
-                                "CurseForge",
-                                StoreBackendType::Curseforge,
-                                Some(self.backend),
-                                |v| { Message::InstallMods(InstallModsMessage::ChangeBackend(v)) }
-                            )
-                            .text_size(14)
-                            .size(14),
-                            widget::Space::with_height(5),
-                            widget::text("Select Type:").size(18),
-                            widget::column(QueryType::ALL.iter().map(|n| {
-                                widget::radio(n.to_string(), *n, Some(self.query_type), |v| {
-                                    Message::InstallMods(InstallModsMessage::ChangeQueryType(v))
-                                })
-                                .text_size(14)
-                                .size(14)
-                                .into()
-                            }))
-                            .spacing(5)
-                        )
-                        .spacing(5)
-                    } else {
-                        // Mods are being installed. Can't back out.
-                        // Show list of mods being installed.
-                        widget::column!("Installing:", {
-                            widget::column(self.mods_download_in_progress.iter().filter_map(|id| {
-                                let search = self.results.as_ref()?;
-                                let hit = search
-                                    .mods
-                                    .iter()
-                                    .find(|hit| hit.id == id.get_internal_id())?;
-                                Some(widget::text!("- {}", hit.title).into())
-                            }))
-                        })
-                    },
+                    self.get_side_panel(),
                 )
                 .padding(10)
                 .spacing(10)
@@ -131,6 +84,57 @@ impl MenuModsDownload {
         .into()
     }
 
+    fn get_side_panel(&self) -> Element {
+        let normal_controls = widget::column!(
+            back_button().on_press(Message::ManageMods(ManageModsMessage::ScreenOpen)),
+            widget::Space::with_height(5.0),
+            widget::text("Select store:").size(18),
+            widget::radio(
+                "Modrinth",
+                StoreBackendType::Modrinth,
+                Some(self.backend),
+                |v| { Message::InstallMods(InstallModsMessage::ChangeBackend(v)) }
+            )
+            .text_size(14)
+            .size(14),
+            widget::radio(
+                "CurseForge",
+                StoreBackendType::Curseforge,
+                Some(self.backend),
+                |v| { Message::InstallMods(InstallModsMessage::ChangeBackend(v)) }
+            )
+            .text_size(14)
+            .size(14),
+            widget::Space::with_height(5),
+            widget::text("Select Type:").size(18),
+            widget::column(QueryType::ALL.iter().map(|n| {
+                widget::radio(n.to_string(), *n, Some(self.query_type), |v| {
+                    Message::InstallMods(InstallModsMessage::ChangeQueryType(v))
+                })
+                .text_size(14)
+                .size(14)
+                .into()
+            }))
+            .spacing(5)
+        )
+        .spacing(5);
+
+        if self.mods_download_in_progress.is_empty() || self.results.is_none() {
+            normal_controls.into()
+        } else {
+            // Mods are being installed. Can't back out.
+            // Show list of mods being installed.
+            widget::column!("Installing:", {
+                widget::column(
+                    self.mods_download_in_progress
+                        .iter()
+                        .filter_map(|(_, title)| Some(widget::text!("- {title}").into())),
+                )
+            })
+            .into()
+        }
+    }
+
     fn get_mods_list<'a>(
         &'a self,
         images: &'a ImageState,
@@ -173,7 +177,7 @@ impl MenuModsDownload {
             .on_press_maybe(
                 (!self
                     .mods_download_in_progress
-                    .contains(&ModId::from_pair(&hit.id, backend))
+                    .contains_key(&ModId::from_pair(&hit.id, backend))
                     && !self.mod_index.mods.contains_key(&hit.id)
                     && !self.mod_index.mods.values().any(|n| n.name == hit.title))
                 .then_some(Message::InstallMods(InstallModsMessage::Download(i)))

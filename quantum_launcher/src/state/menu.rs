@@ -264,7 +264,7 @@ pub struct MenuModsDownload {
     pub version_json: Box<VersionDetails>,
     pub opened_mod: Option<usize>,
     pub latest_load: Instant,
-    pub mods_download_in_progress: HashSet<ModId>,
+    pub mods_download_in_progress: HashMap<ModId, String>,
     pub scroll_offset: AbsoluteOffset,
 
     pub config: InstanceConfigJson,

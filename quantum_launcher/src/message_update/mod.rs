@@ -299,7 +299,7 @@ impl Launcher {
         };
 
         menu.mods_download_in_progress
-            .insert(ModId::Modrinth(hit.id.clone()));
+            .insert(ModId::Modrinth(hit.id.clone()), hit.title.clone());
 
         let project_id = hit.id.clone();
         let backend = menu.backend;

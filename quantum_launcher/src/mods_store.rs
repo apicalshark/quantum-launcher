@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    time::Instant,
-};
+use std::{collections::HashMap, time::Instant};
 
 use iced::futures::executor::block_on;
 use iced::{widget::scrollable::AbsoluteOffset, Task};
@@ -34,7 +31,7 @@ impl Launcher {
             results: None,
             opened_mod: None,
             mod_descriptions: HashMap::new(),
-            mods_download_in_progress: HashSet::new(),
+            mods_download_in_progress: HashMap::new(),
             mod_index,
             is_loading_continuation: false,
 
