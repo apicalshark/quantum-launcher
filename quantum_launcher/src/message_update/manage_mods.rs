@@ -280,7 +280,7 @@ impl Launcher {
 
     fn update_mod_index(&mut self) {
         if let State::EditMods(menu) = &mut self.state {
-            match block_on(ModIndex::get(self.selected_instance.as_ref().unwrap())).strerr() {
+            match block_on(ModIndex::load(self.selected_instance.as_ref().unwrap())).strerr() {
                 Ok(idx) => menu.mods = idx,
                 Err(err) => self.set_error(err),
             }

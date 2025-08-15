@@ -181,7 +181,7 @@ impl Launcher {
             let config_json = InstanceConfigJson::read(instance).await?;
             let version_json = Box::new(VersionDetails::load(instance).await?);
 
-            let idx = ModIndex::get(instance).await?;
+            let idx = ModIndex::load(instance).await?;
             let locally_installed_mods =
                 MenuEditMods::update_locally_installed_mods(&idx, instance);
 
@@ -218,7 +218,7 @@ impl Launcher {
 
         let is_vanilla = config_json.mod_type == "Vanilla";
 
-        let idx = block_on(ModIndex::get(selected_instance))?;
+        let idx = block_on(ModIndex::load(selected_instance))?;
         let locally_installed_mods =
             MenuEditMods::update_locally_installed_mods(&idx, selected_instance);
 

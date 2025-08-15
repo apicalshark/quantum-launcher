@@ -31,7 +31,7 @@ pub struct ModIndex {
 }
 
 impl ModIndex {
-    pub async fn get(selected_instance: &InstanceSelection) -> Result<Self, JsonFileError> {
+    pub async fn load(selected_instance: &InstanceSelection) -> Result<Self, JsonFileError> {
         let dot_mc_dir = selected_instance.get_dot_minecraft_path();
 
         let mods_dir = dot_mc_dir.join("mods");

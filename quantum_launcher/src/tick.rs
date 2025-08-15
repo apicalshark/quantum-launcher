@@ -332,7 +332,7 @@ impl MenuModsDownload {
         images: &mut ImageState,
     ) -> Task<Message> {
         let index_cmd = Task::perform(
-            async move { ModIndex::get(&selected_instance).await },
+            async move { ModIndex::load(&selected_instance).await },
             |n| Message::InstallMods(InstallModsMessage::IndexUpdated(n.strerr())),
         );
 

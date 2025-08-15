@@ -14,7 +14,7 @@ pub async fn delete_mods(
     }
 
     info!("Deleting mods:");
-    let mut index = ModIndex::get(&instance).await?;
+    let mut index = ModIndex::load(&instance).await?;
 
     let mods_dir = instance.get_dot_minecraft_path().join("mods");
 

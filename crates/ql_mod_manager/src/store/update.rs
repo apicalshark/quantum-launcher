@@ -23,7 +23,7 @@ pub async fn apply_updates(
 pub async fn check_for_updates(
     selected_instance: InstanceSelection,
 ) -> Result<Vec<(ModId, String)>, ModError> {
-    let index = ModIndex::get(&selected_instance).await?;
+    let index = ModIndex::load(&selected_instance).await?;
 
     let version_json = VersionDetails::load(&selected_instance).await?;
 

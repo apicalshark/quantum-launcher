@@ -78,7 +78,7 @@ impl PresetJson {
         let minecraft_version = get_minecraft_version(&instance).await?;
         let instance_type = get_instance_type(&instance).await?;
 
-        let index = ModIndex::get(&instance).await?;
+        let index = ModIndex::load(&instance).await?;
 
         let mut entries_modrinth = HashMap::new();
         let mut entries_local: Vec<(String, Vec<u8>)> = Vec::new();

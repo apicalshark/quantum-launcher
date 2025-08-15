@@ -46,7 +46,7 @@ impl<'a> ModDownloader<'a> {
             loader: get_loader(&instance)
                 .await?
                 .map(|n| n.to_curseforge().to_owned()),
-            index: ModIndex::get(&instance).await?,
+            index: ModIndex::load(&instance).await?,
             mods_dir,
             resourcepacks_dir,
             shaderpacks_dir,

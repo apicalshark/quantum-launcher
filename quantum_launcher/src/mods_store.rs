@@ -20,7 +20,7 @@ impl Launcher {
         } else {
             Box::new(block_on(VersionDetails::load(selection))?)
         };
-        let mod_index = block_on(ModIndex::get(selection))?;
+        let mod_index = block_on(ModIndex::load(selection))?;
 
         let mut menu = MenuModsDownload {
             scroll_offset: AbsoluteOffset::default(),
