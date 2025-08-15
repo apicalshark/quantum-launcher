@@ -67,9 +67,6 @@ impl VersionDetails {
     /// Loads a Minecraft instance JSON from disk,
     /// based on a path to the root of the instance directory.
     ///
-    /// This is the `async` function, for the sync function
-    /// see [`VersionDetails::load_s`]
-    ///
     /// # Errors
     /// - `dir`/`details.json` doesn't exist or isn't a file
     /// - `details.json` file couldn't be loaded

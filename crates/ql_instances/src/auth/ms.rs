@@ -203,7 +203,7 @@ impl From<keyring::Error> for Error {
 /// refresh token.
 ///
 /// You can read an existing refresh token
-/// from disk using [`read_refresh_token`].
+/// from disk using [`super::read_refresh_token`].
 ///
 /// Note: This is for reusing an existing logged-in
 /// account. If you want to freshly log in, use
