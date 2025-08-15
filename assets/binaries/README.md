@@ -9,14 +9,6 @@ The launcher will `include_bytes!()` these libraries
 so you can reproduce the build on your own, but it's
 unlikely that you'll get matching binary-perfect builds.
 
-## `macos/java-objc-bridge-1.1.jar`
-- From [java-objc-bridge](https://github.com/shannah/Java-Objective-C-Bridge)
-- **Purpose**: Enables Java ↔ Objective-C communication on macOS.
-### Compilation
-- Built on **macOS Catalina** using **Xcode 12.4**.
-- Recompiled to support **macOS aarch64** (Apple Silicon).
-- Mojang’s bundled version only includes **macOS x86_64**.
-
 ---
 
 ## `freebsd/liblwjgl64_x86_64.so`
