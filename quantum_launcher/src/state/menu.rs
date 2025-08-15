@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     time::Instant,
 };
 
@@ -264,7 +264,7 @@ pub struct MenuModsDownload {
     pub version_json: Box<VersionDetails>,
     pub opened_mod: Option<usize>,
     pub latest_load: Instant,
-    pub mods_download_in_progress: HashMap<ModId, String>,
+    pub mods_download_in_progress: BTreeMap<ModId, String>,
     pub scroll_offset: AbsoluteOffset,
 
     pub config: InstanceConfigJson,

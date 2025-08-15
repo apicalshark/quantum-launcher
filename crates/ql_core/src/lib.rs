@@ -298,7 +298,7 @@ impl Display for ListEntry {
 
 pub const LAUNCHER_VERSION_NAME: &str = "0.4.2";
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ModId {
     Modrinth(String),
     Curseforge(String),
