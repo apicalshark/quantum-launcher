@@ -1,8 +1,5 @@
-use iced::futures::executor::block_on;
 use iced::Task;
-use ql_core::{
-    err, json::VersionDetails, InstanceSelection, IntoStringError, Loader, ModId, SelectedMod,
-};
+use ql_core::{err, InstanceSelection, IntoStringError, Loader, ModId, SelectedMod};
 use ql_mod_manager::store::{RecommendedMod, RECOMMENDED_MODS};
 use std::collections::HashSet;
 
@@ -29,9 +26,7 @@ impl Launcher {
         match message {
             EditPresetsMessage::Open => return self.go_to_edit_presets_menu(),
             EditPresetsMessage::TabChange(tab) => {
-                if let Some(value) = self.preset_change_tab(&tab) {
-                    return value;
-                }
+                return self.preset_change_tab(&tab);
             }
             EditPresetsMessage::ToggleCheckbox((name, id), enable) => {
                 iflet_manage_preset!(self, Build, selected_mods, selected_state, {
@@ -98,7 +93,8 @@ impl Launcher {
                 {
                     match result {
                         Ok(n) => {
-                            *recommended_mods = Some(n.into_iter().map(|n| (true, n)).collect());
+                            *recommended_mods =
+                                Some(n.into_iter().map(|n| (n.enabled_by_default, n)).collect());
                         }
                         Err(err) => *error = Some(err),
                     }
@@ -161,7 +157,7 @@ impl Launcher {
         }
     }
 
-    fn preset_change_tab(&mut self, tab: &str) -> Option<Task<Message>> {
+    fn preset_change_tab(&mut self, tab: &str) -> Task<Message> {
         if let State::ManagePresets(MenuEditPresets {
             inner,
             config,
@@ -184,21 +180,19 @@ impl Launcher {
                     };
                 }
                 PRESET_INNER_RECOMMENDED => {
-                    if let Some(task) = Self::presets_switch_to_recommended(
+                    return Self::presets_switch_to_recommended(
                         self.selected_instance.as_ref().unwrap(),
                         inner,
                         config,
                         recommended_mods,
-                    ) {
-                        return Some(task);
-                    }
+                    );
                 }
                 _ => {
                     err!("Invalid mod preset tab: {tab}");
                 }
             }
         }
-        None
+        Task::none()
     }
 
     fn preset_select_all(&mut self) {
@@ -236,7 +230,7 @@ impl Launcher {
         inner: &mut MenuEditPresetsInner,
         config: &mut ql_core::json::InstanceConfigJson,
         recommended_mods: &mut Option<Vec<(bool, RecommendedMod)>>,
-    ) -> Option<Task<Message>> {
+    ) -> Task<Message> {
         let mod_type = config.mod_type.clone();
         let (sender, receiver) = std::sync::mpsc::channel();
         *inner = MenuEditPresetsInner::Recommended {
@@ -244,17 +238,18 @@ impl Launcher {
             error: None,
         };
         if recommended_mods.is_some() {
-            return None;
+            return Task::none();
         }
-        let json = block_on(VersionDetails::load(selected_instance)).ok()?;
-        let loader = Loader::try_from(mod_type.as_str()).ok()?;
-        let version = json.get_id().to_owned();
+        let Some(loader) = Loader::try_from(mod_type.as_str()).ok() else {
+            *recommended_mods = Some(Vec::new());
+            return Task::none();
+        };
         let ids = RECOMMENDED_MODS.to_owned();
 
-        Some(Task::perform(
-            RecommendedMod::get_compatible_mods(ids, version, loader, sender),
+        Task::perform(
+            RecommendedMod::get_compatible_mods(ids, selected_instance.clone(), loader, sender),
             |n| Message::EditPresets(EditPresetsMessage::RecommendedModCheck(n.strerr())),
-        ))
+        )
     }
 
     fn go_to_edit_presets_menu(&mut self) -> Task<Message> {
@@ -274,7 +269,7 @@ impl Launcher {
 
         let (sender, receiver) = std::sync::mpsc::channel();
 
-        self.state = State::ManagePresets(MenuEditPresets {
+        let mut menu = MenuEditPresets {
             inner: if is_empty {
                 MenuEditPresetsInner::Recommended {
                     progress: ProgressBar::with_recv(receiver),
@@ -292,25 +287,28 @@ impl Launcher {
             config: menu.config.clone(),
             sorted_mods_list: menu.sorted_mods_list.clone(),
             drag_and_drop_hovered: false,
-        });
-
-        if !is_empty {
-            return Task::none();
-        }
-
-        let Ok(json) = block_on(VersionDetails::load(
-            self.selected_instance.as_ref().unwrap(),
-        )) else {
-            return Task::none();
-        };
-        let Ok(loader) = Loader::try_from(mod_type.as_str()) else {
-            return Task::none();
         };
 
-        let version = json.get_id().to_owned();
+        let loader = Loader::try_from(mod_type.as_str());
+        let loader = if is_empty && loader.is_ok() {
+            self.state = State::ManagePresets(menu);
+            loader.unwrap()
+        } else {
+            if loader.is_err() {
+                menu.recommended_mods = Some(Vec::new());
+            }
+            self.state = State::ManagePresets(menu);
+            return Task::none();
+        };
+
         let ids = RECOMMENDED_MODS.to_owned();
         Task::perform(
-            RecommendedMod::get_compatible_mods(ids, version, loader, sender),
+            RecommendedMod::get_compatible_mods(
+                ids,
+                self.selected_instance.clone().unwrap(),
+                loader,
+                sender,
+            ),
             |n| Message::EditPresets(EditPresetsMessage::RecommendedModCheck(n.strerr())),
         )
     }

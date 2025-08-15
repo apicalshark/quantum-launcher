@@ -18,6 +18,13 @@ impl Launcher {
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::Nothing | Message::CoreLogCleanComplete(Ok(())) => {}
+            Message::Multiple(msgs) => {
+                let mut task = Task::none();
+                for msg in msgs {
+                    task = task.chain(self.update(msg));
+                }
+                return task;
+            }
 
             Message::CoreTickConfigSaved(result)
             | Message::LaunchKillEnd(result)

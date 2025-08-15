@@ -2,6 +2,7 @@ use iced::widget::tooltip::Position;
 use iced::{widget, Length};
 use ql_core::{InstanceSelection, SelectedMod};
 
+use crate::state::PRESET_INNER_RECOMMENDED;
 use crate::{
     icon_manager,
     menu_renderer::{back_button, back_to_launch_screen, button_with_icon, tooltip, Element},
@@ -249,11 +250,21 @@ impl MenuEditMods {
 
     fn get_mod_list(&self) -> Element {
         if self.sorted_mods_list.is_empty() {
-            return widget::column!("Download some mods to get started")
-                .spacing(10)
-                .padding(10)
-                .width(Length::Fill)
-                .into();
+            return widget::column!(
+                "Download some mods to get started",
+                widget::button("View Recommended Mods").on_press_with(|| {
+                    Message::Multiple(vec![
+                        Message::EditPresets(EditPresetsMessage::Open),
+                        Message::EditPresets(EditPresetsMessage::TabChange(
+                            PRESET_INNER_RECOMMENDED.to_owned(),
+                        )),
+                    ])
+                })
+            )
+            .spacing(10)
+            .padding(10)
+            .width(Length::Fill)
+            .into();
         }
 
         widget::container(

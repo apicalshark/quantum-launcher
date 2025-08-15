@@ -3531,6 +3531,7 @@ version = "0.0.0"
 dependencies = [
  "chrono",
  "colored",
+ "futures",
  "image",
  "ql_core",
  "ql_java_handler",

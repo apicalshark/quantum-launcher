@@ -127,8 +127,8 @@ impl MenuModsDownload {
             widget::column!("Installing:", {
                 widget::column(
                     self.mods_download_in_progress
-                        .iter()
-                        .filter_map(|(_, title)| Some(widget::text!("- {title}").into())),
+                        .values()
+                        .map(|title| widget::text!("- {title}").into()),
                 )
             })
             .into()

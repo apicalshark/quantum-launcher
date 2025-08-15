@@ -8,7 +8,7 @@ use crate::{
     menu_renderer::{button_with_icon, launch::TAB_HEIGHT, Element},
     state::{
         EditPresetsMessage, ManageModsMessage, MenuEditPresets, MenuEditPresetsInner, Message,
-        ModListEntry, SelectedState,
+        ModListEntry, SelectedState, PRESET_INNER_BUILD, PRESET_INNER_RECOMMENDED,
     },
     stylesheet::{color::Color, styles::LauncherTheme, widgets::StyleButton},
 };
@@ -49,8 +49,8 @@ impl MenuEditPresets {
                     .on_press(Message::ManageMods(ManageModsMessage::ScreenOpen)),
                     widget::Space::with_width(16.0),
 
-                    self.get_tab_button("Create"),
-                    self.get_tab_button("Recommended"),
+                    self.get_tab_button(PRESET_INNER_BUILD),
+                    self.get_tab_button(PRESET_INNER_RECOMMENDED),
 
                     widget::horizontal_space(),
 
@@ -161,31 +161,36 @@ impl MenuEditPresets {
                     .spacing(10)
                     .into()
                 } else if let Some(mods) = &self.recommended_mods {
-                    widget::column!(
-                        button_with_icon(icon_manager::download(), "Download Recommended Mods", 16)
-                            .on_press(Message::EditPresets(
-                                EditPresetsMessage::RecommendedDownload
-                            )),
-                        widget::column(mods.iter().enumerate().map(|(i, (e, n))| {
-                            let elem: Element = if n.enabled_by_default {
-                                widget::text!("- {}", n.name).into()
-                            } else {
-                                widget::checkbox(n.name, *e)
-                                    .on_toggle(move |n| {
-                                        Message::EditPresets(EditPresetsMessage::RecommendedToggle(
-                                            i, n,
-                                        ))
-                                    })
+                    if mods.is_empty() {
+                        widget::text(if self.config.mod_type == "Vanilla" {
+                            "Install a mod loader (like Fabric/Forge/NeoForge/Quilt/etc, whichever is compatible)\n\nYou need one before you can install mods"
+                        } else {
+                            "No recommended mods found :)"
+                        }).into()
+                    } else {
+                        widget::column!(
+                            button_with_icon(icon_manager::download(), "Download Recommended Mods", 16)
+                                .on_press(Message::EditPresets(
+                                    EditPresetsMessage::RecommendedDownload
+                                )),
+                            widget::column(mods.iter().enumerate().map(|(i, (e, n))| {
+                                let elem: Element =
+                                    widget::checkbox(n.name, *e)
+                                        .on_toggle(move |n| {
+                                            Message::EditPresets(EditPresetsMessage::RecommendedToggle(
+                                                i, n,
+                                            ))
+                                        })
+                                        .into();
+                                widget::column!(elem, widget::text(n.description).size(12))
+                                    .spacing(5)
                                     .into()
-                            };
-                            widget::column!(elem, widget::text(n.description).size(12))
-                                .spacing(5)
-                                .into()
-                        }))
+                            }))
+                            .spacing(10)
+                        )
                         .spacing(10)
-                    )
-                    .spacing(10)
-                    .into()
+                        .into()
+                    }
                 } else {
                     progress.view()
                 }

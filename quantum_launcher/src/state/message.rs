@@ -226,6 +226,7 @@ pub enum LauncherSettingsMessage {
 pub enum Message {
     #[allow(unused)]
     Nothing,
+    Multiple(Vec<Message>),
 
     WelcomeContinueToTheme,
     WelcomeContinueToAuth,
