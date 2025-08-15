@@ -57,7 +57,12 @@ pub async fn insert(
     bytes: Vec<u8>,
     name: &str,
 ) -> Result<(), JsonFileError> {
+    let filename = format!("{name}.zip");
     let mut jarmods = JarMods::get(&instance).await?;
+    if let Some(entry) = jarmods.mods.iter_mut().find(|n| n.filename == filename) {
+        entry.enabled = true;
+        return Ok(());
+    }
 
     let jarmods_dir = instance.get_instance_path().join("jarmods");
     if !jarmods_dir.is_dir() {
@@ -66,7 +71,6 @@ pub async fn insert(
             .path(&jarmods_dir)?;
     }
 
-    let filename = format!("{name}.zip");
     let file_path = jarmods_dir.join(&filename);
     tokio::fs::write(&file_path, &bytes)
         .await

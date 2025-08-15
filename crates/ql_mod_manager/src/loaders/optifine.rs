@@ -20,8 +20,10 @@ pub async fn install_b173(
     instance: InstanceSelection,
     url: &'static str,
 ) -> Result<(), OptifineError> {
+    info!("Installing OptiFine for Beta 1.7.3...");
     let bytes = file_utils::download_file_to_bytes(url, true).await?;
     jarmod::insert(instance, bytes, "Optifine").await?;
+    pt!("Finished! It can be found in Jarmods");
 
     Ok(())
 }
@@ -104,7 +106,7 @@ pub async fn install(
             "Optifine",
         )
         .await?;
-        pt!("Finished installing OptiFine for Beta 1.7.3");
+        pt!("Finished installing OptiFine (old version)");
         return Ok(());
     }
 
