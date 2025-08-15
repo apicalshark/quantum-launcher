@@ -7,33 +7,40 @@
 //!   mojang support, i.e. they provide the java install files
 //!   for these platforms.
 //!
-//! - Any entry with __ represents a version not supported by
+//! - Any entry with `##` represents a version not supported by
 //!   mojang, but supported through *Amazon Corretto Java*
 //!   which we provide an alternate installer for.
 //!
-//! - Any entry with -- represents a version not supported by
+//! - Any entry with `@@` represents a version not supported by
 //!   mojang, but installed from
-//!   <https://github.com/hmsjy2017/get-jdk>
+//!   <https://github.com/Mrmayman/get-jdk>
 //!
-//! - Any entry with !! represents a version not supported at all.
+//! - Any entry with `__` represents a version not supported at all.
 //!
 //! ```txt
 //! Linux   x64 :  8 16 17 21
-//! Linux   x32 :  8 !! !! !!  <- only java 8; MC 1.16.5 and below
-//! Linux   a64 : __ __ __ __  <- corretto
-//! Linux   a32 : -- !! !! !!  <- github
+//! Linux   x32 :  8 __ __ __  <- (only Java 8: MC 1.16.5 and below)
+//! Linux   a64 : ## ## ## ##  <- Corretto
+//! Linux   a32 : @@ __ __ __  <- GitHub (only Java 8)
+//!
+//! Solaris x64 : @@ __ __ __
+//! Solaris S64 : @@ __ __ __
+//!
+//! FreeBSD x64 : @@ __ __ __
 //!
 //! macOS   x64 :  8 16 17 21
-//! macOS   a64 : __ __ 17 21  <- corretto
+//! macOS   a64 : ## ## 17 21
 //!
 //! Windows x64 :  8 16 17 21
-//! Windows x32 :  8 16 17 __  <- corretto
-//! Windows a64 : !! !! 17 21  <- only java 17+; mostly fine,
+//! Windows x32 :  8 16 17 @@
+//! Windows a64 : __ __ 17 21  <- only java 17+; mostly fine,
 //!                             but some things like ModLoader might break
 //! -------------------
 //! x64   means x86_64 (64 bit)
 //! x32   means x86    (32 bit)
 //! a64   means aarch64 or ARM (64 bit)
+//! a32   means ARM 32 bit
+//! S64   means sparc64 (64 bit)
 //! -------------------
 //! ```
 //!
@@ -45,7 +52,7 @@ use ql_core::{file_utils, GenericProgress};
 
 use crate::{extract_tar_gz, send_progress, JavaInstallError, JavaVersion};
 
-pub async fn install(
+pub(crate) async fn install(
     version: JavaVersion,
     java_install_progress_sender: Option<&Sender<GenericProgress>>,
     install_dir: &Path,
@@ -102,7 +109,7 @@ impl JavaVersion {
     pub(crate) fn get_alternate_url(self) -> Option<&'static str> {
         // Sources:
         // https://aws.amazon.com/corretto/
-        // https://github.com/hmsjy2017/get-jdk/
+        // https://github.com/Mrmayman/get-jdk/
 
         if cfg!(target_os = "linux") {
             self.get_url_linux()
@@ -110,12 +117,33 @@ impl JavaVersion {
             self.get_url_macos()
         } else if cfg!(target_os = "windows") {
             self.get_url_windows()
+        } else if cfg!(target_os = "freebsd") {
+            // # Sourcing
+            // The following is a re-packaged version of:
+            // <https://pkg.freebsd.org/FreeBSD:13:amd64/quarterly/All/openjdk8-8.452.09.1_1.pkg>
+            //
+            // If the above link is dead, just search for `openjdk8` in FreeBSD `pkg`
+            //
+            // No modifications were made to Java itself,
+            // it was simply re-archived with a different directory structure
+            //
+            // For licensing/source code, consult the other files here,
+            // and FreeBSD's repositories too, as this was taken from there.
+            if let JavaVersion::Java8 = self {
+                if cfg!(target_arch = "x86_64") {
+                    Some("https://github.com/Mrmayman/get-jdk/releases/download/java8-1/jdk-8u452-freebsd-x64.tar.gz")
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
         } else if cfg!(target_os = "solaris") {
             if let JavaVersion::Java8 = self {
                 if cfg!(target_arch = "x86_64") {
-                    Some("https://github.com/hmsjy2017/get-jdk/releases/download/v8u231/jdk-8u231-solaris-x64.tar.gz")
+                    Some("https://github.com/Mrmayman/get-jdk/releases/download/java8-1/jdk-8u231-solaris-x64.tar.gz")
                 } else if cfg!(target_arch = "sparc64") {
-                    Some("https://github.com/hmsjy2017/get-jdk/releases/download/v8u231/jdk-8u231-solaris-sparcv9.tar.gz")
+                    Some("https://github.com/Mrmayman/get-jdk/releases/download/java8-1/jdk-8u231-solaris-sparcv9.tar.gz")
                 } else {
                     None
                 }
@@ -154,7 +182,7 @@ impl JavaVersion {
             })
         } else if cfg!(target_arch = "arm") {
             if let JavaVersion::Java8 = self {
-                Some("https://github.com/hmsjy2017/get-jdk/releases/download/v8u231/jdk-8u231-linux-arm32-vfp-hflt.tar.gz")
+                Some("https://github.com/Mrmayman/get-jdk/releases/download/java8-1/jdk-8u231-linux-arm32-vfp-hflt.tar.gz")
             } else {
                 None
             }

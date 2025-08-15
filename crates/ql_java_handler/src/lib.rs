@@ -16,7 +16,7 @@ use ql_core::{
 mod compression;
 pub use compression::extract_tar_gz;
 
-mod alternate_java;
+pub mod alternate_java;
 mod json;
 
 pub use json::list::JavaVersion;
