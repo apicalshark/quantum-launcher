@@ -216,7 +216,7 @@ pub async fn login_refresh(
 ) -> Result<AccountData, Error> {
     send_progress(sender.as_ref(), 0, 4, "Refreshing account token...");
 
-    let response: String = retry(async || {
+    let response: String = retry(|| async {
         CLIENT
             .post("https://login.live.com/oauth20_token.srf")
             .form(&[

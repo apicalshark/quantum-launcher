@@ -195,7 +195,7 @@ pub async fn download_file_to_string(url: &str, user_agent: bool) -> Result<Stri
         Ok(response.text().await?)
     }
 
-    retry(async || inner(url, user_agent).await).await
+    retry(|| async { inner(url, user_agent).await }).await
 }
 
 /// Downloads a file from the given URL into a JSON.
@@ -226,7 +226,7 @@ pub async fn download_file_to_json<T: DeserializeOwned>(
         Ok(serde_json::from_str(&text).json(text)?)
     }
 
-    retry(async || inner(url, user_agent).await).await
+    retry(|| async { inner(url, user_agent).await }).await
 }
 
 /// Downloads a file from the given URL into a `Vec<u8>`.
@@ -253,7 +253,7 @@ pub async fn download_file_to_bytes(url: &str, user_agent: bool) -> Result<Vec<u
         Ok(response.bytes().await?.to_vec())
     }
 
-    retry(async || inner(url, user_agent).await).await
+    retry(|| async { inner(url, user_agent).await }).await
 }
 
 /// Downloads a file from the given URL and saves it to a path.
@@ -302,7 +302,7 @@ pub async fn download_file_to_path(
         Ok(())
     }
 
-    retry(async || inner(url, user_agent, path).await).await
+    retry(|| async { inner(url, user_agent, path).await }).await
 }
 
 /// Downloads a file from the given URL into a `Vec<u8>`,
@@ -333,7 +333,7 @@ pub async fn download_file_to_bytes_with_agent(
         Ok(response.bytes().await?.to_vec())
     }
 
-    retry(async || inner(url, user_agent).await).await
+    retry(|| async { inner(url, user_agent).await }).await
 }
 
 pub fn check_for_success(response: &Response) -> Result<(), RequestError> {

@@ -312,7 +312,7 @@ impl Launcher {
         }
         self.accounts_dropdown.insert(0, username.clone());
 
-        let accounts = self.config.accounts.get_or_insert_default();
+        let accounts = self.config.accounts.get_or_insert_with(Default::default);
         accounts.insert(
             username.clone(),
             ConfigAccount {

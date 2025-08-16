@@ -176,7 +176,7 @@ impl LauncherConfig {
     }
 
     pub fn read_window_size(&mut self) -> (f32, f32) {
-        let window = self.window.get_or_insert_default();
+        let window = self.window.get_or_insert_with(Default::default);
         let scale = self.ui_scale.unwrap_or(1.0) as f32;
         let window_width = window
             .width

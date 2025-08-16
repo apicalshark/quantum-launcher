@@ -99,7 +99,7 @@ impl Launcher {
                 {
                     menu.config
                         .global_settings
-                        .get_or_insert_default()
+                        .get_or_insert_with(Default::default)
                         .window_width = if width.is_empty() {
                         None
                     } else {
@@ -116,7 +116,7 @@ impl Launcher {
                 {
                     menu.config
                         .global_settings
-                        .get_or_insert_default()
+                        .get_or_insert_with(Default::default)
                         .window_height = if height.is_empty() {
                         None
                     } else {

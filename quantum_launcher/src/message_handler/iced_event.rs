@@ -33,7 +33,7 @@ impl Launcher {
                 iced::window::Event::Resized(size) => {
                     self.window_size = (size.width, size.height);
                     // Save window size to config for persistence
-                    let window = self.config.window.get_or_insert_default();
+                    let window = self.config.window.get_or_insert_with(Default::default);
                     window.width = Some(size.width);
                     window.height = Some(size.height);
 

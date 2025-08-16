@@ -501,12 +501,12 @@ impl Launcher {
                 self.config.antialiasing = Some(t);
             }
             LauncherSettingsMessage::ToggleWindowSize(t) => {
-                self.config.window.get_or_insert_default().save_window_size = t;
+                self.config.window.get_or_insert_with(Default::default).save_window_size = t;
             }
             LauncherSettingsMessage::DefaultMinecraftWidthChanged(input) => {
                 self.config
                     .global_settings
-                    .get_or_insert_default()
+                    .get_or_insert_with(Default::default)
                     .window_width = if input.trim().is_empty() {
                     None
                 } else {
@@ -516,7 +516,7 @@ impl Launcher {
             LauncherSettingsMessage::DefaultMinecraftHeightChanged(input) => {
                 self.config
                     .global_settings
-                    .get_or_insert_default()
+                    .get_or_insert_with(Default::default)
                     .window_height = if input.trim().is_empty() {
                     None
                 } else {
