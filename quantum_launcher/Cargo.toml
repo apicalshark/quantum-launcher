@@ -41,8 +41,9 @@ iced = { version = "0.13", default-features = false, features = [
     "image",
     "svg",
     "lazy",
+    "advanced",
 ] }
-tabular = { git = "https://github.com/Mrmayman/tabular.git" }
+#tabular = { git = "https://github.com/Mrmayman/tabular.git" }
 
 # For parsing JSON
 serde = { workspace = true }
