@@ -367,31 +367,43 @@ pub enum SelectedMod {
 /// this will open the link with your default browser.
 ///
 /// If you input a path (for example, `C:\Users\Mrmayman\Documents\`)
-/// this will open it in the file explorer.
+/// this will open it in the file explorer using the system's default file manager.
 ///
-/// # Panics
-/// Only supported on windows, macOS and linux,
-/// other platforms will **panic**.
+/// # Platform details
+/// - Linux, BSDs: `xdg-open <PATH>`
+/// - macOS: `open <PATH>`
+/// - Windows: `cmd /c start /b <PATH>`
+///
+/// Unsupported platforms will log an error and not open anything.
 #[allow(clippy::zombie_processes)]
 pub fn open_file_explorer<S: AsRef<OsStr>>(path: S) {
     use std::process::Command;
 
     let path = path.as_ref();
     info!("Opening link: {}", path.to_string_lossy());
-    if let Err(err) = Command::new(
-        if cfg!(target_os = "linux") || cfg!(target_os = "freebsd") {
-            "xdg-open"
-        } else if cfg!(target_os = "windows") {
-            "explorer"
-        } else if cfg!(target_os = "macos") {
-            "open"
-        } else {
-            panic!("Opening file explorer not supported on this platform.")
-        },
-    )
-    .arg(path)
-    .spawn()
-    {
+
+    #[allow(unused)]
+    let result: std::io::Result<()> = Err(std::io::Error::other("Unsupported Platform!"));
+
+    #[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd"))]
+    let result = Command::new("xdg-open").arg(path).spawn();
+    #[cfg(target_os = "macos")]
+    let result = Command::new("open").arg(path).spawn();
+    #[cfg(target_os = "windows")]
+    let result = {
+        // To not flash a terminal window
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+        // Respects the user's default file manager
+        Command::new("cmd")
+            .args(["/c", "start", "/b", ""])
+            .arg(path)
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()
+    };
+
+    if let Err(err) = result {
         err!("Could not open link: {err}");
     }
 }
