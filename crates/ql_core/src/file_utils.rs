@@ -639,6 +639,41 @@ pub async fn find_item_in_dir<F: FnMut(&Path, &str) -> bool>(
     Ok(None)
 }
 
+/// Extract a ZIP archive to a directory using the new zip crate API
+/// 
+/// # Arguments
+/// * `reader` - A reader that implements Read + Seek (e.g., Cursor<Vec<u8>>)
+/// * `extract_to` - The target directory to extract files to
+/// * `strip_toplevel` - If true, removes common root directory (matches old zip-extract behavior)
+/// 
+/// # Examples
+/// ```rust
+/// use std::io::Cursor;
+/// use ql_core::file_utils::extract_zip_archive;
+/// 
+/// let zip_data = vec![/* zip file bytes */];
+/// extract_zip_archive(Cursor::new(zip_data), "/path/to/extract", true)?;
+/// ```
+pub fn extract_zip_archive<R: std::io::Read + std::io::Seek>(
+    reader: R,
+    extract_to: &Path,
+    strip_toplevel: bool,
+) -> Result<(), zip::result::ZipError> {
+    use zip::ZipArchive;
+    
+    let mut archive = ZipArchive::new(reader)?;
+    
+    if strip_toplevel {
+        // Use the new extract_unwrapped_root_dir method when stripping top level
+        archive.extract_unwrapped_root_dir(extract_to, zip::read::root_dir_common_filter)?;
+    } else {
+        // Use the standard extract method
+        archive.extract(extract_to)?;
+    }
+    
+    Ok(())
+}
+
 pub async fn zip_directory_to_bytes<P: AsRef<Path>>(dir: P) -> std::io::Result<Vec<u8>> {
     let mut buffer = Cursor::new(Vec::new());
     let mut zip = ZipWriter::new(&mut buffer);

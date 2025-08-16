@@ -1,50 +1,12 @@
-use std::{sync::mpsc::Sender, path::Path};
+use std::sync::mpsc::Sender;
 
 use ql_core::{
     file_utils, info,
     json::{InstanceConfigJson, Manifest, VersionDetails},
     pt, GenericProgress, IntoIoError, IntoJsonError, IntoStringError, ListEntry, LAUNCHER_DIR,
 };
-use zip::ZipArchive;
 
 use crate::ServerError;
-
-/// Extract a ZIP archive to a directory using the new zip crate API
-fn extract_zip_archive<R: std::io::Read + std::io::Seek>(
-    reader: R, 
-    extract_to: &Path
-) -> Result<(), zip::result::ZipError> {
-    let mut archive = ZipArchive::new(reader)?;
-    
-    for i in 0..archive.len() {
-        let mut file = archive.by_index(i)?;
-        let outpath = match file.enclosed_name() {
-            Some(path) => extract_to.join(path),
-            None => continue,
-        };
-
-        if file.is_dir() {
-            std::fs::create_dir_all(&outpath)?;
-        } else {
-            if let Some(p) = outpath.parent() {
-                if !p.exists() {
-                    std::fs::create_dir_all(p)?;
-                }
-            }
-            let mut outfile = std::fs::File::create(&outpath)?;
-            std::io::copy(&mut file, &mut outfile)?;
-        }
-
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            if let Some(mode) = file.unix_mode() {
-                std::fs::set_permissions(&outpath, std::fs::Permissions::from_mode(mode))?;
-            }
-        }
-    }
-    Ok(())
-}
 
 /// Creates a minecraft server with the given name and version.
 ///
@@ -110,7 +72,7 @@ pub async fn create_server(
         is_classic_server = true;
 
         let archive = file_utils::download_file_to_bytes(&server.url, true).await?;
-        extract_zip_archive(std::io::Cursor::new(archive), &server_dir)?;
+        file_utils::extract_zip_archive(std::io::Cursor::new(archive), &server_dir, true)?;
 
         let old_path = server_dir.join("minecraft-server.jar");
         tokio::fs::rename(&old_path, &server_jar_path)

@@ -19,54 +19,16 @@
 use std::path::{Path, PathBuf, StripPrefixError};
 
 use crate::{
-    file_utils::zip_directory_to_bytes,
+    file_utils::{zip_directory_to_bytes, extract_zip_archive},
     get_jar_path,
     json::{JsonOptifine, VersionDetails},
     pt, InstanceSelection, IntoIoError, IoError, JsonError, JsonFileError,
 };
 use thiserror::Error;
-use zip::ZipArchive;
 
 mod json;
 
 pub use json::{JarMod, JarMods};
-
-/// Extract a ZIP archive to a directory using the new zip crate API
-fn extract_zip_archive<R: std::io::Read + std::io::Seek>(
-    reader: R, 
-    extract_to: &std::path::Path
-) -> Result<(), zip::result::ZipError> {
-    let mut archive = ZipArchive::new(reader)?;
-    
-    for i in 0..archive.len() {
-        let mut file = archive.by_index(i)?;
-        let outpath = match file.enclosed_name() {
-            Some(path) => extract_to.join(path),
-            None => continue,
-        };
-
-        if file.is_dir() {
-            std::fs::create_dir_all(&outpath)?;
-        } else {
-            if let Some(p) = outpath.parent() {
-                if !p.exists() {
-                    std::fs::create_dir_all(p)?;
-                }
-            }
-            let mut outfile = std::fs::File::create(&outpath)?;
-            std::io::copy(&mut file, &mut outfile)?;
-        }
-
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            if let Some(mode) = file.unix_mode() {
-                std::fs::set_permissions(&outpath, std::fs::Permissions::from_mode(mode))?;
-            }
-        }
-    }
-    Ok(())
-}
 
 pub async fn remove(instance: &InstanceSelection, filename: &str) -> Result<(), JsonFileError> {
     let mut jarmods = JarMods::get(instance).await?;
@@ -142,7 +104,7 @@ pub async fn build(instance: &InstanceSelection) -> Result<PathBuf, JarModError>
     tokio::fs::create_dir_all(&tmp_dir).await.path(&tmp_dir)?;
 
     let original_jar_bytes = tokio::fs::read(&original_jar).await.path(&original_jar)?;
-    extract_zip_archive(std::io::Cursor::new(&original_jar_bytes), &tmp_dir)?;
+    extract_zip_archive(std::io::Cursor::new(&original_jar_bytes), &tmp_dir, true)?;
 
     for jar in &index.mods {
         if !jar.enabled {
@@ -152,7 +114,7 @@ pub async fn build(instance: &InstanceSelection) -> Result<PathBuf, JarModError>
         pt!("{}", jar.filename);
         let path = jarmods_dir.join(&jar.filename);
         let bytes = tokio::fs::read(&path).await.path(&path)?;
-        extract_zip_archive(std::io::Cursor::new(&bytes), &tmp_dir)?;
+        extract_zip_archive(std::io::Cursor::new(&bytes), &tmp_dir, true)?;
     }
 
     let meta_inf = tmp_dir.join("META-INF");
