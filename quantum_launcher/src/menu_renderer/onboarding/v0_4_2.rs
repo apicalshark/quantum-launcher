@@ -84,8 +84,13 @@ pub fn changelog<'a>() -> Element<'a> {
             widget::text("Performance:").size(20),
             widget::text("- Fixed lag spikes on some systems when selecting instances").size(FS),
             widget::text("- Many autosaving features has been slowed down, and disk accesses reduced").size(FS),
-            widget::text("- Optimized the log renderer (slightly worse scrolling as a tradeoff)").size(FS),
-            widget::text("- The \"Create Instance\" version list loads WAY faster now (b)").size(FS),
+
+            widget::Space::with_height(5),
+            widget::text("Optimized:"),
+            widget::text("- \"Create Instance\" version list `(b)`").size(FS),
+            widget::text("- Recommended mods list").size(FS),
+            widget::text("- Forge installation for older versions").size(FS),
+            widget::text("- Log renderer (slightly worse scrolling as a tradeoff)").size(FS),
         ].spacing(5),
 
         widget::horizontal_rule(1),
