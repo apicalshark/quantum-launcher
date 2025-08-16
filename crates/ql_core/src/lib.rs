@@ -385,7 +385,6 @@ pub fn open_file_explorer<S: AsRef<OsStr>>(path: S) {
     let result = if cfg!(target_os = "linux") || cfg!(target_os = "freebsd") {
         Command::new("xdg-open").arg(path).spawn()
     } else if cfg!(target_os = "windows") {
-        // Use 'cmd /c start /b' to respect user's default file manager without showing terminal
         #[cfg(target_os = "windows")]
         {
             use std::os::windows::process::CommandExt;
