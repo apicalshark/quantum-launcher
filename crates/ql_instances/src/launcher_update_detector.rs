@@ -192,7 +192,7 @@ pub async fn install_launcher_update(
         message: Some("Extracting new launcher".to_owned()),
         has_finished: false,
     });
-    zip_extract::extract(std::io::Cursor::new(download_zip), exe_location, true)?;
+    file_utils::extract_zip_archive(std::io::Cursor::new(download_zip), exe_location, true)?;
 
     // Should I, though?
     let rm_path = exe_location.join("README.md");
@@ -247,7 +247,7 @@ pub enum UpdateError {
     #[error("{UPDATE_ERR_PREFIX}{0}")]
     Io(#[from] IoError),
     #[error("{UPDATE_ERR_PREFIX}zip extract error: {0}")]
-    Zip(#[from] zip_extract::ZipExtractError),
+    Zip(#[from] zip::result::ZipError),
 }
 
 impl_3_errs_jri!(UpdateError, Serde, Request, Io);

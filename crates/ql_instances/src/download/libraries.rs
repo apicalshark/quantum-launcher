@@ -12,7 +12,6 @@ use ql_core::{
     },
     pt, DownloadProgress, IntoIoError, IoError,
 };
-use zip_extract::ZipExtractError;
 
 #[allow(clippy::wildcard_imports)]
 use crate::download::constants::*;
@@ -263,7 +262,7 @@ impl GameDownloader {
 
             let library = file_utils::download_file_to_bytes(url, false).await?;
 
-            zip_extract::extract(Cursor::new(&library), &natives_dir, true)
+            file_utils::extract_zip_archive(Cursor::new(&library), &natives_dir, true)
                 .map_err(DownloadError::NativesExtractError)?;
         }
 
@@ -508,7 +507,7 @@ fn supports_os(classifiers: &BTreeMap<String, LibraryClassifier>) -> bool {
     })
 }
 
-pub fn extract_zip_file(archive: &[u8], target_dir: &Path) -> Result<(), ZipExtractError> {
-    zip_extract::extract(Cursor::new(archive), target_dir, true)?;
+pub fn extract_zip_file(archive: &[u8], target_dir: &Path) -> Result<(), zip::result::ZipError> {
+    file_utils::extract_zip_archive(Cursor::new(archive), target_dir, true)?;
     Ok(())
 }

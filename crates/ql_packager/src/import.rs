@@ -12,7 +12,6 @@ use std::{
     },
 };
 use tokio::fs;
-use zip_extract::extract;
 
 use crate::InstanceInfo;
 
@@ -62,7 +61,7 @@ pub async fn import_instance(
             has_finished: false,
         });
     }
-    extract(zip_file, temp_dir, true)?;
+    file_utils::extract_zip_archive(std::io::BufReader::new(zip_file), temp_dir, true)?;
 
     let try_ql = temp_dir.join("quantum-config.json");
     let try_mmc = temp_dir.join("mmc-pack.json");

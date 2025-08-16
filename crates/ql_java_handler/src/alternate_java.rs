@@ -85,7 +85,7 @@ pub(crate) async fn install(
     if url.ends_with("tar.gz") {
         extract_tar_gz(&file_bytes, install_dir).map_err(JavaInstallError::TarGzExtract)?;
     } else if url.ends_with("zip") {
-        zip_extract::extract(Cursor::new(&file_bytes), install_dir, true)?;
+        file_utils::extract_zip_archive(Cursor::new(&file_bytes), install_dir, true)?;
     } else {
         return Err(JavaInstallError::UnknownExtension(url.to_owned()));
     }

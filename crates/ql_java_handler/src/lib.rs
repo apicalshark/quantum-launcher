@@ -20,7 +20,6 @@ pub mod alternate_java;
 mod json;
 
 pub use json::list::JavaVersion;
-use zip_extract::ZipExtractError;
 
 #[cfg(target_os = "windows")]
 pub const JAVA: &str = "javaw";
@@ -310,7 +309,7 @@ pub enum JavaInstallError {
     UnsupportedPlatform,
 
     #[error("{JAVA_INSTALL_ERR_PREFIX}zip extract error:\n{0}")]
-    ZipExtract(#[from] ZipExtractError),
+    ZipExtract(#[from] zip::result::ZipError),
     #[error("{JAVA_INSTALL_ERR_PREFIX}couldn't extract java tar.gz:\n{0}")]
     TarGzExtract(std::io::Error),
     #[error("{JAVA_INSTALL_ERR_PREFIX}unknown extension for java: {0}\n\nTHIS IS A BUG, PLEASE REPORT ON DISCORD")]

@@ -17,7 +17,7 @@ ql_reqwest = { path = "../ql_reqwest" }
 
 chrono = { workspace = true }
 semver = "1"
-zip-extract = { workspace = true }
+zip = { workspace = true }
 
 tokio = { workspace = true }
 
