@@ -1,4 +1,4 @@
-use super::SIDEBAR_DRAG_LEEWAY;
+use super::{SIDEBAR_DRAG_LEEWAY, SIDEBAR_LIMIT_LEFT, SIDEBAR_LIMIT_RIGHT};
 use crate::state::{
     Launcher, LauncherSettingsTab, MenuCreateInstance, MenuEditJarMods, MenuEditMods,
     MenuExportInstance, MenuInstallFabric, MenuInstallOptifine, MenuLaunch, MenuLauncherSettings,
@@ -13,12 +13,21 @@ use ql_core::{err, info, info_no_log, jarmod::JarMod, InstanceSelection};
 use std::ffi::OsStr;
 use std::path::Path;
 
-const SIDEBAR_LIMIT_RIGHT: f32 = 50.0;
-
 impl Launcher {
     pub fn iced_event(&mut self, event: iced::Event, status: iced::event::Status) -> Task<Message> {
         if let State::Launch(MenuLaunch { sidebar_width, .. }) = &mut self.state {
             self.config.sidebar_width = Some(u32::from(*sidebar_width));
+
+            if self.window_size.0 > f32::from(SIDEBAR_LIMIT_RIGHT)
+                && *sidebar_width > self.window_size.0 as u16 - SIDEBAR_LIMIT_RIGHT
+            {
+                *sidebar_width = self.window_size.0 as u16 - SIDEBAR_LIMIT_RIGHT;
+            }
+
+            if self.window_size.0 > SIDEBAR_LIMIT_LEFT && *sidebar_width < SIDEBAR_LIMIT_LEFT as u16
+            {
+                *sidebar_width = SIDEBAR_LIMIT_LEFT as u16;
+            }
         }
 
         match event {
@@ -36,13 +45,6 @@ impl Launcher {
                     let window = self.config.window.get_or_insert_with(Default::default);
                     window.width = Some(size.width);
                     window.height = Some(size.height);
-
-                    if let State::Launch(MenuLaunch { sidebar_width, .. }) = &mut self.state {
-                        let limit = (self.window_size.0 - SIDEBAR_LIMIT_RIGHT) as u16;
-                        if *sidebar_width > limit {
-                            *sidebar_width = limit;
-                        }
-                    }
                 }
                 iced::window::Event::FileHovered(_) => {
                     self.set_drag_and_drop_hover(true);
@@ -162,10 +164,13 @@ impl Launcher {
                         ..
                     }) = &mut self.state
                     {
-                        if self.mouse_pos.0 > self.window_size.0 - SIDEBAR_LIMIT_RIGHT {
-                            *sidebar_width = (self.window_size.0 - SIDEBAR_LIMIT_RIGHT) as u16;
-                        } else if self.mouse_pos.0 < 120.0 {
-                            *sidebar_width = 120;
+                        if self.mouse_pos.0 < SIDEBAR_LIMIT_LEFT {
+                            *sidebar_width = SIDEBAR_LIMIT_LEFT as u16;
+                        } else if (self.mouse_pos.0 + f32::from(SIDEBAR_LIMIT_RIGHT)
+                            > self.window_size.0)
+                            && self.window_size.0 as u16 > SIDEBAR_LIMIT_RIGHT
+                        {
+                            *sidebar_width = self.window_size.0 as u16 - SIDEBAR_LIMIT_RIGHT;
                         } else {
                             *sidebar_width = self.mouse_pos.0 as u16;
                         }
