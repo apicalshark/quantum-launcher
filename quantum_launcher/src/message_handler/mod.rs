@@ -96,6 +96,13 @@ impl Launcher {
                         },
                     );
 
+                    let mut censors = Vec::new();
+                    for account in self.accounts.values() {
+                        if let Some(token) = &account.access_token {
+                            censors.push(token.clone());
+                        }
+                    }
+
                     return Task::perform(
                         async move {
                             let result = ql_instances::read_logs(
@@ -104,6 +111,7 @@ impl Launcher {
                                 child,
                                 Some(sender),
                                 selected_instance.clone(),
+                                censors,
                             )
                             .await;
 

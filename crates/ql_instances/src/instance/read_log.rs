@@ -29,6 +29,8 @@ use ql_core::{err, json::VersionDetails, IoError, JsonError, JsonFileError};
 /// - `child`: The instance process.
 /// - `sender`: The sender to send [`LogLine`]s to.
 /// - `instance_name`: The name of the instance.
+/// - `censors`: Any strings to censor (like session id, password, etc.)
+///   Leave blank if not needed.
 ///
 /// # Errors
 /// If:
@@ -44,6 +46,7 @@ pub async fn read_logs(
     child: Arc<Mutex<Child>>,
     sender: Option<Sender<LogLine>>,
     instance_name: String,
+    censors: Vec<String>,
 ) -> Result<(ExitStatus, String), ReadError> {
     // TODO: Use the "newfangled" approach of the Modrinth launcher:
     // https://github.com/modrinth/code/blob/main/packages/app-lib/src/state/process.rs#L208
@@ -81,6 +84,7 @@ pub async fn read_logs(
         tokio::select! {
             line = stdout_reader.next_line() => {
                 if let Some(mut line) = line? {
+                    line = censor(&line, &censors);
                     if uses_xml {
                         xml_parse(sender.as_ref(), &mut xml_cache, &line, &mut has_errored);
                     } else {
@@ -91,12 +95,19 @@ pub async fn read_logs(
             },
             line = stderr_reader.next_line() => {
                 if let Some(mut line) = line? {
+                    line = censor(&line, &censors);
                     line.push('\n');
                     send(sender.as_ref(), LogLine::Error(line));
                 }
             }
         }
     }
+}
+
+fn censor(input: &str, censors: &[String]) -> String {
+    censors.iter().fold(input.to_string(), |acc, censor| {
+        acc.replace(censor, "[REDACTED]")
+    })
 }
 
 fn send(sender: Option<&Sender<LogLine>>, msg: LogLine) {
