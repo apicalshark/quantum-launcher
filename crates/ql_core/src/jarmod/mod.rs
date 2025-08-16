@@ -25,11 +25,48 @@ use crate::{
     pt, InstanceSelection, IntoIoError, IoError, JsonError, JsonFileError,
 };
 use thiserror::Error;
-use zip_extract::ZipExtractError;
+use zip::ZipArchive;
 
 mod json;
 
 pub use json::{JarMod, JarMods};
+
+/// Extract a ZIP archive to a directory using the new zip crate API
+fn extract_zip_archive<R: std::io::Read + std::io::Seek>(
+    reader: R, 
+    extract_to: &std::path::Path
+) -> Result<(), zip::result::ZipError> {
+    let mut archive = ZipArchive::new(reader)?;
+    
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i)?;
+        let outpath = match file.enclosed_name() {
+            Some(path) => extract_to.join(path),
+            None => continue,
+        };
+
+        if file.is_dir() {
+            std::fs::create_dir_all(&outpath)?;
+        } else {
+            if let Some(p) = outpath.parent() {
+                if !p.exists() {
+                    std::fs::create_dir_all(p)?;
+                }
+            }
+            let mut outfile = std::fs::File::create(&outpath)?;
+            std::io::copy(&mut file, &mut outfile)?;
+        }
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Some(mode) = file.unix_mode() {
+                std::fs::set_permissions(&outpath, std::fs::Permissions::from_mode(mode))?;
+            }
+        }
+    }
+    Ok(())
+}
 
 pub async fn remove(instance: &InstanceSelection, filename: &str) -> Result<(), JsonFileError> {
     let mut jarmods = JarMods::get(instance).await?;
@@ -105,7 +142,7 @@ pub async fn build(instance: &InstanceSelection) -> Result<PathBuf, JarModError>
     tokio::fs::create_dir_all(&tmp_dir).await.path(&tmp_dir)?;
 
     let original_jar_bytes = tokio::fs::read(&original_jar).await.path(&original_jar)?;
-    zip_extract::extract(std::io::Cursor::new(&original_jar_bytes), &tmp_dir, true)?;
+    extract_zip_archive(std::io::Cursor::new(&original_jar_bytes), &tmp_dir)?;
 
     for jar in &index.mods {
         if !jar.enabled {
@@ -115,7 +152,7 @@ pub async fn build(instance: &InstanceSelection) -> Result<PathBuf, JarModError>
         pt!("{}", jar.filename);
         let path = jarmods_dir.join(&jar.filename);
         let bytes = tokio::fs::read(&path).await.path(&path)?;
-        zip_extract::extract(std::io::Cursor::new(&bytes), &tmp_dir, true)?;
+        extract_zip_archive(std::io::Cursor::new(&bytes), &tmp_dir)?;
     }
 
     let meta_inf = tmp_dir.join("META-INF");
@@ -167,8 +204,6 @@ pub enum JarModError {
     #[error("{JARMOD_ERR_PREFIX}while stripping prefix of jarmods/tmp:\n{0}")]
     StripPrefix(#[from] StripPrefixError),
 
-    #[error("{JARMOD_ERR_PREFIX}while extracting zip:\n{0}")]
-    ZipExtract(#[from] ZipExtractError),
     #[error("{JARMOD_ERR_PREFIX}while processing zip:\n{0}")]
     ZipError(#[from] zip::result::ZipError),
     #[error("{JARMOD_ERR_PREFIX}while reading from zip:\n{0}")]

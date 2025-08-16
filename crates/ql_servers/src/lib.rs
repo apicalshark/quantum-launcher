@@ -25,7 +25,6 @@ pub use server_properties::ServerProperties;
 // pub use ssh::run_tunnel;
 
 use thiserror::Error;
-use zip_extract::ZipExtractError;
 
 const SERVER_ERR_PREFIX: &str = "while managing server:\n";
 
@@ -48,7 +47,7 @@ pub enum ServerError {
     #[error("A server with that name already exists!")]
     ServerAlreadyExists,
     #[error("{SERVER_ERR_PREFIX}zip extract error:\n{0}")]
-    ZipExtract(#[from] ZipExtractError),
+    ZipExtract(#[from] zip::result::ZipError),
     #[error("{SERVER_ERR_PREFIX}couldn't find forge shim file")]
     NoForgeShimFound,
     #[error("{SERVER_ERR_PREFIX}couldn't convert PathBuf to str: {0:?}")]

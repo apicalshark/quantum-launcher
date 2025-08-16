@@ -12,12 +12,49 @@ use ql_core::{
     },
     pt, DownloadProgress, IntoIoError, IoError,
 };
-use zip_extract::ZipExtractError;
+use zip::ZipArchive;
 
 #[allow(clippy::wildcard_imports)]
 use crate::download::constants::*;
 
 use super::{DownloadError, GameDownloader};
+
+/// Extract a ZIP archive to a directory using the new zip crate API
+fn extract_zip_archive<R: std::io::Read + std::io::Seek>(
+    reader: R, 
+    extract_to: &Path
+) -> Result<(), zip::result::ZipError> {
+    let mut archive = ZipArchive::new(reader)?;
+    
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i)?;
+        let outpath = match file.enclosed_name() {
+            Some(path) => extract_to.join(path),
+            None => continue,
+        };
+
+        if file.is_dir() {
+            std::fs::create_dir_all(&outpath)?;
+        } else {
+            if let Some(p) = outpath.parent() {
+                if !p.exists() {
+                    std::fs::create_dir_all(p)?;
+                }
+            }
+            let mut outfile = std::fs::File::create(&outpath)?;
+            std::io::copy(&mut file, &mut outfile)?;
+        }
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Some(mode) = file.unix_mode() {
+                std::fs::set_permissions(&outpath, std::fs::Permissions::from_mode(mode))?;
+            }
+        }
+    }
+    Ok(())
+}
 
 const MACOS_ARM_LWJGL_294_1: &str = "https://libraries.minecraft.net/org/lwjgl/lwjgl/lwjgl-platform/2.9.4-nightly-20150209/lwjgl-platform-2.9.4-nightly-20150209-natives-osx.jar";
 const MACOS_ARM_LWJGL_294_2: &str = "https://github.com/Dungeons-Guide/lwjgl/releases/download/2.9.4-20150209-mmachina.2-syeyoung.1/lwjgl-platform-2.9.4-nightly-20150209-natives-osx-arm64.jar";
@@ -263,7 +300,7 @@ impl GameDownloader {
 
             let library = file_utils::download_file_to_bytes(url, false).await?;
 
-            zip_extract::extract(Cursor::new(&library), &natives_dir, true)
+            extract_zip_archive(Cursor::new(&library), &natives_dir)
                 .map_err(DownloadError::NativesExtractError)?;
         }
 
@@ -508,7 +545,7 @@ fn supports_os(classifiers: &BTreeMap<String, LibraryClassifier>) -> bool {
     })
 }
 
-pub fn extract_zip_file(archive: &[u8], target_dir: &Path) -> Result<(), ZipExtractError> {
-    zip_extract::extract(Cursor::new(archive), target_dir, true)?;
+pub fn extract_zip_file(archive: &[u8], target_dir: &Path) -> Result<(), zip::result::ZipError> {
+    extract_zip_archive(Cursor::new(archive), target_dir)?;
     Ok(())
 }

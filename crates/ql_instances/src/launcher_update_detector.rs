@@ -2,6 +2,7 @@ use std::{
     ffi::OsStr,
     process::Command,
     sync::{mpsc::Sender, Arc},
+    path::Path,
 };
 
 use ql_core::{
@@ -10,8 +11,46 @@ use ql_core::{
 };
 use serde::Deserialize;
 use thiserror::Error;
+use zip::ZipArchive;
 
 use crate::LAUNCHER_VERSION;
+
+/// Extract a ZIP archive to a directory using the new zip crate API
+fn extract_zip_archive<R: std::io::Read + std::io::Seek>(
+    reader: R, 
+    extract_to: &Path
+) -> Result<(), zip::result::ZipError> {
+    let mut archive = ZipArchive::new(reader)?;
+    
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i)?;
+        let outpath = match file.enclosed_name() {
+            Some(path) => extract_to.join(path),
+            None => continue,
+        };
+
+        if file.is_dir() {
+            std::fs::create_dir_all(&outpath)?;
+        } else {
+            if let Some(p) = outpath.parent() {
+                if !p.exists() {
+                    std::fs::create_dir_all(p)?;
+                }
+            }
+            let mut outfile = std::fs::File::create(&outpath)?;
+            std::io::copy(&mut file, &mut outfile)?;
+        }
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Some(mode) = file.unix_mode() {
+                std::fs::set_permissions(&outpath, std::fs::Permissions::from_mode(mode))?;
+            }
+        }
+    }
+    Ok(())
+}
 
 #[derive(Debug, Clone)]
 pub enum UpdateCheckInfo {
@@ -192,7 +231,7 @@ pub async fn install_launcher_update(
         message: Some("Extracting new launcher".to_owned()),
         has_finished: false,
     });
-    zip_extract::extract(std::io::Cursor::new(download_zip), exe_location, true)?;
+    extract_zip_archive(std::io::Cursor::new(download_zip), exe_location)?;
 
     // Should I, though?
     let rm_path = exe_location.join("README.md");
@@ -247,7 +286,7 @@ pub enum UpdateError {
     #[error("{UPDATE_ERR_PREFIX}{0}")]
     Io(#[from] IoError),
     #[error("{UPDATE_ERR_PREFIX}zip extract error: {0}")]
-    Zip(#[from] zip_extract::ZipExtractError),
+    Zip(#[from] zip::result::ZipError),
 }
 
 impl_3_errs_jri!(UpdateError, Serde, Request, Io);

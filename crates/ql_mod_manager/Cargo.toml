@@ -13,7 +13,6 @@ ql_reqwest = { path = "../ql_reqwest" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
-zip-extract = { workspace = true }
 zip = { workspace = true }
 
 tokio = { workspace = true }

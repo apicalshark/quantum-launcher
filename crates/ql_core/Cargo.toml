@@ -12,9 +12,8 @@ dirs = "6"
 futures = { workspace = true }
 colored = { workspace = true }
 
-zip-extract = { workspace = true }
 zip = { workspace = true }
-walkdir = "2"
+walkdir = { workspace = true }
 regex = "1"
 
 tokio = { workspace = true }

@@ -26,9 +26,6 @@ rfd = { version = "0.15", default-features = false, features = [
     "tokio",
 ] }
 
-zip-extract = { version = "0.4", default-features = false, features = [
-    "deflate",
-] }
 zip = { version = "4", default-features = false, features = ["deflate"] }
 walkdir = "2.3"
 image = { version = "0.24", default-features = false, features = [

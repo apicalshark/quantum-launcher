@@ -52,6 +52,43 @@ use ql_core::{file_utils, GenericProgress};
 
 use crate::{extract_tar_gz, send_progress, JavaInstallError, JavaVersion};
 
+/// Extract a ZIP archive to a directory using the new zip crate API
+fn extract_zip_archive<R: std::io::Read + std::io::Seek>(
+    reader: R, 
+    extract_to: &Path
+) -> Result<(), zip::result::ZipError> {
+    let mut archive = zip::ZipArchive::new(reader)?;
+    
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i)?;
+        let outpath = match file.enclosed_name() {
+            Some(path) => extract_to.join(path),
+            None => continue,
+        };
+
+        if file.is_dir() {
+            std::fs::create_dir_all(&outpath)?;
+        } else {
+            if let Some(p) = outpath.parent() {
+                if !p.exists() {
+                    std::fs::create_dir_all(p)?;
+                }
+            }
+            let mut outfile = std::fs::File::create(&outpath)?;
+            std::io::copy(&mut file, &mut outfile)?;
+        }
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Some(mode) = file.unix_mode() {
+                std::fs::set_permissions(&outpath, std::fs::Permissions::from_mode(mode))?;
+            }
+        }
+    }
+    Ok(())
+}
+
 pub(crate) async fn install(
     version: JavaVersion,
     java_install_progress_sender: Option<&Sender<GenericProgress>>,
@@ -85,7 +122,7 @@ pub(crate) async fn install(
     if url.ends_with("tar.gz") {
         extract_tar_gz(&file_bytes, install_dir).map_err(JavaInstallError::TarGzExtract)?;
     } else if url.ends_with("zip") {
-        zip_extract::extract(Cursor::new(&file_bytes), install_dir, true)?;
+        extract_zip_archive(Cursor::new(&file_bytes), install_dir)?;
     } else {
         return Err(JavaInstallError::UnknownExtension(url.to_owned()));
     }

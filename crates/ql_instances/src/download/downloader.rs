@@ -34,7 +34,7 @@ pub enum DownloadError {
     #[error("{DOWNLOAD_ERR_PREFIX}in assets JSON, field not found: \"{0}\"")]
     AssetsJsonFieldNotFound(String),
     #[error("{DOWNLOAD_ERR_PREFIX}could not extract native libraries:\n{0}")]
-    NativesExtractError(#[from] zip_extract::ZipExtractError),
+    NativesExtractError(#[from] zip::result::ZipError),
     #[error("{DOWNLOAD_ERR_PREFIX}tried to remove natives outside folder. POTENTIAL SECURITY RISK AVOIDED")]
     NativesOutsideDirRemove,
 }
