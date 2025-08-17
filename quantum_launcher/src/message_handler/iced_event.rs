@@ -1,8 +1,10 @@
 use super::{SIDEBAR_DRAG_LEEWAY, SIDEBAR_LIMIT_LEFT, SIDEBAR_LIMIT_RIGHT};
+use crate::message_update::MSG_RESIZE;
 use crate::state::{
-    Launcher, LauncherSettingsTab, MenuCreateInstance, MenuEditJarMods, MenuEditMods,
-    MenuExportInstance, MenuInstallFabric, MenuInstallOptifine, MenuLaunch, MenuLauncherSettings,
-    MenuLauncherUpdate, MenuLoginAlternate, MenuLoginMS, MenuServerCreate, Message, State,
+    Launcher, LauncherSettingsMessage, LauncherSettingsTab, MenuCreateInstance, MenuEditJarMods,
+    MenuEditMods, MenuExportInstance, MenuInstallFabric, MenuInstallOptifine, MenuLaunch,
+    MenuLauncherSettings, MenuLauncherUpdate, MenuLoginAlternate, MenuLoginMS, MenuServerCreate,
+    Message, State,
 };
 use iced::{
     keyboard::{key::Named, Key},
@@ -45,6 +47,16 @@ impl Launcher {
                     let window = self.config.window.get_or_insert_with(Default::default);
                     window.width = Some(size.width);
                     window.height = Some(size.height);
+
+                    if let State::GenericMessage(msg) = &self.state {
+                        if msg == MSG_RESIZE {
+                            return self.update(Message::LauncherSettings(
+                                LauncherSettingsMessage::ChangeTab(
+                                    LauncherSettingsTab::UserInterface,
+                                ),
+                            ))
+                        }
+                    }
                 }
                 iced::window::Event::FileHovered(_) => {
                     self.set_drag_and_drop_hover(true);
@@ -193,8 +205,8 @@ impl Launcher {
                         menu.sidebar_dragging = false;
                     }
                 }
-                iced::mouse::Event::WheelScrolled { delta } => {
-                    if let iced::event::Status::Ignored = status {
+                iced::mouse::Event::WheelScrolled { /*delta*/ .. } => {
+                    /*if let iced::event::Status::Ignored = status {
                         if self.keys_pressed.contains(&Key::Named(Named::Control)) {
                             match delta {
                                 iced::mouse::ScrollDelta::Lines { y, .. }
@@ -209,7 +221,7 @@ impl Launcher {
                                 }
                             }
                         }
-                    }
+                    }*/
                 }
                 iced::mouse::Event::CursorEntered | iced::mouse::Event::CursorLeft => {}
             },

@@ -27,6 +27,8 @@ use crate::{
     stylesheet::styles::{LauncherThemeColor, LauncherThemeLightness},
 };
 
+pub const MSG_RESIZE: &str = "Resize your window to apply the changes.";
+
 impl Launcher {
     pub fn update_install_fabric(&mut self, message: InstallFabricMessage) -> Task<Message> {
         match message {
@@ -474,6 +476,7 @@ impl Launcher {
             LauncherSettingsMessage::UiScaleApply => {
                 if let State::LauncherSettings(menu) = &self.state {
                     self.config.ui_scale = Some(menu.temp_scale);
+                    self.state = State::GenericMessage(MSG_RESIZE.to_owned());
                 }
             }
             LauncherSettingsMessage::ClearJavaInstalls => {
@@ -501,7 +504,10 @@ impl Launcher {
                 self.config.antialiasing = Some(t);
             }
             LauncherSettingsMessage::ToggleWindowSize(t) => {
-                self.config.window.get_or_insert_with(Default::default).save_window_size = t;
+                self.config
+                    .window
+                    .get_or_insert_with(Default::default)
+                    .save_window_size = t;
             }
             LauncherSettingsMessage::DefaultMinecraftWidthChanged(input) => {
                 self.config
