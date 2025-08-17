@@ -62,6 +62,10 @@ pub fn changelog<'a>() -> Element<'a> {
             widget::text("- Improved support for weird character encodings in file paths").size(FS),
             widget::text("- Missing libraries are now auto-downloaded").size(FS),
             widget::text("- Last account selected is now remembered").size(FS),
+            widget::text("- On Windows, custom file managers are now respected when opening files").size(FS),
+            widget::Space::with_height(5),
+            widget::text("- Added dialog to prevent glitching upon changing UI scale").size(FS),
+            widget::text("- Removed Ctrl-Scroll to change UI scale due to many bugs").size(FS),
         ].spacing(5),
 
         widget::column![
