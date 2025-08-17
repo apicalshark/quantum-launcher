@@ -1,4 +1,4 @@
-use iced::{widget, Length};
+use iced::{widget, Alignment, Length};
 
 use crate::{
     icon_manager,
@@ -9,22 +9,24 @@ use super::{back_button, button_with_icon, center_x, Element};
 
 impl MenuLoginAlternate {
     pub fn view(&self, tick_timer: usize) -> Element {
-        let status: Element = if self.is_loading {
-            let dots = ".".repeat((tick_timer % 3) + 1);
-            widget::column![widget::text!("Loading{dots}")]
-                .padding(8)
+        let status: Element =
+            if self.is_loading {
+                let dots = ".".repeat((tick_timer % 3) + 1);
+                widget::column![widget::text!("Loading{dots}")]
+                    .padding(8)
+                    .into()
+            } else {
+                widget::column![button_with_icon(icon_manager::tick(), "Login", 16)
+                    .on_press(Message::Account(AccountMessage::AltLogin))]
+                .align_x(Alignment::Center)
+                .push_maybe(self.is_littleskin.then_some(
+                    widget::button("Login with OAuth").on_press(Message::Account(
+                        AccountMessage::LittleSkinOauthButtonClicked,
+                    )),
+                ))
+                .spacing(5)
                 .into()
-        } else {
-            widget::column![button_with_icon(icon_manager::tick(), "Login", 16)
-                .on_press(Message::Account(AccountMessage::AltLogin))]
-            // Uncomment for (experimental) Oauth-based littleskin login
-            // .push_maybe(self.is_littleskin.then_some(
-            //     widget::button("Login with OAuth").on_press(Message::Account(
-            //         AccountMessage::LittleSkinOauthButtonClicked,
-            //     )),
-            // ))
-            .into()
-        };
+            };
 
         let padding = iced::Padding {
             top: 5.0,
@@ -120,22 +122,27 @@ impl MenuLoginAlternate {
         };
 
         let code_row = widget::row![
-            widget::text!("Code: {}", oauth.user_code).size(18),
-            widget::button("Copy").on_press(Message::CoreCopyText(oauth.user_code.clone())),
+            widget::text!("Code: {}", oauth.user_code).size(16),
+            widget::button(widget::text("Copy").size(13))
+                .on_press(Message::CoreCopyText(oauth.user_code.clone())),
         ]
+        .align_y(Alignment::Center)
         .spacing(10);
         let url_row = widget::row![
-            widget::text!("Link: {}", oauth.verification_uri).size(14),
-            widget::button("Open").on_press(Message::CoreOpenLink(oauth.verification_uri.clone())),
+            widget::text!("Link: {}", oauth.verification_uri).size(16),
+            widget::button(widget::text("Open").size(13))
+                .on_press(Message::CoreOpenLink(oauth.verification_uri.clone())),
         ]
+        .align_y(Alignment::Center)
         .spacing(10);
         widget::column![
             widget::vertical_space(),
             widget::text("LittleSkin Device Login").size(20),
             widget::text("Open this link and enter the code:").size(14),
-            code_row,
-            url_row,
-            widget::text!("Expires in: {}s", time_left).size(12),
+            widget::Space::with_height(5),
+            widget::container(widget::column![code_row, url_row]).padding(10),
+            widget::Space::with_height(5),
+            widget::text!("Expires in: {}s", time_left).size(13),
             widget::vertical_space(),
             widget::text("Waiting for login...").size(14),
             widget::vertical_space(),
