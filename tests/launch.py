@@ -127,21 +127,21 @@ if sys.platform.startswith("win"):
                 pass
 
 
-    def _close_window_windows(pid: PID) -> None:
+    def _close_window_windows(pid: PID) -> bool:
         wins = _get_windows_for_pid(pid)
         if not wins:
-            print(f"No windows found for pid {pid}")
-            return
+            return False
 
         print(f"✅ Window found (PID: {pid}), sending WM_CLOSE")
         for hwnd in wins:
             _attempt_to_close_window(hwnd)
         procs.kill_process(pid)
+        return True
 
 
 def _close_window_unix(result: bytes, pid: int) -> None:
     window_ids: list[str] = result.decode().strip().splitlines()
-    print(f"✅ Window found! {"(by name)," if len(window_ids) == 0 else ""} killing")
+    print(f"✅ Window found! {'(by name),' if len(window_ids) == 0 else ''} killing")
     procs.kill_process(pid)
 
 
