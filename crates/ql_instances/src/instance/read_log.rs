@@ -314,6 +314,7 @@ impl LogEvent {
             }
         );
         if let Some(throwable) = self.throwable.as_deref() {
+            let throwable = throwable.replace('\t', "\n\t");
             _ = writeln!(out, "\nCaused by {throwable}");
         }
         out
@@ -384,6 +385,7 @@ impl Display for LogEvent {
             msg = if let Some(n) = &self.message { &n } else { "" }
         )?;
         if let Some(throwable) = self.throwable.as_deref() {
+            let throwable = throwable.replace('\t', "\n\t");
             writeln!(f, "Caused by {throwable}")?;
         }
         Ok(())
