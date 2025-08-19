@@ -82,7 +82,7 @@ impl Launcher {
                 }) {
                     Ok(n) => return n,
                     Err(err) => self.set_error(err),
-                };
+                }
             }
             EditPresetsMessage::RecommendedModCheck(result) => {
                 if let State::ManagePresets(MenuEditPresets {

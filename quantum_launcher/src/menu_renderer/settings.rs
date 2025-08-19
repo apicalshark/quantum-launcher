@@ -54,8 +54,8 @@ impl MenuLauncherSettings {
                     widget::column(LauncherSettingsTab::ALL.iter().map(|tab| {
                         let text = widget::text(tab.to_string());
                         sidebar_button(
-                            *tab,
-                            self.selected_tab,
+                            tab,
+                            &self.selected_tab,
                             text,
                             Message::LauncherSettings(LauncherSettingsMessage::ChangeTab(*tab)),
                         )

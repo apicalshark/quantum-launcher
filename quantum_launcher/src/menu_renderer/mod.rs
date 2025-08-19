@@ -83,8 +83,8 @@ pub fn shortcut_ctrl<'a>(key: &str) -> Element<'a> {
 }
 
 fn sidebar_button<'a, A: PartialEq>(
-    current: A,
-    selected: A,
+    current: &A,
+    selected: &A,
     text: impl Into<Element<'a>>,
     message: Message,
 ) -> Element<'a> {
@@ -453,8 +453,8 @@ impl MenuLicense {
             widget::container(widget::column(LicenseTab::ALL.iter().map(|tab| {
                 let text = widget::text(tab.to_string());
                 sidebar_button(
-                    *tab,
-                    self.selected_tab,
+                    tab,
+                    &self.selected_tab,
                     text,
                     Message::LicenseChangeTab(*tab),
                 )

@@ -438,7 +438,7 @@ impl Launcher {
         )
     }
 
-    fn load_jar_from_path(&mut self, path: &PathBuf, filename: &str) {
+    fn load_jar_from_path(&mut self, path: &Path, filename: &str) {
         let selected_instance = self.selected_instance.as_ref().unwrap();
         let new_path = selected_instance
             .get_dot_minecraft_path()

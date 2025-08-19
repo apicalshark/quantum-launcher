@@ -156,7 +156,7 @@ fn render_html<'a>(
         }
         "head" | "br" => true,
         "img" => {
-            draw_image(element, images, attrs);
+            draw_image(element, images, &attrs);
             true
         }
         "code" => {
@@ -196,7 +196,7 @@ fn render_html<'a>(
 fn draw_image<'a>(
     element: &mut Element<'a>,
     images: &'a ImageState,
-    attrs: std::cell::Ref<'_, Vec<html5ever::Attribute>>,
+    attrs: &[html5ever::Attribute],
 ) {
     if let Some(attr) = attrs
         .iter()
