@@ -190,6 +190,24 @@ impl InstanceConfigJson {
                 .or(global.and_then(|n| n.window_height)),
         )
     }
+
+    /// Gets Java arguments with global fallback support.
+    /// 
+    /// Returns per-instance Java arguments if they exist and contain non-empty arguments,
+    /// otherwise returns global Java arguments.
+    /// This implements the priority system: instance-specific (with meaningful content) > global fallback.
+    #[must_use]
+    pub fn get_java_args<'a>(&'a self, global: Option<&'a GlobalSettings>) -> Option<&'a Vec<String>> {
+        // Check if instance has meaningful Java args (non-empty after filtering)
+        if let Some(instance_args) = &self.java_args {
+            let has_meaningful_args = instance_args.iter().any(|arg| !arg.trim().is_empty());
+            if has_meaningful_args {
+                return Some(instance_args);
+            }
+        }
+        // Otherwise, fall back to global Java args
+        global.and_then(|g| g.java_args.as_ref())
+    }
 }
 
 /// Settings that can both be set on a per-instance basis
@@ -210,4 +228,12 @@ pub struct GlobalSettings {
     /// When set, this will launch Minecraft with a specific window height
     /// using the `--height` command line argument.
     pub window_height: Option<u32>,
+    /// **Client Only**
+    ///
+    /// Global Java arguments that are applied when no per-instance Java arguments are set.
+    ///
+    /// When an instance has no custom Java arguments configured, these global
+    /// arguments will be used instead. If an instance has its own Java arguments,
+    /// the global ones are ignored.
+    pub java_args: Option<Vec<String>>,
 }

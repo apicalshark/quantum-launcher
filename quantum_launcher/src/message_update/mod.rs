@@ -29,6 +29,20 @@ use crate::{
 
 pub const MSG_RESIZE: &str = "Resize your window to apply the changes.";
 
+/// Helper function to handle argument editing (shared logic between instance and global args)
+fn edit_arguments_list(msg: String, args: &mut Vec<String>, idx: usize) {
+    if msg.contains(' ') {
+        args.remove(idx);
+        let mut insert_idx = idx;
+        for s in msg.split(' ').filter(|n| !n.is_empty()) {
+            args.insert(insert_idx, s.to_owned());
+            insert_idx += 1;
+        }
+    } else if let Some(existing_arg) = args.get_mut(idx) {
+        *existing_arg = msg;
+    }
+}
+
 impl Launcher {
     pub fn update_install_fabric(&mut self, message: InstallFabricMessage) -> Task<Message> {
         match message {
@@ -528,6 +542,52 @@ impl Launcher {
                 } else {
                     input.trim().parse::<u32>().ok()
                 };
+            }
+            LauncherSettingsMessage::GlobalJavaArgsAdd => {
+                self.config
+                    .global_settings
+                    .get_or_insert_with(Default::default)
+                    .java_args
+                    .get_or_insert_with(Vec::new)
+                    .push(String::new());
+            }
+            LauncherSettingsMessage::GlobalJavaArgEdit(arg, idx) => {
+                if let Some(args) = self.config
+                    .global_settings
+                    .as_mut()
+                    .and_then(|g| g.java_args.as_mut()) {
+                    edit_arguments_list(arg, args, idx);
+                }
+            }
+            LauncherSettingsMessage::GlobalJavaArgDelete(idx) => {
+                if let Some(args) = self.config
+                    .global_settings
+                    .as_mut()
+                    .and_then(|g| g.java_args.as_mut()) {
+                    if idx < args.len() {
+                        args.remove(idx);
+                    }
+                }
+            }
+            LauncherSettingsMessage::GlobalJavaArgShiftUp(idx) => {
+                if let Some(args) = self.config
+                    .global_settings
+                    .as_mut()
+                    .and_then(|g| g.java_args.as_mut()) {
+                    if idx > 0 && idx < args.len() {
+                        args.swap(idx, idx - 1);
+                    }
+                }
+            }
+            LauncherSettingsMessage::GlobalJavaArgShiftDown(idx) => {
+                if let Some(args) = self.config
+                    .global_settings
+                    .as_mut()
+                    .and_then(|g| g.java_args.as_mut()) {
+                    if idx + 1 < args.len() {
+                        args.swap(idx, idx + 1);
+                    }
+                }
             }
         }
         Task::none()

@@ -250,10 +250,10 @@ impl GameLauncher {
         // TODO: deal with self.version_json.arguments.jvm (currently ignored)
         let mut args: Vec<String> = self
             .config_json
-            .java_args
-            .iter()
-            .flatten()
-            .cloned()
+            .get_java_args(self.global_settings.as_ref())
+            .map(|args| args.iter().filter(|arg| !arg.trim().is_empty()).cloned().collect::<Vec<_>>())
+            .unwrap_or_default()
+            .into_iter()
             .chain([
                 "-Dminecraft.launcher.brand=minecraft-launcher".to_owned(),
                 "-Dminecraft.launcher.version=2.1.1349".to_owned(),

@@ -220,6 +220,13 @@ pub enum LauncherSettingsMessage {
 
     ToggleAntialiasing(bool),
     ToggleWindowSize(bool),
+
+    // Global Java arguments
+    GlobalJavaArgsAdd,
+    GlobalJavaArgEdit(String, usize),
+    GlobalJavaArgDelete(usize),
+    GlobalJavaArgShiftUp(usize),
+    GlobalJavaArgShiftDown(usize),
 }
 
 #[derive(Debug, Clone)]

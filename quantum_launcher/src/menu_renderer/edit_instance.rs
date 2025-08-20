@@ -259,3 +259,35 @@ pub fn resolution_dialog<'a>(
     ]
     .spacing(5)
 }
+
+pub fn global_java_args_dialog<'a>(
+    global_settings: Option<&'a GlobalSettings>,
+    add_msg: Message,
+    delete_msg: impl Fn(usize) -> Message + 'a,
+    edit_msg: &'a dyn Fn(String, usize) -> Message,
+    up_msg: impl Fn(usize) -> Message + 'a,
+    down_msg: impl Fn(usize) -> Message + 'a,
+) -> widget::Column<'a, Message, LauncherTheme> {
+    let ts = |n: &LauncherTheme| n.style_text(Color::SecondLight);
+
+    widget::column![
+        "Global Java Arguments:",
+        widget::text(
+            "These Java arguments will be used for instances that don't have custom Java arguments configured.\nInstance-specific arguments take priority over global ones."
+        )
+        .size(12)
+        .style(ts),
+        widget::column!(
+            MenuEditInstance::get_java_args_list(
+                global_settings.and_then(|g| g.java_args.as_ref()),
+                delete_msg,
+                up_msg,
+                down_msg,
+                edit_msg
+            ),
+            button_with_icon(icon_manager::create(), "Add Argument", 16)
+                .on_press(add_msg)
+        ).spacing(5),
+    ]
+    .spacing(5)
+}

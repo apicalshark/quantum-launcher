@@ -12,12 +12,25 @@ use iced::{
 };
 use ql_core::jarmod::JarMods;
 use ql_core::{err, info, info_no_log, jarmod::JarMod, InstanceSelection};
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsStr;
 use std::path::Path;
 
 impl Launcher {
     pub fn iced_event(&mut self, event: iced::Event, status: iced::event::Status) -> Task<Message> {
-        self.validate_sidebar_width();
+        if let State::Launch(MenuLaunch { sidebar_width, .. }) = &mut self.state {
+            self.config.sidebar_width = Some(u32::from(*sidebar_width));
+
+            if self.window_size.0 > f32::from(SIDEBAR_LIMIT_RIGHT)
+                && *sidebar_width > self.window_size.0 as u16 - SIDEBAR_LIMIT_RIGHT
+            {
+                *sidebar_width = self.window_size.0 as u16 - SIDEBAR_LIMIT_RIGHT;
+            }
+
+            if self.window_size.0 > SIDEBAR_LIMIT_LEFT && *sidebar_width < SIDEBAR_LIMIT_LEFT as u16
+            {
+                *sidebar_width = SIDEBAR_LIMIT_LEFT as u16;
+            }
+        }
 
         match event {
             iced::Event::Window(event) => match event {
@@ -35,13 +48,17 @@ impl Launcher {
                     window.width = Some(size.width);
                     window.height = Some(size.height);
 
+                    // Also check and save maximized state - try different approach
+                    // For now, let's skip the automatic maximized detection on resize
+                    // We'll handle it differently
+
                     if let State::GenericMessage(msg) = &self.state {
                         if msg == MSG_RESIZE {
                             return self.update(Message::LauncherSettings(
                                 LauncherSettingsMessage::ChangeTab(
                                     LauncherSettingsTab::UserInterface,
                                 ),
-                            ));
+                            ))
                         }
                     }
                 }
@@ -58,14 +75,51 @@ impl Launcher {
                         path.extension().map(OsStr::to_ascii_lowercase),
                         path.file_name().and_then(OsStr::to_str),
                     ) {
-                        return self.drag_and_drop(&path, extension, filename);
+                        if let State::EditMods(_) = &self.state {
+                            if extension == "jar" || extension == "disabled" {
+                                self.load_jar_from_path(&path, filename);
+                            } else if extension == "qmp" {
+                                return self.load_qmp_from_path(&path);
+                            } else if extension == "zip" || extension == "mrpack" {
+                                return self.load_modpack_from_path(path);
+                            }
+                        } else if let State::ManagePresets(_) = &self.state {
+                            if extension == "qmp" {
+                                return self.load_qmp_from_path(&path);
+                            } else if extension == "zip" || extension == "mrpack" {
+                                return self.load_modpack_from_path(path);
+                            }
+                        } else if let State::EditJarMods(MenuEditJarMods {
+                            jarmods: Some(jarmods),
+                            ..
+                        }) = &mut self.state
+                        {
+                            if extension == "jar" || extension == "zip" {
+                                Self::load_jarmods_from_path(
+                                    self.selected_instance.as_ref().unwrap(),
+                                    &path,
+                                    filename,
+                                    jarmods,
+                                );
+                            }
+                        } else if let State::InstallOptifine(MenuInstallOptifine::Choosing {
+                            ..
+                        }) = &mut self.state
+                        {
+                            if extension == "jar" || extension == "zip" {
+                                return self.install_optifine_confirm(&path);
+                            }
+                        }
                     }
                 }
                 iced::window::Event::RedrawRequested(_)
-                | iced::window::Event::Moved { .. }
                 | iced::window::Event::Opened { .. }
                 | iced::window::Event::Focused
                 | iced::window::Event::Unfocused => {}
+                iced::window::Event::Moved { .. } => {
+                    // For now, skip the maximize detection 
+                    // We need to find the right approach for window ID
+                }
             },
             iced::Event::Keyboard(event) => match event {
                 iced::keyboard::Event::KeyPressed {
@@ -181,69 +235,6 @@ impl Launcher {
             iced::Event::Touch(_) => {}
         }
         Task::none()
-    }
-
-    fn drag_and_drop(&mut self, path: &Path, extension: OsString, filename: &str) -> Task<Message> {
-        if let State::EditMods(_) = &self.state {
-            if extension == "jar" || extension == "disabled" {
-                self.load_jar_from_path(path, filename);
-                Task::none()
-            } else if extension == "qmp" {
-                self.load_qmp_from_path(path)
-            } else if extension == "zip" || extension == "mrpack" {
-                self.load_modpack_from_path(path.to_owned())
-            } else {
-                Task::none()
-            }
-        } else if let State::ManagePresets(_) = &self.state {
-            if extension == "qmp" {
-                self.load_qmp_from_path(path)
-            } else if extension == "zip" || extension == "mrpack" {
-                self.load_modpack_from_path(path.to_owned())
-            } else {
-                Task::none()
-            }
-        } else if let State::EditJarMods(MenuEditJarMods {
-            jarmods: Some(jarmods),
-            ..
-        }) = &mut self.state
-        {
-            if extension == "jar" || extension == "zip" {
-                Self::load_jarmods_from_path(
-                    self.selected_instance.as_ref().unwrap(),
-                    path,
-                    filename,
-                    jarmods,
-                );
-            }
-            Task::none()
-        } else if let State::InstallOptifine(MenuInstallOptifine::Choosing { .. }) = &mut self.state
-        {
-            if extension == "jar" || extension == "zip" {
-                self.install_optifine_confirm(path)
-            } else {
-                Task::none()
-            }
-        } else {
-            Task::none()
-        }
-    }
-
-    fn validate_sidebar_width(&mut self) {
-        if let State::Launch(MenuLaunch { sidebar_width, .. }) = &mut self.state {
-            self.config.sidebar_width = Some(u32::from(*sidebar_width));
-            let window_width = self.window_size.0;
-
-            if window_width > f32::from(SIDEBAR_LIMIT_RIGHT)
-                && *sidebar_width > window_width as u16 - SIDEBAR_LIMIT_RIGHT
-            {
-                *sidebar_width = window_width as u16 - SIDEBAR_LIMIT_RIGHT;
-            }
-
-            if window_width > SIDEBAR_LIMIT_LEFT && *sidebar_width < SIDEBAR_LIMIT_LEFT as u16 {
-                *sidebar_width = SIDEBAR_LIMIT_LEFT as u16;
-            }
-        }
     }
 
     fn load_jarmods_from_path(

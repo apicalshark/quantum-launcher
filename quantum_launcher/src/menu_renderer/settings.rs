@@ -4,7 +4,7 @@ use ql_core::LAUNCHER_DIR;
 use super::{
     back_button, button_with_icon, get_theme_selector, sidebar_button, Element, DISCORD, GITHUB,
 };
-use crate::menu_renderer::edit_instance::resolution_dialog;
+use crate::menu_renderer::edit_instance::{global_java_args_dialog, resolution_dialog};
 use crate::{
     config::LauncherConfig,
     icon_manager,
@@ -182,6 +182,17 @@ impl LauncherSettingsTab {
                         LauncherSettingsMessage::DefaultMinecraftHeightChanged(n)
                     ),
                     true
+                )]
+                .padding(10)
+                .spacing(10),
+                widget::horizontal_rule(1),
+                widget::column![global_java_args_dialog(
+                    config.global_settings.as_ref(),
+                    Message::LauncherSettings(LauncherSettingsMessage::GlobalJavaArgsAdd),
+                    |idx| Message::LauncherSettings(LauncherSettingsMessage::GlobalJavaArgDelete(idx)),
+                    &|arg, idx| Message::LauncherSettings(LauncherSettingsMessage::GlobalJavaArgEdit(arg, idx)),
+                    |idx| Message::LauncherSettings(LauncherSettingsMessage::GlobalJavaArgShiftUp(idx)),
+                    |idx| Message::LauncherSettings(LauncherSettingsMessage::GlobalJavaArgShiftDown(idx)),
                 )]
                 .padding(10)
                 .spacing(10),
