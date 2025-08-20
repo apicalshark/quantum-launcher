@@ -48,9 +48,6 @@ impl Launcher {
                     window.width = Some(size.width);
                     window.height = Some(size.height);
 
-                    // Also check and save maximized state - try different approach
-                    // For now, let's skip the automatic maximized detection on resize
-                    // We'll handle it differently
 
                     if let State::GenericMessage(msg) = &self.state {
                         if msg == MSG_RESIZE {
@@ -116,10 +113,7 @@ impl Launcher {
                 | iced::window::Event::Opened { .. }
                 | iced::window::Event::Focused
                 | iced::window::Event::Unfocused => {}
-                iced::window::Event::Moved { .. } => {
-                    // For now, skip the maximize detection 
-                    // We need to find the right approach for window ID
-                }
+                iced::window::Event::Moved { .. } => { }
             },
             iced::Event::Keyboard(event) => match event {
                 iced::keyboard::Event::KeyPressed {

@@ -195,7 +195,6 @@ impl InstanceConfigJson {
     /// 
     /// Returns per-instance Java arguments if they exist and contain non-empty arguments,
     /// otherwise returns global Java arguments.
-    /// This implements the priority system: instance-specific (with meaningful content) > global fallback.
     #[must_use]
     pub fn get_java_args<'a>(&'a self, global: Option<&'a GlobalSettings>) -> Option<&'a Vec<String>> {
         // Check if instance has meaningful Java args (non-empty after filtering)
