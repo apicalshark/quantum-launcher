@@ -63,6 +63,7 @@ pub enum EditInstanceMessage {
     JavaArgDelete(usize),
     JavaArgShiftUp(usize),
     JavaArgShiftDown(usize),
+    JavaArgsModeChanged(ql_core::json::instance_config::JavaArgsMode),
     GameArgsAdd,
     GameArgEdit(String, usize),
     GameArgDelete(usize),

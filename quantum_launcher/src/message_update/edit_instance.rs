@@ -59,6 +59,15 @@ impl Launcher {
             EditInstanceMessage::JavaArgDelete(idx) => {
                 self.e_java_arg_delete(idx);
             }
+            EditInstanceMessage::JavaArgsModeChanged(mode) => {
+                if let State::Launch(MenuLaunch {
+                    edit_instance: Some(menu),
+                    ..
+                }) = &mut self.state
+                {
+                    menu.config.java_args_mode = Some(mode);
+                }
+            }
             EditInstanceMessage::GameArgsAdd => {
                 self.e_game_arg_add();
             }

@@ -5,7 +5,7 @@ use crate::{
     stylesheet::{color::Color, styles::LauncherTheme},
 };
 use iced::{widget, Length};
-use ql_core::json::GlobalSettings;
+use ql_core::json::{GlobalSettings, instance_config::JavaArgsMode};
 use ql_core::InstanceSelection;
 
 use super::Element;
@@ -94,8 +94,21 @@ impl MenuEditInstance {
     }
 
     fn item_args(&self) -> widget::Column<'_, Message, LauncherTheme> {
+        let current_mode = self.config.java_args_mode.as_ref().unwrap_or(&JavaArgsMode::Fallback);
+        
         widget::column!(
             "Java arguments:",
+            widget::row!(
+                "Mode:",
+                widget::pick_list(
+                    &[JavaArgsMode::Fallback, JavaArgsMode::Override, JavaArgsMode::Combine][..],
+                    Some(current_mode.clone()),
+                    |mode| Message::EditInstance(EditInstanceMessage::JavaArgsModeChanged(mode))
+                )
+                .placeholder("Select mode...")
+                .width(Length::Fixed(150.0))
+            ).spacing(10).align_y(iced::Alignment::Center),
+            self.get_mode_description(current_mode),
             widget::column!(
                 Self::get_java_args_list(
                     self.config.java_args.as_ref(),
@@ -123,6 +136,22 @@ impl MenuEditInstance {
         .padding(10)
         .spacing(10)
         .width(Length::Fill)
+    }
+    
+    fn get_mode_description(&self, mode: &JavaArgsMode) -> Element {
+        let description = match mode {
+            JavaArgsMode::Fallback => 
+                "Use global arguments only when instance has no arguments (default behavior)",
+            JavaArgsMode::Override => 
+                "Instance arguments replace global arguments completely",
+            JavaArgsMode::Combine => 
+                "Global arguments are combined with instance arguments (global first)"
+        };
+        
+        widget::text(description)
+            .size(12)
+            .style(|theme: &LauncherTheme| theme.style_text(Color::SecondLight))
+            .into()
     }
 
     fn item_mem_alloc(&self) -> widget::Column<'_, Message, LauncherTheme> {
