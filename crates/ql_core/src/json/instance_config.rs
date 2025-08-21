@@ -33,9 +33,9 @@ impl Default for JavaArgsMode {
 impl std::fmt::Display for JavaArgsMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            JavaArgsMode::Fallback => write!(f, "Fallback (Default)"),
-            JavaArgsMode::Override => write!(f, "Override Global"),
-            JavaArgsMode::Combine => write!(f, "Combine with Global"),
+            JavaArgsMode::Fallback => write!(f, "Fallback"),
+            JavaArgsMode::Override => write!(f, "Override"),
+            JavaArgsMode::Combine => write!(f, "Combine"),
         }
     }
 }
