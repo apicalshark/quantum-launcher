@@ -11,6 +11,7 @@ use crate::{
 impl MenuExportMods {
     pub fn view(&self, images: &ImageState, window_size: (f32, f32)) -> Element {
         let selected_count = self.selected_mods.len();
+        let has_mods = selected_count > 0;
         
         widget::container(
             widget::scrollable(
@@ -27,13 +28,21 @@ impl MenuExportMods {
                     
                     // Info about selected mods with better styling
                     widget::container(
-                        widget::text(format!("{} mod{} selected for export", 
-                            selected_count,
-                            if selected_count == 1 { "" } else { "s" }
-                        ))
+                        widget::text(if has_mods {
+                            format!("{} mod{} selected for export", 
+                                selected_count,
+                                if selected_count == 1 { "" } else { "s" }
+                            )
+                        } else {
+                            "No mods selected - please select some mods first".to_string()
+                        })
                         .size(16)
-                        .style(|theme: &LauncherTheme| {
-                            theme.style_text(Color::SecondLight)
+                        .style(move |theme: &LauncherTheme| {
+                            if has_mods {
+                                theme.style_text(Color::SecondLight)
+                            } else {
+                                theme.style_text(Color::SecondDark)
+                            }
                         })
                     )
                     .padding([10, 15])
@@ -71,24 +80,38 @@ impl MenuExportMods {
                                 .spacing(4),
                                 widget::horizontal_space(),
                                 widget::row![
-                                    widget::button(
-                                        widget::text("Copy").size(14)
-                                    )
-                                    .padding([8, 16])
-                                    .style(|theme: &LauncherTheme, status| {
-                                        use crate::stylesheet::widgets::StyleButton;
-                                        theme.style_button(status, StyleButton::Round)
-                                    })
-                                    .on_press(Message::ExportMods(ExportModsMessage::CopyPlainTextToClipboard)),
-                                    widget::button(
-                                        widget::text("Save").size(14)
-                                    )
-                                    .padding([8, 16])
-                                    .style(|theme: &LauncherTheme, status| {
-                                        use crate::stylesheet::widgets::StyleButton;
-                                        theme.style_button(status, StyleButton::FlatDark)
-                                    })
-                                    .on_press(Message::ExportMods(ExportModsMessage::ExportAsPlainText)),
+                                    {
+                                        let copy_button = widget::button(
+                                            widget::text("Copy").size(14)
+                                        )
+                                        .padding([8, 16])
+                                        .style(|theme: &LauncherTheme, status| {
+                                            use crate::stylesheet::widgets::StyleButton;
+                                            theme.style_button(status, StyleButton::Round)
+                                        });
+                                        
+                                        if has_mods {
+                                            copy_button.on_press(Message::ExportMods(ExportModsMessage::CopyPlainTextToClipboard))
+                                        } else {
+                                            copy_button
+                                        }
+                                    },
+                                    {
+                                        let save_button = widget::button(
+                                            widget::text("Save").size(14)
+                                        )
+                                        .padding([8, 16])
+                                        .style(|theme: &LauncherTheme, status| {
+                                            use crate::stylesheet::widgets::StyleButton;
+                                            theme.style_button(status, StyleButton::FlatDark)
+                                        });
+                                        
+                                        if has_mods {
+                                            save_button.on_press(Message::ExportMods(ExportModsMessage::ExportAsPlainText))
+                                        } else {
+                                            save_button
+                                        }
+                                    }
                                 ]
                                 .spacing(12)
                             ]
@@ -122,24 +145,38 @@ impl MenuExportMods {
                                 .spacing(4),
                                 widget::horizontal_space(),
                                 widget::row![
-                                    widget::button(
-                                        widget::text("Copy").size(14)
-                                    )
-                                    .padding([8, 16])
-                                    .style(|theme: &LauncherTheme, status| {
-                                        use crate::stylesheet::widgets::StyleButton;
-                                        theme.style_button(status, StyleButton::Round)
-                                    })
-                                    .on_press(Message::ExportMods(ExportModsMessage::CopyToClipboard)),
-                                    widget::button(
-                                        widget::text("Save").size(14)
-                                    )
-                                    .padding([8, 16])
-                                    .style(|theme: &LauncherTheme, status| {
-                                        use crate::stylesheet::widgets::StyleButton;
-                                        theme.style_button(status, StyleButton::FlatDark)
-                                    })
-                                    .on_press(Message::ExportMods(ExportModsMessage::ExportAsMarkdown)),
+                                    {
+                                        let copy_button = widget::button(
+                                            widget::text("Copy").size(14)
+                                        )
+                                        .padding([8, 16])
+                                        .style(|theme: &LauncherTheme, status| {
+                                            use crate::stylesheet::widgets::StyleButton;
+                                            theme.style_button(status, StyleButton::Round)
+                                        });
+                                        
+                                        if has_mods {
+                                            copy_button.on_press(Message::ExportMods(ExportModsMessage::CopyToClipboard))
+                                        } else {
+                                            copy_button
+                                        }
+                                    },
+                                    {
+                                        let save_button = widget::button(
+                                            widget::text("Save").size(14)
+                                        )
+                                        .padding([8, 16])
+                                        .style(|theme: &LauncherTheme, status| {
+                                            use crate::stylesheet::widgets::StyleButton;
+                                            theme.style_button(status, StyleButton::FlatDark)
+                                        });
+                                        
+                                        if has_mods {
+                                            save_button.on_press(Message::ExportMods(ExportModsMessage::ExportAsMarkdown))
+                                        } else {
+                                            save_button
+                                        }
+                                    }
                                 ]
                                 .spacing(12)
                             ]
@@ -151,25 +188,53 @@ impl MenuExportMods {
                             theme.style_container_sharp_box(0.0, Color::Dark)
                         }),
                         
-                        // Preview section with better styling
-                        widget::column![
-                            widget::text("Preview:")
-                                .size(18)
-                                .style(|theme: &LauncherTheme| {
-                                    theme.style_text(Color::Light)
-                                }),
-                            widget::container(
-                                widget::scrollable(self.get_preview_content(images, window_size))
-                                    .width(Length::Fill)
-                                    .height(400) // Fixed height that provides plenty of space
-                            )
-                            .style(|theme: &LauncherTheme| {
-                                theme.style_container_sharp_box(0.0, Color::ExtraDark)
-                            })
-                            .padding(15)
-                            .width(Length::Fill),
-                        ]
-                        .spacing(10)
+                        // Preview section with better styling - only show if mods are selected
+                        {
+                            if has_mods {
+                                widget::column![
+                                    widget::text("Preview:")
+                                        .size(18)
+                                        .style(|theme: &LauncherTheme| {
+                                            theme.style_text(Color::Light)
+                                        }),
+                                    widget::container(
+                                        widget::scrollable(self.get_preview_content(images, window_size))
+                                            .width(Length::Fill)
+                                            .height(400) // Fixed height that provides plenty of space
+                                    )
+                                    .style(|theme: &LauncherTheme| {
+                                        theme.style_container_sharp_box(0.0, Color::ExtraDark)
+                                    })
+                                    .padding(15)
+                                    .width(Length::Fill),
+                                ]
+                                .spacing(10)
+                            } else {
+                                widget::column![
+                                    widget::text("Preview:")
+                                        .size(18)
+                                        .style(|theme: &LauncherTheme| {
+                                            theme.style_text(Color::Light)
+                                        }),
+                                    widget::container(
+                                        widget::text("Select some mods from the mod manager to see a preview here")
+                                            .size(14)
+                                            .style(|theme: &LauncherTheme| {
+                                                theme.style_text(Color::SecondLight)
+                                            })
+                                    )
+                                    .center_x(Length::Fill)
+                                    .center_y(Length::Fixed(200.0))
+                                    .style(|theme: &LauncherTheme| {
+                                        theme.style_container_sharp_box(0.0, Color::ExtraDark)
+                                    })
+                                    .padding(20)
+                                    .height(400)
+                                    .width(Length::Fill),
+                                ]
+                                .spacing(10)
+                            }
+                        }
                     ]
                     .spacing(20)
                 ]
