@@ -252,9 +252,16 @@ impl Launcher {
                     }
                 }
             }
-            ManageModsMessage::ExportToClipboard => {
-                if let State::EditMods(menu) = &self.state {
-                    return self.export_selected_mods_to_clipboard(menu);
+            ManageModsMessage::ExportMenuOpen => {
+                if let State::EditMods(menu) = &mut self.state {
+                    // Navigate to the export menu with the current selection and mod data
+                    use crate::state::MenuExportMods;
+                    
+                    self.state = State::ExportMods(MenuExportMods {
+                        selected_mods: menu.selected_mods.clone(),
+                        mod_index: menu.mods.clone(),
+                        instance: self.selected_instance.clone().unwrap(),
+                    });
                 }
             }
         }
@@ -487,14 +494,124 @@ impl Launcher {
         }
     }
 
-    fn export_selected_mods_to_clipboard(&self, menu: &MenuEditMods) -> Task<Message> {
+    fn export_selected_mods_as_plain_text(selected_mods: &HashSet<SelectedMod>) -> Task<Message> {
+        let mut lines = Vec::new();
+        
+        for selected_mod in selected_mods {
+            match selected_mod {
+                SelectedMod::Downloaded { name, .. } => {
+                    lines.push(name.clone());
+                }
+                SelectedMod::Local { file_name } => {
+                    // Remove file extension for cleaner display
+                    let display_name = file_name
+                        .strip_suffix(".jar")
+                        .or_else(|| file_name.strip_suffix(".zip"))
+                        .unwrap_or(file_name);
+                    lines.push(display_name.to_string());
+                }
+            }
+        }
+        
+        if lines.is_empty() {
+            Self::export_to_file("No mods selected for export".to_string())
+        } else {
+            let text = lines.join("\n");
+            Self::export_to_file(text)
+        }
+    }
+
+    fn export_selected_mods_as_markdown(selected_mods: &HashSet<SelectedMod>, mod_index: &ModIndex) -> Task<Message> {
         let mut markdown_lines = Vec::new();
         
-        for selected_mod in &menu.selected_mods {
+        for selected_mod in selected_mods {
             match selected_mod {
                 SelectedMod::Downloaded { name, id } => {
                     // Try to get the mod config from the index for better URL generation
-                    if let Some(mod_config) = menu.mods.mods.get(&id.get_index_str()) {
+                    if let Some(mod_config) = mod_index.mods.get(&id.get_index_str()) {
+                        let url = match mod_config.project_source.as_str() {
+                            "modrinth" => {
+                                format!("https://modrinth.com/mod/{}", mod_config.project_id)
+                            }
+                            "curseforge" => {
+                                format!("https://www.curseforge.com/minecraft/mc-mods/{}", mod_config.project_id)
+                            }
+                            _ => {
+                                // Fallback to basic URL generation based on ModId
+                                match id {
+                                    ModId::Modrinth(mod_id) => {
+                                        format!("https://modrinth.com/mod/{}", mod_id)
+                                    }
+                                    ModId::Curseforge(mod_id) => {
+                                        format!("https://www.curseforge.com/minecraft/mc-mods/{}", mod_id)
+                                    }
+                                }
+                            }
+                        };
+                        markdown_lines.push(format!("[{}]({})", name, url));
+                    } else {
+                        // Fallback if mod config is not found
+                        let url = match id {
+                            ModId::Modrinth(mod_id) => {
+                                format!("https://modrinth.com/mod/{}", mod_id)
+                            }
+                            ModId::Curseforge(mod_id) => {
+                                format!("https://www.curseforge.com/minecraft/mc-mods/{}", mod_id)
+                            }
+                        };
+                        markdown_lines.push(format!("[{}]({})", name, url));
+                    }
+                }
+                SelectedMod::Local { file_name } => {
+                    // For local mods, we just add the filename without a link
+                    let display_name = file_name
+                        .strip_suffix(".jar")
+                        .or_else(|| file_name.strip_suffix(".zip"))
+                        .unwrap_or(file_name);
+                    markdown_lines.push(display_name.to_string());
+                }
+            }
+        }
+        
+        if markdown_lines.is_empty() {
+            Self::export_to_file("No mods selected for export".to_string())
+        } else {
+            let markdown_text = markdown_lines.join("\n");
+            Self::export_to_file(markdown_text)
+        }
+    }
+
+    fn export_to_file(content: String) -> Task<Message> {
+        // Use a file dialog to save the exported content
+        if let Some(path) = rfd::FileDialog::new()
+            .set_title("Save exported mod list")
+            .add_filter("Text files", &["txt"])
+            .add_filter("Markdown files", &["md"])
+            .save_file()
+        {
+            match std::fs::write(&path, content) {
+                Ok(()) => {
+                    // Optionally, we could show a success message
+                    Task::none()
+                }
+                Err(_err) => {
+                    // Handle the error by setting an error message
+                    Task::none() // For now, just return none
+                }
+            }
+        } else {
+            Task::none()
+        }
+    }
+
+    fn export_selected_mods_to_clipboard(selected_mods: &HashSet<SelectedMod>, mod_index: &ModIndex) -> Task<Message> {
+        let mut markdown_lines = Vec::new();
+        
+        for selected_mod in selected_mods {
+            match selected_mod {
+                SelectedMod::Downloaded { name, id } => {
+                    // Try to get the mod config from the index for better URL generation
+                    if let Some(mod_config) = mod_index.mods.get(&id.get_index_str()) {
                         let url = match mod_config.project_source.as_str() {
                             "modrinth" => {
                                 // For Modrinth, we can use either the project_id (slug) or the ID
@@ -536,7 +653,7 @@ impl Launcher {
                     let display_name = file_name
                         .strip_suffix(".jar")
                         .or_else(|| file_name.strip_suffix(".zip"))
-                        .unwrap_or(file_name);
+                        .unwrap_or(file_name.as_str());
                     markdown_lines.push(display_name.to_string());
                 }
             }
@@ -548,6 +665,33 @@ impl Launcher {
         } else {
             let markdown_text = markdown_lines.join("\n");
             iced::clipboard::write(markdown_text)
+        }
+    }
+
+    fn export_selected_mods_as_plain_text_to_clipboard(selected_mods: &HashSet<SelectedMod>) -> Task<Message> {
+        let mut lines = Vec::new();
+        
+        for selected_mod in selected_mods {
+            match selected_mod {
+                SelectedMod::Downloaded { name, .. } => {
+                    lines.push(name.clone());
+                }
+                SelectedMod::Local { file_name } => {
+                    // Remove file extension for cleaner display
+                    let display_name = file_name
+                        .strip_suffix(".jar")
+                        .or_else(|| file_name.strip_suffix(".zip"))
+                        .unwrap_or(file_name);
+                    lines.push(display_name.to_string());
+                }
+            }
+        }
+        
+        if lines.is_empty() {
+            iced::clipboard::write("No mods selected for export".to_string())
+        } else {
+            let text = lines.join("\n");
+            iced::clipboard::write(text)
         }
     }
 
@@ -570,6 +714,37 @@ impl Launcher {
                 }
             }
         }
+    }
+
+    pub fn update_export_mods(&mut self, msg: crate::state::ExportModsMessage) -> Task<Message> {
+        use crate::state::ExportModsMessage;
+        match msg {
+            ExportModsMessage::ExportAsPlainText => {
+                if let State::ExportMods(menu) = &self.state {
+                    return Self::export_selected_mods_as_plain_text(&menu.selected_mods);
+                }
+            }
+            ExportModsMessage::ExportAsMarkdown => {
+                if let State::ExportMods(menu) = &self.state {
+                    return Self::export_selected_mods_as_markdown(&menu.selected_mods, &menu.mod_index);
+                }
+            }
+            ExportModsMessage::CopyToClipboard => {
+                if let State::ExportMods(menu) = &self.state {
+                    return Self::export_selected_mods_to_clipboard(&menu.selected_mods, &menu.mod_index);
+                }
+            }
+            ExportModsMessage::CopyPlainTextToClipboard => {
+                if let State::ExportMods(menu) = &self.state {
+                    return Self::export_selected_mods_as_plain_text_to_clipboard(&menu.selected_mods);
+                }
+            }
+            ExportModsMessage::Back => {
+                // Go back to the mod management screen
+                return Task::perform(async {}, |_| Message::ManageMods(ManageModsMessage::ScreenOpenWithoutUpdate));
+            }
+        }
+        Task::none()
     }
 }
 

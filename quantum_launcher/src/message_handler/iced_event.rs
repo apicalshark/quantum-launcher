@@ -316,7 +316,8 @@ impl Launcher {
             }
             State::InstallOptifine(MenuInstallOptifine::Choosing { .. })
             | State::InstallFabric(MenuInstallFabric::Loaded { progress: None, .. })
-            | State::EditJarMods(_) => {
+            | State::EditJarMods(_) 
+            | State::ExportMods(_) => {
                 should_return_to_mods_screen = true;
             }
             State::ModsDownload(menu) if menu.opened_mod.is_some() => {

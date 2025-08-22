@@ -298,8 +298,8 @@ impl MenuEditMods {
                                 13
                             )
                             .on_press(Message::ManageMods(ManageModsMessage::SelectAll)),
-                            button_with_icon(icon_manager::save_with_size(13), "Export to Clipboard", 13)
-                                .on_press(Message::ManageMods(ManageModsMessage::ExportToClipboard)),
+                            button_with_icon(icon_manager::save_with_size(13), "Export...", 13)
+                                .on_press(Message::ManageMods(ManageModsMessage::ExportMenuOpen)),
                         ]
                         .spacing(5)
                         .wrap()

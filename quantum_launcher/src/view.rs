@@ -144,6 +144,7 @@ impl Launcher {
                 view_log_upload_result(url, self.selected_instance.as_ref().unwrap().is_server())
             }
             State::License(menu) => menu.view(),
+            State::ExportMods(menu) => menu.view(&self.images, self.window_size),
         }
     }
 }

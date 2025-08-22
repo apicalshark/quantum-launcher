@@ -98,7 +98,16 @@ pub enum ManageModsMessage {
     SelectAll,
     AddFile,
     AddFileDone(Res<HashSet<CurseforgeNotAllowed>>),
-    ExportToClipboard,
+    ExportMenuOpen,
+}
+
+#[derive(Debug, Clone)]
+pub enum ExportModsMessage {
+    ExportAsPlainText,
+    ExportAsMarkdown,
+    CopyToClipboard,
+    CopyPlainTextToClipboard,
+    Back,
 }
 
 #[derive(Debug, Clone)]
@@ -236,6 +245,7 @@ pub enum Message {
     CreateInstance(CreateInstanceMessage),
     EditInstance(EditInstanceMessage),
     ManageMods(ManageModsMessage),
+    ExportMods(ExportModsMessage),
     ManageJarMods(ManageJarModsMessage),
     InstallMods(InstallModsMessage),
     InstallOptifine(InstallOptifineMessage),

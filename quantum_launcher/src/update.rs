@@ -56,6 +56,7 @@ impl Launcher {
 
             Message::Account(msg) => return self.update_account(msg),
             Message::ManageMods(message) => return self.update_manage_mods(message),
+            Message::ExportMods(message) => return self.update_export_mods(message),
             Message::ManageJarMods(message) => return self.update_manage_jar_mods(message),
             Message::LaunchInstanceSelected { name, is_server } => {
                 self.selected_instance = Some(InstanceSelection::new(&name, is_server));
