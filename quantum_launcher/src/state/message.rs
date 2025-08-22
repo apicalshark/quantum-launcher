@@ -108,7 +108,6 @@ pub enum ExportModsMessage {
     ExportAsMarkdown,
     CopyToClipboard,
     CopyPlainTextToClipboard,
-    Back,
 }
 
 #[derive(Debug, Clone)]

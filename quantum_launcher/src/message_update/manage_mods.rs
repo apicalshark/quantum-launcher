@@ -260,7 +260,6 @@ impl Launcher {
                     self.state = State::ExportMods(MenuExportMods {
                         selected_mods: menu.selected_mods.clone(),
                         mod_index: menu.mods.clone(),
-                        instance: self.selected_instance.clone().unwrap(),
                     });
                 }
             }
@@ -738,10 +737,6 @@ impl Launcher {
                 if let State::ExportMods(menu) = &self.state {
                     return Self::export_selected_mods_as_plain_text_to_clipboard(&menu.selected_mods);
                 }
-            }
-            ExportModsMessage::Back => {
-                // Go back to the mod management screen
-                return Task::perform(async {}, |_| Message::ManageMods(ManageModsMessage::ScreenOpenWithoutUpdate));
             }
         }
         Task::none()

@@ -276,7 +276,7 @@ impl MenuExportMods {
         
         // Add a header to show this is a preview
         preview_elements.push(
-            widget::text("Mod List Preview (showing clickable links)")
+            widget::text("Mod List Preview")
                 .size(13)
                 .style(|theme: &LauncherTheme| {
                     theme.style_text(Color::SecondLight)
