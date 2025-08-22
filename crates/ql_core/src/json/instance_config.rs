@@ -22,17 +22,9 @@ pub enum JavaArgsMode {
     Combine,
 }
 
-impl std::fmt::Display for JavaArgsMode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            JavaArgsMode::Fallback => write!(f, "Fallback"),
-            JavaArgsMode::Disable => write!(f, "Disable"),
-            JavaArgsMode::Combine => write!(f, "Combine"),
-        }
-    }
-}
-
 impl JavaArgsMode {
+    pub const ALL: &[Self] = &[Self::Combine, Self::Disable, Self::Fallback];
+
     pub fn get_description(self) -> &'static str {
         match self {
             JavaArgsMode::Fallback => "Use global arguments only when instance has no arguments",
@@ -40,6 +32,16 @@ impl JavaArgsMode {
             JavaArgsMode::Combine => {
                 "Global arguments are combined with instance arguments (default)"
             }
+        }
+    }
+}
+
+impl std::fmt::Display for JavaArgsMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            JavaArgsMode::Fallback => write!(f, "Fallback"),
+            JavaArgsMode::Disable => write!(f, "Disable"),
+            JavaArgsMode::Combine => write!(f, "Combine (default)"),
         }
     }
 }

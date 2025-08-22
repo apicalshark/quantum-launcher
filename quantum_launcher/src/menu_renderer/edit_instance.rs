@@ -100,24 +100,21 @@ impl MenuEditInstance {
             .unwrap_or_else(JavaArgsMode::default);
 
         widget::column!(
-            "Java arguments:",
-            widget::row!(
-                "Mode:",
-                widget::pick_list(
-                    [
-                        JavaArgsMode::Fallback,
-                        JavaArgsMode::Disable,
-                        JavaArgsMode::Combine
-                    ],
-                    Some(current_mode.clone()),
-                    |mode| Message::EditInstance(EditInstanceMessage::JavaArgsModeChanged(mode))
-                )
-                .placeholder("Select mode...")
-                .width(Length::Fixed(150.0))
-            )
-            .spacing(10)
-            .align_y(iced::Alignment::Center),
-            self.get_mode_description(current_mode),
+            widget::container(
+                widget::column![
+                    widget::text("Interaction with global arguments:").size(14),
+                    widget::pick_list(JavaArgsMode::ALL, Some(current_mode.clone()), |mode| {
+                        Message::EditInstance(EditInstanceMessage::JavaArgsModeChanged(mode))
+                    })
+                    .placeholder("Select mode...")
+                    .width(150)
+                    .text_size(14),
+                    self.get_mode_description(current_mode),
+                ]
+                .padding(10)
+                .spacing(7)
+            ),
+            widget::text("Java arguments:").size(20),
             widget::column!(
                 Self::get_java_args_list(
                     self.config.java_args.as_deref(),
@@ -129,7 +126,7 @@ impl MenuEditInstance {
                 button_with_icon(icon_manager::create(), "Add", 16)
                     .on_press(Message::EditInstance(EditInstanceMessage::JavaArgsAdd))
             ),
-            "Game arguments:",
+            widget::text("Game arguments:").size(20),
             widget::column!(
                 Self::get_java_args_list(
                     self.config.game_args.as_deref(),
@@ -304,21 +301,16 @@ pub fn global_java_args_dialog<'a>(
     widget::column![
         "Global Java Arguments:",
         widget::text(
-            "These Java arguments will be used for instances that don't have custom Java arguments configured.\nInstance-specific arguments take priority over global ones."
+            r"These Java arguments will apply to all instances.
+You can override or customize their behaviour on a per-instance basis too."
         )
         .size(12)
         .style(ts),
         widget::column!(
-            MenuEditInstance::get_java_args_list(
-                java_args,
-                delete_msg,
-                up_msg,
-                down_msg,
-                edit_msg
-            ),
-            button_with_icon(icon_manager::create(), "Add Argument", 16)
-                .on_press(add_msg)
-        ).spacing(5),
+            MenuEditInstance::get_java_args_list(java_args, delete_msg, up_msg, down_msg, edit_msg),
+            button_with_icon(icon_manager::create(), "Add Argument", 16).on_press(add_msg)
+        )
+        .spacing(5),
     ]
     .spacing(5)
 }
