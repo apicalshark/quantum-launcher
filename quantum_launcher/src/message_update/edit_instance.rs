@@ -6,6 +6,8 @@ use crate::{
     state::{get_entries, EditInstanceMessage, Launcher, MenuLaunch, Message, State},
 };
 
+use super::add_to_arguments_list;
+
 impl Launcher {
     pub fn update_edit_instance(
         &mut self,
@@ -340,18 +342,5 @@ impl Launcher {
         if idx + 1 < args.len() {
             args.swap(idx, idx + 1);
         }
-    }
-}
-
-fn add_to_arguments_list(msg: String, args: &mut Vec<String>, idx: usize) {
-    if msg.contains(' ') {
-        args.remove(idx);
-        let mut insert_idx = idx;
-        for s in msg.split(' ').filter(|n| !n.is_empty()) {
-            args.insert(insert_idx, s.to_owned());
-            insert_idx += 1;
-        }
-    } else if let Some(arg) = args.get_mut(idx) {
-        *arg = msg;
     }
 }

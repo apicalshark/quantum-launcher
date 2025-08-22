@@ -170,7 +170,9 @@ pub fn launch_instance(
         username.clone(),
         None,
         account.clone(),
-        None, // No global defaults in CLI mode
+        // No global defaults in CLI mode
+        None,
+        Vec::new(),
     ))?;
 
     if let (Some(stdout), Some(stderr)) = {

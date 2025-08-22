@@ -187,12 +187,20 @@ impl LauncherSettingsTab {
                 .spacing(10),
                 widget::horizontal_rule(1),
                 widget::column![global_java_args_dialog(
-                    config.global_settings.as_ref(),
+                    config.extra_java_args.as_deref(),
                     Message::LauncherSettings(LauncherSettingsMessage::GlobalJavaArgsAdd),
-                    |idx| Message::LauncherSettings(LauncherSettingsMessage::GlobalJavaArgDelete(idx)),
-                    &|arg, idx| Message::LauncherSettings(LauncherSettingsMessage::GlobalJavaArgEdit(arg, idx)),
-                    |idx| Message::LauncherSettings(LauncherSettingsMessage::GlobalJavaArgShiftUp(idx)),
-                    |idx| Message::LauncherSettings(LauncherSettingsMessage::GlobalJavaArgShiftDown(idx)),
+                    |idx| Message::LauncherSettings(LauncherSettingsMessage::GlobalJavaArgDelete(
+                        idx
+                    )),
+                    &|arg, idx| Message::LauncherSettings(
+                        LauncherSettingsMessage::GlobalJavaArgEdit(arg, idx)
+                    ),
+                    |idx| Message::LauncherSettings(LauncherSettingsMessage::GlobalJavaArgShiftUp(
+                        idx
+                    )),
+                    |idx| Message::LauncherSettings(
+                        LauncherSettingsMessage::GlobalJavaArgShiftDown(idx)
+                    ),
                 )]
                 .padding(10)
                 .spacing(10),

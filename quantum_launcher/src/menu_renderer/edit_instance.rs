@@ -5,7 +5,7 @@ use crate::{
     stylesheet::{color::Color, styles::LauncherTheme},
 };
 use iced::{widget, Length};
-use ql_core::json::{GlobalSettings, instance_config::JavaArgsMode};
+use ql_core::json::{instance_config::JavaArgsMode, GlobalSettings};
 use ql_core::InstanceSelection;
 
 use super::Element;
@@ -94,24 +94,33 @@ impl MenuEditInstance {
     }
 
     fn item_args(&self) -> widget::Column<'_, Message, LauncherTheme> {
-        let current_mode = self.config.java_args_mode.as_ref().unwrap_or(&JavaArgsMode::Fallback);
-        
+        let current_mode = self
+            .config
+            .java_args_mode
+            .unwrap_or_else(JavaArgsMode::default);
+
         widget::column!(
             "Java arguments:",
             widget::row!(
                 "Mode:",
                 widget::pick_list(
-                    &[JavaArgsMode::Fallback, JavaArgsMode::Override, JavaArgsMode::Combine][..],
+                    [
+                        JavaArgsMode::Fallback,
+                        JavaArgsMode::Disable,
+                        JavaArgsMode::Combine
+                    ],
                     Some(current_mode.clone()),
                     |mode| Message::EditInstance(EditInstanceMessage::JavaArgsModeChanged(mode))
                 )
                 .placeholder("Select mode...")
                 .width(Length::Fixed(150.0))
-            ).spacing(10).align_y(iced::Alignment::Center),
+            )
+            .spacing(10)
+            .align_y(iced::Alignment::Center),
             self.get_mode_description(current_mode),
             widget::column!(
                 Self::get_java_args_list(
-                    self.config.java_args.as_ref(),
+                    self.config.java_args.as_deref(),
                     |n| Message::EditInstance(EditInstanceMessage::JavaArgDelete(n)),
                     |n| Message::EditInstance(EditInstanceMessage::JavaArgShiftUp(n)),
                     |n| Message::EditInstance(EditInstanceMessage::JavaArgShiftDown(n)),
@@ -123,7 +132,7 @@ impl MenuEditInstance {
             "Game arguments:",
             widget::column!(
                 Self::get_java_args_list(
-                    self.config.game_args.as_ref(),
+                    self.config.game_args.as_deref(),
                     |n| Message::EditInstance(EditInstanceMessage::GameArgDelete(n)),
                     |n| Message::EditInstance(EditInstanceMessage::GameArgShiftUp(n)),
                     |n| Message::EditInstance(EditInstanceMessage::GameArgShiftDown(n)),
@@ -137,17 +146,10 @@ impl MenuEditInstance {
         .spacing(10)
         .width(Length::Fill)
     }
-    
-    fn get_mode_description(&self, mode: &JavaArgsMode) -> Element {
-        let description = match mode {
-            JavaArgsMode::Fallback => 
-                "Use global arguments only when instance has no arguments (default behavior)",
-            JavaArgsMode::Override => 
-                "Instance arguments replace global arguments completely",
-            JavaArgsMode::Combine => 
-                "Global arguments are combined with instance arguments (global first)"
-        };
-        
+
+    fn get_mode_description(&self, mode: JavaArgsMode) -> Element {
+        let description = mode.get_description();
+
         widget::text(description)
             .size(12)
             .style(|theme: &LauncherTheme| theme.style_text(Color::SecondLight))
@@ -199,7 +201,7 @@ impl MenuEditInstance {
     }
 
     fn get_java_args_list<'a>(
-        args: Option<&'a Vec<String>>,
+        args: Option<&'a [String]>,
         mut msg_delete: impl FnMut(usize) -> Message,
         mut msg_up: impl FnMut(usize) -> Message,
         mut msg_down: impl FnMut(usize) -> Message,
@@ -290,7 +292,7 @@ pub fn resolution_dialog<'a>(
 }
 
 pub fn global_java_args_dialog<'a>(
-    global_settings: Option<&'a GlobalSettings>,
+    java_args: Option<&'a [String]>,
     add_msg: Message,
     delete_msg: impl Fn(usize) -> Message + 'a,
     edit_msg: &'a dyn Fn(String, usize) -> Message,
@@ -308,7 +310,7 @@ pub fn global_java_args_dialog<'a>(
         .style(ts),
         widget::column!(
             MenuEditInstance::get_java_args_list(
-                global_settings.and_then(|g| g.java_args.as_ref()),
+                java_args,
                 delete_msg,
                 up_msg,
                 down_msg,

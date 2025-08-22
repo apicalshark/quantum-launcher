@@ -322,7 +322,7 @@ impl GameDownloader {
             is_server: Some(false),
             omniarchive: None,
             global_settings: None,
-            java_args_mode: None, // Use default (Fallback)
+            java_args_mode: None,
         };
         let config_json = serde_json::to_string(&config_json).json_to()?;
 

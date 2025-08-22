@@ -46,6 +46,7 @@ pub struct GameLauncher {
     /// Launcher-wide instance settings. These
     /// can be overridden by `config_json.global_settings`.
     global_settings: Option<GlobalSettings>,
+    extra_java_args: Vec<String>,
 }
 
 impl GameLauncher {
@@ -54,6 +55,7 @@ impl GameLauncher {
         username: String,
         java_install_progress_sender: Option<Sender<GenericProgress>>,
         global_settings: Option<GlobalSettings>,
+        extra_java_args: Vec<String>,
     ) -> Result<Self, GameLaunchError> {
         let instance_dir = get_instance_dir(&instance_name).await?;
 
@@ -77,6 +79,7 @@ impl GameLauncher {
             config_json,
             version_json,
             global_settings,
+            extra_java_args,
         })
     }
 
@@ -250,7 +253,7 @@ impl GameLauncher {
         // TODO: deal with self.version_json.arguments.jvm (currently ignored)
         let mut args: Vec<String> = self
             .config_json
-            .get_java_args(self.global_settings.as_ref())
+            .get_java_args(&self.extra_java_args)
             .into_iter()
             .filter(|arg| !arg.trim().is_empty())
             .chain([
