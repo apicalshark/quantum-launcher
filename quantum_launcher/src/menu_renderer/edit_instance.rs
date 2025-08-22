@@ -5,7 +5,7 @@ use crate::{
     stylesheet::{color::Color, styles::LauncherTheme},
 };
 use iced::{widget, Length};
-use ql_core::json::GlobalSettings;
+use ql_core::json::{instance_config::JavaArgsMode, GlobalSettings};
 use ql_core::InstanceSelection;
 
 use super::Element;
@@ -94,11 +94,30 @@ impl MenuEditInstance {
     }
 
     fn item_args(&self) -> widget::Column<'_, Message, LauncherTheme> {
+        let current_mode = self
+            .config
+            .java_args_mode
+            .unwrap_or_else(JavaArgsMode::default);
+
         widget::column!(
-            "Java arguments:",
+            widget::container(
+                widget::column![
+                    widget::text("Interaction with global arguments:").size(14),
+                    widget::pick_list(JavaArgsMode::ALL, Some(current_mode.clone()), |mode| {
+                        Message::EditInstance(EditInstanceMessage::JavaArgsModeChanged(mode))
+                    })
+                    .placeholder("Select mode...")
+                    .width(150)
+                    .text_size(14),
+                    self.get_mode_description(current_mode),
+                ]
+                .padding(10)
+                .spacing(7)
+            ),
+            widget::text("Java arguments:").size(20),
             widget::column!(
                 Self::get_java_args_list(
-                    self.config.java_args.as_ref(),
+                    self.config.java_args.as_deref(),
                     |n| Message::EditInstance(EditInstanceMessage::JavaArgDelete(n)),
                     |n| Message::EditInstance(EditInstanceMessage::JavaArgShiftUp(n)),
                     |n| Message::EditInstance(EditInstanceMessage::JavaArgShiftDown(n)),
@@ -107,10 +126,10 @@ impl MenuEditInstance {
                 button_with_icon(icon_manager::create(), "Add", 16)
                     .on_press(Message::EditInstance(EditInstanceMessage::JavaArgsAdd))
             ),
-            "Game arguments:",
+            widget::text("Game arguments:").size(20),
             widget::column!(
                 Self::get_java_args_list(
-                    self.config.game_args.as_ref(),
+                    self.config.game_args.as_deref(),
                     |n| Message::EditInstance(EditInstanceMessage::GameArgDelete(n)),
                     |n| Message::EditInstance(EditInstanceMessage::GameArgShiftUp(n)),
                     |n| Message::EditInstance(EditInstanceMessage::GameArgShiftDown(n)),
@@ -123,6 +142,15 @@ impl MenuEditInstance {
         .padding(10)
         .spacing(10)
         .width(Length::Fill)
+    }
+
+    fn get_mode_description(&self, mode: JavaArgsMode) -> Element {
+        let description = mode.get_description();
+
+        widget::text(description)
+            .size(12)
+            .style(|theme: &LauncherTheme| theme.style_text(Color::SecondLight))
+            .into()
     }
 
     fn item_mem_alloc(&self) -> widget::Column<'_, Message, LauncherTheme> {
@@ -170,7 +198,7 @@ impl MenuEditInstance {
     }
 
     fn get_java_args_list<'a>(
-        args: Option<&'a Vec<String>>,
+        args: Option<&'a [String]>,
         mut msg_delete: impl FnMut(usize) -> Message,
         mut msg_up: impl FnMut(usize) -> Message,
         mut msg_down: impl FnMut(usize) -> Message,
@@ -256,6 +284,33 @@ pub fn resolution_dialog<'a>(
         widget::text("Common resolutions: 854x480, 1366x768, 1920x1080, 2560x1440, 3840x2160")
             .size(12)
             .style(ts),
+    ]
+    .spacing(5)
+}
+
+pub fn global_java_args_dialog<'a>(
+    java_args: Option<&'a [String]>,
+    add_msg: Message,
+    delete_msg: impl Fn(usize) -> Message + 'a,
+    edit_msg: &'a dyn Fn(String, usize) -> Message,
+    up_msg: impl Fn(usize) -> Message + 'a,
+    down_msg: impl Fn(usize) -> Message + 'a,
+) -> widget::Column<'a, Message, LauncherTheme> {
+    let ts = |n: &LauncherTheme| n.style_text(Color::SecondLight);
+
+    widget::column![
+        "Global Java Arguments:",
+        widget::text(
+            r"These Java arguments will apply to all instances.
+You can override or customize their behaviour on a per-instance basis too."
+        )
+        .size(12)
+        .style(ts),
+        widget::column!(
+            MenuEditInstance::get_java_args_list(java_args, delete_msg, up_msg, down_msg, edit_msg),
+            button_with_icon(icon_manager::create(), "Add Argument", 16).on_press(add_msg)
+        )
+        .spacing(5),
     ]
     .spacing(5)
 }

@@ -25,6 +25,7 @@ pub async fn launch(
     java_install_progress_sender: Option<Sender<GenericProgress>>,
     auth: Option<AccountData>,
     global_settings: Option<GlobalSettings>,
+    extra_java_args: Vec<String>,
 ) -> Result<Arc<Mutex<Child>>, GameLaunchError> {
     if username.is_empty() {
         return Err(GameLaunchError::UsernameIsEmpty);
@@ -38,6 +39,7 @@ pub async fn launch(
         username,
         java_install_progress_sender,
         global_settings,
+        extra_java_args,
     )
     .await?;
 

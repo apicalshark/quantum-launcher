@@ -4,6 +4,48 @@ use serde::{Deserialize, Serialize};
 
 use crate::{InstanceSelection, IntoIoError, IntoJsonError, JsonFileError};
 
+/// Defines how instance Java arguments should interact with global Java arguments
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum JavaArgsMode {
+    /// Use global arguments only if instance arguments are empty,
+    /// as a *fallback*.
+    #[serde(rename = "fallback")]
+    Fallback,
+    /// Disable global arguments entirely,
+    /// **only** use instance arguments
+    #[serde(rename = "disable")]
+    Disable,
+    /// Combine global arguments with instance arguments,
+    /// using both together.
+    #[serde(rename = "combine")]
+    #[default]
+    Combine,
+}
+
+impl JavaArgsMode {
+    pub const ALL: &[Self] = &[Self::Combine, Self::Disable, Self::Fallback];
+
+    pub fn get_description(self) -> &'static str {
+        match self {
+            JavaArgsMode::Fallback => "Use global arguments only when instance has no arguments",
+            JavaArgsMode::Disable => "No global arguments are applied",
+            JavaArgsMode::Combine => {
+                "Global arguments are combined with instance arguments (default)"
+            }
+        }
+    }
+}
+
+impl std::fmt::Display for JavaArgsMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            JavaArgsMode::Fallback => write!(f, "Fallback"),
+            JavaArgsMode::Disable => write!(f, "Disable"),
+            JavaArgsMode::Combine => write!(f, "Combine (default)"),
+        }
+    }
+}
+
 /// Configuration for a specific instance.
 /// Not to be confused with [`crate::json::VersionDetails`]. That one
 /// is launcher agnostic data provided from mojang, this one is
@@ -119,6 +161,15 @@ pub struct InstanceConfigJson {
     pub close_on_start: Option<bool>,
 
     pub global_settings: Option<GlobalSettings>,
+
+    /// Controls how this instance's Java arguments interact with global Java arguments.
+    ///
+    /// **Default: `JavaArgsMode::Fallback`**
+    ///
+    /// - `Fallback`: Use global args only when instance has no meaningful args (backward compatible)
+    /// - `Override`: Instance args completely replace global args (ignore global when instance has args)
+    /// - `Combine`: Global args are prepended to instance args (both are used together)
+    pub java_args_mode: Option<JavaArgsMode>,
 }
 
 impl InstanceConfigJson {
@@ -189,6 +240,55 @@ impl InstanceConfigJson {
                 .and_then(|n| n.window_height)
                 .or(global.and_then(|n| n.window_height)),
         )
+    }
+
+    /// Gets Java arguments with global fallback/combination support.
+    ///
+    /// The behavior depends on the instance's `java_args_mode`:
+    /// - `Fallback`: Returns instance args if meaningful, otherwise global args
+    /// - `Override`: Returns instance args only (ignores global even if instance is empty)
+    /// - `Combine`: Returns global args + instance args (global first)
+    ///
+    /// Returns an empty vector if no arguments should be used.
+    #[must_use]
+    pub fn get_java_args(&self, global_args: &[String]) -> Vec<String> {
+        let mode = self
+            .java_args_mode
+            .as_ref()
+            .unwrap_or(&JavaArgsMode::Combine);
+        let instance_args = self.java_args.as_ref();
+
+        let has_meaningful_instance_args =
+            instance_args.map_or(false, |args| args.iter().any(|arg| !arg.trim().is_empty()));
+
+        match mode {
+            // Use instance if meaningful, otherwise global
+            JavaArgsMode::Fallback => {
+                if has_meaningful_instance_args {
+                    instance_args.unwrap().clone()
+                } else {
+                    global_args.to_owned()
+                }
+            }
+            // Use instance args only, ignore global completely
+            JavaArgsMode::Disable => {
+                if has_meaningful_instance_args {
+                    instance_args.unwrap().clone()
+                } else {
+                    Vec::new()
+                }
+            }
+            // Combine both instance and global args
+            JavaArgsMode::Combine => {
+                let mut combined = Vec::new();
+                combined.extend(global_args.iter().filter(|n| !n.trim().is_empty()).cloned());
+                if has_meaningful_instance_args {
+                    combined.extend(instance_args.unwrap().iter().cloned());
+                }
+
+                combined
+            }
+        }
     }
 }
 
