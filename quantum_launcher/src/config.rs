@@ -1,10 +1,10 @@
+use crate::{WINDOW_HEIGHT, WINDOW_WIDTH};
 use ql_core::json::GlobalSettings;
 use ql_core::{
     err, IntoIoError, IntoJsonError, JsonFileError, LAUNCHER_DIR, LAUNCHER_VERSION_NAME,
 };
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::Path};
-use crate::{WINDOW_HEIGHT, WINDOW_WIDTH};
 
 pub const SIDEBAR_WIDTH_DEFAULT: u32 = 190;
 
@@ -100,6 +100,7 @@ pub struct LauncherConfig {
     /// Settings that apply both on a per-instance basis and with global overrides.
     // Since: v0.4.2
     pub global_settings: Option<GlobalSettings>,
+    pub extra_java_args: Option<Vec<String>>,
 }
 
 impl Default for LauncherConfig {
@@ -118,6 +119,7 @@ impl Default for LauncherConfig {
             account_selected: None,
             window: None,
             global_settings: None,
+            extra_java_args: None,
         }
     }
 }

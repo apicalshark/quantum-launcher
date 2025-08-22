@@ -121,6 +121,7 @@ async fn write_config(
         // to control the server instantly after starting it?
         close_on_start: None,
         global_settings: None,
+        java_args_mode: None,
     };
     let server_config_path = server_dir.join("config.json");
     tokio::fs::write(

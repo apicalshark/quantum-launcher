@@ -63,6 +63,7 @@ pub enum EditInstanceMessage {
     JavaArgDelete(usize),
     JavaArgShiftUp(usize),
     JavaArgShiftDown(usize),
+    JavaArgsModeChanged(ql_core::json::instance_config::JavaArgsMode),
     GameArgsAdd,
     GameArgEdit(String, usize),
     GameArgDelete(usize),
@@ -230,6 +231,13 @@ pub enum LauncherSettingsMessage {
 
     ToggleAntialiasing(bool),
     ToggleWindowSize(bool),
+
+    // Global Java arguments
+    GlobalJavaArgsAdd,
+    GlobalJavaArgEdit(String, usize),
+    GlobalJavaArgDelete(usize),
+    GlobalJavaArgShiftUp(usize),
+    GlobalJavaArgShiftDown(usize),
 }
 
 #[derive(Debug, Clone)]
