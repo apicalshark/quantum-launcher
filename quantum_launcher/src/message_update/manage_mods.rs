@@ -252,6 +252,11 @@ impl Launcher {
                     }
                 }
             }
+            ManageModsMessage::ExportToClipboard => {
+                if let State::EditMods(menu) = &self.state {
+                    return self.export_selected_mods_to_clipboard(menu);
+                }
+            }
         }
         Task::none()
     }
@@ -479,6 +484,70 @@ impl Launcher {
                     SelectedState::Some
                 };
             }
+        }
+    }
+
+    fn export_selected_mods_to_clipboard(&self, menu: &MenuEditMods) -> Task<Message> {
+        let mut markdown_lines = Vec::new();
+        
+        for selected_mod in &menu.selected_mods {
+            match selected_mod {
+                SelectedMod::Downloaded { name, id } => {
+                    // Try to get the mod config from the index for better URL generation
+                    if let Some(mod_config) = menu.mods.mods.get(&id.get_index_str()) {
+                        let url = match mod_config.project_source.as_str() {
+                            "modrinth" => {
+                                // For Modrinth, we can use either the project_id (slug) or the ID
+                                format!("https://modrinth.com/mod/{}", mod_config.project_id)
+                            }
+                            "curseforge" => {
+                                // For CurseForge, project_id should be the slug
+                                format!("https://www.curseforge.com/minecraft/mc-mods/{}", mod_config.project_id)
+                            }
+                            _ => {
+                                // Fallback to basic URL generation based on ModId
+                                match id {
+                                    ModId::Modrinth(mod_id) => {
+                                        format!("https://modrinth.com/mod/{}", mod_id)
+                                    }
+                                    ModId::Curseforge(mod_id) => {
+                                        format!("https://www.curseforge.com/minecraft/mc-mods/{}", mod_id)
+                                    }
+                                }
+                            }
+                        };
+                        markdown_lines.push(format!("[{}]({})", name, url));
+                    } else {
+                        // Fallback if mod config is not found
+                        let url = match id {
+                            ModId::Modrinth(mod_id) => {
+                                format!("https://modrinth.com/mod/{}", mod_id)
+                            }
+                            ModId::Curseforge(mod_id) => {
+                                format!("https://www.curseforge.com/minecraft/mc-mods/{}", mod_id)
+                            }
+                        };
+                        markdown_lines.push(format!("[{}]({})", name, url));
+                    }
+                }
+                SelectedMod::Local { file_name } => {
+                    // For local mods, we just add the filename without a link
+                    // Remove file extension for cleaner display
+                    let display_name = file_name
+                        .strip_suffix(".jar")
+                        .or_else(|| file_name.strip_suffix(".zip"))
+                        .unwrap_or(file_name);
+                    markdown_lines.push(display_name.to_string());
+                }
+            }
+        }
+        
+        if markdown_lines.is_empty() {
+            // Show a message if no mods are selected
+            iced::clipboard::write("No mods selected for export".to_string())
+        } else {
+            let markdown_text = markdown_lines.join("\n");
+            iced::clipboard::write(markdown_text)
         }
     }
 

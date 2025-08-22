@@ -369,41 +369,46 @@ pub enum SelectedMod {
 /// If you input a path (for example, `C:\Users\Mrmayman\Documents\`)
 /// this will open it in the file explorer using the system's default file manager.
 ///
-/// # Platform details
-/// - Linux, BSDs: `xdg-open <PATH>`
-/// - macOS: `open <PATH>`
-/// - Windows: `cmd /c start /b <PATH>`
+/// On Windows, this respects the user's default file manager and runs silently
+/// without showing a terminal window.
 ///
-/// Unsupported platforms will log an error and not open anything.
+/// # Panics
+/// Only supported on windows, macOS and linux,
+/// other platforms will **panic**.
 #[allow(clippy::zombie_processes)]
 pub fn open_file_explorer<S: AsRef<OsStr>>(path: S) {
     use std::process::Command;
 
     let path = path.as_ref();
     info!("Opening link: {}", path.to_string_lossy());
-
-    #[allow(unused)]
-    let result: std::io::Result<()> = Err(std::io::Error::other("Unsupported Platform!"));
-
-    #[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd"))]
-    let result = Command::new("xdg-open").arg(path).spawn();
-    #[cfg(target_os = "macos")]
-    let result = Command::new("open").arg(path).spawn();
-    #[cfg(target_os = "windows")]
-    let result = {
-        // To not flash a terminal window
-        use std::os::windows::process::CommandExt;
-        const CREATE_NO_WINDOW: u32 = 0x08000000;
-
-        // Respects the user's default file manager
-        Command::new("cmd")
-            .args(["/c", "start", "/b", ""])
-            .arg(path)
-            .creation_flags(CREATE_NO_WINDOW)
-            .spawn()
+    
+    let result = if cfg!(target_os = "linux") || cfg!(target_os = "freebsd") {
+        Command::new("xdg-open").arg(path).spawn()
+    } else if cfg!(target_os = "windows") {
+        // Use 'cmd /c start /b' to respect user's default file manager without showing terminal
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x08000000;
+            Command::new("cmd")
+                .args(["/c", "start", "/b", ""])
+                .arg(path)
+                .creation_flags(CREATE_NO_WINDOW)
+                .spawn()
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            // Fallback for non-Windows builds
+            Command::new("cmd").args(["/c", "start", "/b", ""]).arg(path).spawn()
+        }
+    } else if cfg!(target_os = "macos") {
+        Command::new("open").arg(path).spawn()
+    } else {
+        panic!("Opening file explorer not supported on this platform.")
     };
-
-    if let Err(err) = result {
+    
+    if let Err(err) = result
+    {
         err!("Could not open link: {err}");
     }
 }

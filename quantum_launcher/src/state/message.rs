@@ -98,6 +98,7 @@ pub enum ManageModsMessage {
     SelectAll,
     AddFile,
     AddFileDone(Res<HashSet<CurseforgeNotAllowed>>),
+    ExportToClipboard,
 }
 
 #[derive(Debug, Clone)]
