@@ -158,7 +158,10 @@ impl Launcher {
                         }));*/
 
                     let toggle_downloaded = Task::perform(
-                        ql_mod_manager::store::toggle_mods(ids_downloaded, instance_name.clone()),
+                        ql_mod_manager::store::toggle_mods(
+                            ids_downloaded.clone(),
+                            instance_name.clone(),
+                        ),
                         |n| Message::ManageMods(ManageModsMessage::ToggleFinished(n.strerr())),
                     );
                     let toggle_local = Task::perform(

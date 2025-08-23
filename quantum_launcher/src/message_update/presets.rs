@@ -290,15 +290,15 @@ impl Launcher {
         };
 
         let loader = Loader::try_from(mod_type.as_str());
-        let loader = if is_empty && loader.is_ok() {
-            self.state = State::ManagePresets(menu);
-            loader.unwrap()
-        } else {
-            if loader.is_err() {
-                menu.recommended_mods = Some(Vec::new());
+        let loader = match loader {
+            Ok(loader) if is_empty => loader,
+            r @ (Err(_) | Ok(_)) => {
+                if r.is_err() {
+                    menu.recommended_mods = Some(Vec::new());
+                }
+                self.state = State::ManagePresets(menu);
+                return Task::none();
             }
-            self.state = State::ManagePresets(menu);
-            return Task::none();
         };
 
         let ids = RECOMMENDED_MODS.to_owned();
