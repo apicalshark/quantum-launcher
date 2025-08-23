@@ -375,55 +375,18 @@ impl iced::application::DefaultStyle for LauncherTheme {
 }
 
 impl widget::checkbox::Catalog for LauncherTheme {
-    type Class<'a> = ();
+    type Class<'a> = widget::checkbox::StyleFn<'a, LauncherTheme>;
 
-    fn default<'a>() -> <Self as widget::checkbox::Catalog>::Class<'a> {}
+    fn default<'a>() -> <Self as widget::checkbox::Catalog>::Class<'a> {
+        Box::new(|n, status| n.style_checkbox(status, None))
+    }
 
-    fn style(&self, (): &(), status: widget::checkbox::Status) -> widget::checkbox::Style {
-        match status {
-            widget::checkbox::Status::Active { is_checked } => widget::checkbox::Style {
-                background: if is_checked {
-                    self.get_bg(Color::Light, true)
-                } else {
-                    self.get_bg(Color::Dark, true)
-                },
-                icon_color: if is_checked {
-                    self.get(Color::Dark, true)
-                } else {
-                    self.get(Color::Light, true)
-                },
-                border: self.get_border(Color::SecondLight, true),
-                text_color: None,
-            },
-            widget::checkbox::Status::Hovered { is_checked } => widget::checkbox::Style {
-                background: if is_checked {
-                    self.get_bg(Color::White, true)
-                } else {
-                    self.get_bg(Color::SecondDark, true)
-                },
-                icon_color: if is_checked {
-                    self.get(Color::SecondDark, true)
-                } else {
-                    self.get(Color::White, true)
-                },
-                border: self.get_border(Color::Light, true),
-                text_color: None,
-            },
-            widget::checkbox::Status::Disabled { is_checked } => widget::checkbox::Style {
-                background: if is_checked {
-                    self.get_bg(Color::SecondLight, true)
-                } else {
-                    self.get_bg(Color::ExtraDark, true)
-                },
-                icon_color: if is_checked {
-                    self.get(Color::ExtraDark, true)
-                } else {
-                    self.get(Color::SecondLight, true)
-                },
-                border: self.get_border(Color::Mid, true),
-                text_color: None,
-            },
-        }
+    fn style<'a>(
+        &self,
+        s: &<Self as widget::checkbox::Catalog>::Class<'a>,
+        status: widget::checkbox::Status,
+    ) -> widget::checkbox::Style {
+        s(self, status)
     }
 }
 

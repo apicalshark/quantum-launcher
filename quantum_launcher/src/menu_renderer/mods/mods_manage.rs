@@ -90,23 +90,29 @@ impl MenuEditMods {
                 widget::column!(
                     widget::text("Mod Updates Available!").size(15),
                     widget::column(self.available_updates.iter().enumerate().map(
-                        |(i, (id, name, is_enabled))| {
-                            widget::checkbox(
-                                format!(
-                                    "{} - {name}",
-                                    self.mods
-                                        .mods
-                                        .get(&id.get_index_str())
-                                        .map(|n| n.name.clone())
-                                        .unwrap_or_default()
-                                ),
-                                *is_enabled,
-                            )
-                            .on_toggle(move |b| {
-                                Message::ManageMods(ManageModsMessage::UpdateCheckToggle(i, b))
-                            })
-                            .text_size(12)
-                            .into()
+                        |(i, (id, update_name, is_enabled))| {
+                            let title = self
+                                .mods
+                                .mods
+                                .get(&id.get_index_str())
+                                .map(|n| n.name.clone())
+                                .unwrap_or_default();
+
+                            let text = if title.is_empty()
+                                || update_name.contains(&title)
+                                || update_name.contains(&title.replace(' ', ""))
+                            {
+                                update_name.clone()
+                            } else {
+                                format!("{title} - {update_name}")
+                            };
+
+                            widget::checkbox(text, *is_enabled)
+                                .on_toggle(move |b| {
+                                    Message::ManageMods(ManageModsMessage::UpdateCheckToggle(i, b))
+                                })
+                                .text_size(12)
+                                .into()
                         }
                     ))
                     .spacing(10),
@@ -322,28 +328,45 @@ impl MenuEditMods {
                         .iter()
                         .map(|mod_list_entry| match mod_list_entry {
                             ModListEntry::Downloaded { id, config } => {
-                                widget::row!(if config.manually_installed {
-                                    widget::row!(widget::checkbox(
-                                        format!(
-                                            "{}{}",
-                                            if config.enabled { "" } else { "(DISABLED) " },
-                                            config.name
-                                        ),
+                                if config.manually_installed {
+                                    let is_enabled = config.enabled;
+                                    let checkbox = widget::checkbox(
+                                        &config.name,
                                         self.selected_mods.contains(&SelectedMod::Downloaded {
                                             name: config.name.clone(),
-                                            id: (*id).clone()
-                                        })
+                                            id: (*id).clone(),
+                                        }),
                                     )
+                                    .style(move |t: &LauncherTheme, status| {
+                                        t.style_checkbox(
+                                            status,
+                                            Some(if is_enabled {
+                                                Color::White
+                                            } else {
+                                                Color::Mid
+                                            }),
+                                        )
+                                    })
                                     .on_toggle(move |t| {
                                         Message::ManageMods(ManageModsMessage::ToggleCheckbox(
                                             (config.name.clone(), id.clone()),
                                             t,
                                         ))
-                                    }))
+                                    });
+
+                                    if is_enabled {
+                                        checkbox.into()
+                                    } else {
+                                        tooltip(
+                                            checkbox,
+                                            "Disabled",
+                                            widget::tooltip::Position::FollowCursor,
+                                        )
+                                        .into()
+                                    }
                                 } else {
-                                    widget::row!(widget::text!("- (DEPENDENCY) {}", config.name))
-                                },)
-                                .into()
+                                    widget::text!("- (DEPENDENCY) {}", config.name).into()
+                                }
                             }
                             ModListEntry::Local { file_name } => widget::checkbox(
                                 file_name.clone(),
