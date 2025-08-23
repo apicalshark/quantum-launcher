@@ -13,7 +13,7 @@ use crate::{
 };
 
 impl MenuExportMods {
-    pub fn view(&self) -> Element {
+    pub fn view(&'_ self) -> Element<'_> {
         if self.selected_mods.is_empty() {
             return self.get_top_section().padding(25).into();
         }
@@ -21,7 +21,7 @@ impl MenuExportMods {
         widget::scrollable(
             widget::column![
                 self.get_top_section(),
-                self.get_controls(),
+                Self::get_controls(),
                 widget::column![
                     widget::text("Preview:")
                         .size(18)
@@ -42,7 +42,7 @@ impl MenuExportMods {
         .into()
     }
 
-    fn get_controls(&self) -> widget::Column<'_, Message, LauncherTheme> {
+    fn get_controls<'a>() -> widget::Column<'a, Message, LauncherTheme> {
         widget::column![
             widget::text("Choose export format:").size(20),
             widget::row![
@@ -144,10 +144,9 @@ impl MenuExportMods {
             }),
         ]
         .spacing(20)
-        .into()
     }
 
-    fn get_preview_content(&self) -> Element {
+    fn get_preview_content(&'_ self) -> Element<'_> {
         const ELEM_HEIGHT: u16 = 26;
 
         let mut preview_elements = Vec::new();
@@ -160,7 +159,7 @@ impl MenuExportMods {
                             format!("https://modrinth.com/mod/{mod_id}")
                         }
                         ModId::Curseforge(mod_id) => {
-                            format!("https://www.curseforge.com/minecraft/mc-mods/{}", mod_id)
+                            format!("https://www.curseforge.com/minecraft/mc-mods/{mod_id}")
                         }
                     };
 

@@ -13,7 +13,7 @@ use crate::{
 };
 
 impl Launcher {
-    pub fn view(&self) -> Element {
+    pub fn view(&'_ self) -> Element<'_> {
         widget::column![
             widget::column![self.view_menu()].height(
                 (self.window_size.1 / if self.is_log_open { 2.0 } else { 1.0 })
@@ -62,7 +62,7 @@ impl Launcher {
         .into()
     }
 
-    fn view_menu(&self) -> Element {
+    fn view_menu(&'_ self) -> Element<'_> {
         match &self.state {
             State::Launch(menu) => self.view_main_menu(menu),
             State::AccountLoginProgress(progress) => widget::column![

@@ -77,7 +77,7 @@ impl MenuEditMods {
         }
     }
 
-    fn get_mod_update_pane(&self, tick_timer: usize) -> Element {
+    fn get_mod_update_pane(&'_ self, tick_timer: usize) -> Element<'_> {
         if self.update_check_handle.is_some() {
             let dots = ".".repeat((tick_timer % 3) + 1);
             widget::text!("Checking for mod updates{dots}")
@@ -121,7 +121,7 @@ impl MenuEditMods {
         }
     }
 
-    fn get_mod_installer_buttons(&self, selected_instance: &InstanceSelection) -> Element {
+    fn get_mod_installer_buttons(&'_ self, selected_instance: &InstanceSelection) -> Element<'_> {
         match self.config.mod_type.as_str() {
             "Vanilla" => match selected_instance {
                 InstanceSelection::Instance(_) => widget::column![
@@ -220,7 +220,7 @@ impl MenuEditMods {
         }
     }
 
-    fn get_uninstall_panel(mod_type: &str, uninstall_loader_message: Message) -> Element {
+    fn get_uninstall_panel(mod_type: &'_ str, uninstall_loader_message: Message) -> Element<'_> {
         widget::button(
             widget::row![
                 icon_manager::delete_with_size(14),
@@ -237,7 +237,7 @@ impl MenuEditMods {
         .into()
     }
 
-    fn open_mod_folder_button(selected_instance: &InstanceSelection) -> Element {
+    fn open_mod_folder_button(selected_instance: &'_ InstanceSelection) -> Element<'_> {
         let path = {
             let path = selected_instance.get_dot_minecraft_path().join("mods");
             path.exists().then_some(path)
@@ -248,7 +248,7 @@ impl MenuEditMods {
             .into()
     }
 
-    fn get_mod_list(&self) -> Element {
+    fn get_mod_list(&'_ self) -> Element<'_> {
         if self.sorted_mods_list.is_empty() {
             return widget::column!(
                 "Download some mods to get started",
@@ -314,7 +314,7 @@ impl MenuEditMods {
         .into()
     }
 
-    fn get_mod_list_contents(&self) -> Element {
+    fn get_mod_list_contents(&'_ self) -> Element<'_> {
         widget::scrollable(
             widget::row![
                 widget::column({

@@ -84,7 +84,7 @@ impl MenuModsDownload {
         .into()
     }
 
-    fn get_side_panel(&self) -> Element {
+    fn get_side_panel(&'_ self) -> Element<'_> {
         let normal_controls = widget::column!(
             back_button().on_press(Message::ManageMods(ManageModsMessage::ScreenOpen)),
             widget::Space::with_height(5.0),

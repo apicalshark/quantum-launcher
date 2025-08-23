@@ -9,7 +9,7 @@ use crate::{
 };
 
 impl MenuEditJarMods {
-    pub fn view(&self, selected_instance: &InstanceSelection) -> Element {
+    pub fn view(&'_ self, selected_instance: &InstanceSelection) -> Element<'_> {
         let menu_main = widget::row!(
             widget::container(
                 widget::scrollable(
@@ -78,7 +78,7 @@ impl MenuEditJarMods {
         }
     }
 
-    fn get_mod_list(&self) -> Element {
+    fn get_mod_list(&'_ self) -> Element<'_> {
         let Some(jarmods) = &self.jarmods else {
             return widget::column!["Loading..."].padding(10).into();
         };

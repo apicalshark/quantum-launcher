@@ -12,7 +12,7 @@ use crate::{
 };
 
 impl MenuInstallOptifine {
-    pub fn view(&self) -> Element {
+    pub fn view(&'_ self) -> Element<'_> {
         match self {
             MenuInstallOptifine::InstallingB173 => {
                 widget::column![widget::text("Installing OptiFine for Beta 1.7.3...").size(20)]
@@ -100,7 +100,7 @@ impl MenuInstallOptifine {
 }
 
 impl MenuInstallFabric {
-    pub fn view(&self, selected_instance: &InstanceSelection, tick_timer: usize) -> Element {
+    pub fn view(&'_ self, selected_instance: &InstanceSelection, tick_timer: usize) -> Element<'_> {
         match self {
             MenuInstallFabric::Loading { is_quilt, .. } => {
                 let loader_name = if *is_quilt { "Quilt" } else { "Fabric" };
@@ -180,7 +180,7 @@ impl MenuInstallFabric {
 }
 
 impl MenuInstallForge {
-    pub fn view(&self) -> Element {
+    pub fn view(&'_ self) -> Element<'_> {
         let main_block = widget::column!(
             widget::text("Installing Forge/NeoForge...").size(20),
             self.forge_progress.view()

@@ -523,10 +523,10 @@ impl Launcher {
                             format!("https://modrinth.com/mod/{mod_id}")
                         }
                         ModId::Curseforge(mod_id) => {
-                            format!("https://www.curseforge.com/minecraft/mc-mods/{}", mod_id)
+                            format!("https://www.curseforge.com/minecraft/mc-mods/{mod_id}")
                         }
                     };
-                    markdown_lines.push(format!("- [{}]({})", name, url));
+                    markdown_lines.push(format!("- [{name}]({url})"));
                 }
                 SelectedMod::Local { file_name } => {
                     let display_name = file_name
