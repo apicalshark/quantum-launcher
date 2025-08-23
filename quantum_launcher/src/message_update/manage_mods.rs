@@ -256,7 +256,7 @@ impl Launcher {
                 if let State::EditMods(menu) = &mut self.state {
                     // Navigate to the export menu with the current selection and mod data
                     use crate::state::MenuExportMods;
-                    
+
                     self.state = State::ExportMods(MenuExportMods {
                         selected_mods: menu.selected_mods.clone(),
                         mod_index: menu.mods.clone(),
@@ -522,7 +522,7 @@ impl Launcher {
 
     fn export_selected_mods_as_markdown(selected_mods: &HashSet<SelectedMod>, mod_index: &ModIndex) -> Task<Message> {
         let mut markdown_lines = Vec::new();
-        
+
         for selected_mod in selected_mods {
             match selected_mod {
                 SelectedMod::Downloaded { name, id } => {

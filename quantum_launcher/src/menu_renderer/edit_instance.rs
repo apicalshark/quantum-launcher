@@ -94,16 +94,13 @@ impl MenuEditInstance {
     }
 
     fn item_args(&self) -> widget::Column<'_, Message, LauncherTheme> {
-        let current_mode = self
-            .config
-            .java_args_mode
-            .unwrap_or_else(JavaArgsMode::default);
+        let current_mode = self.config.java_args_mode.unwrap_or_default();
 
         widget::column!(
             widget::container(
                 widget::column![
                     widget::text("Interaction with global arguments:").size(14),
-                    widget::pick_list(JavaArgsMode::ALL, Some(current_mode.clone()), |mode| {
+                    widget::pick_list(JavaArgsMode::ALL, Some(current_mode), |mode| {
                         Message::EditInstance(EditInstanceMessage::JavaArgsModeChanged(mode))
                     })
                     .placeholder("Select mode...")

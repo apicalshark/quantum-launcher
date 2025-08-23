@@ -259,7 +259,7 @@ impl InstanceConfigJson {
         let instance_args = self.java_args.as_ref();
 
         let has_meaningful_instance_args =
-            instance_args.map_or(false, |args| args.iter().any(|arg| !arg.trim().is_empty()));
+            instance_args.is_some_and(|args| args.iter().any(|arg| !arg.trim().is_empty()));
 
         match mode {
             // Use instance if meaningful, otherwise global
