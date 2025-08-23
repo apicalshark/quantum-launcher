@@ -523,7 +523,7 @@ impl Launcher {
                             format!("https://modrinth.com/mod/{mod_id}")
                         }
                         ModId::Curseforge(mod_id) => {
-                            format!("https://www.curseforge.com/minecraft/mc-mods/{mod_id}")
+                            format!("https://www.curseforge.com/projects/{mod_id}")
                         }
                     };
                     markdown_lines.push(format!("- [{name}]({url})"));
