@@ -14,8 +14,6 @@ Btw, if you have any questions, feel free to ask me on [Discord](https://discord
 ### Core components
 
 - `ql_core` - Core utilities and shared code
-- `ql_reqwest` - A shim (wrapper) around the [reqwest](https://github.com/seanmonstar/reqwest) library, that
-  automatically deals with platform-specific features in the Cargo.toml.
 
 ### Specific-purpose "libraries"
 
