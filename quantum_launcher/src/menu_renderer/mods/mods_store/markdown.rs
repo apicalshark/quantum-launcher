@@ -203,7 +203,7 @@ fn render_children<'arena, 'element>(
     for item in md.children() {
         let force_newline = {
             let data = item.data.borrow();
-            matches!(data.value, NodeValue::CodeBlock(_))
+            matches!(data.value, NodeValue::CodeBlock(_) | NodeValue::List(_))
         };
         if is_newline | force_newline {
             column = column.push(row.wrap());

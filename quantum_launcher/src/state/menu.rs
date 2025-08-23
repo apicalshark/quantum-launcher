@@ -202,7 +202,6 @@ impl MenuEditMods {
 
 pub struct MenuExportMods {
     pub selected_mods: HashSet<SelectedMod>,
-    pub mod_index: ModIndex,
 }
 
 pub struct MenuEditJarMods {

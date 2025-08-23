@@ -34,10 +34,22 @@ pub fn link<'a>(
     e: impl Into<Element<'a>>,
     url: String,
 ) -> widget::Button<'a, Message, LauncherTheme> {
-    widget::button(e.into())
+    widget::button(underline(e))
         .on_press(Message::CoreOpenLink(url))
         .padding(0)
-        .style(|n: &LauncherTheme, status| n.style_button(status, StyleButton::Flat))
+        .style(|n: &LauncherTheme, status| n.style_button(status, StyleButton::FlatDark))
+}
+
+pub fn underline<'a>(e: impl Into<Element<'a>>) -> widget::Stack<'a, Message, LauncherTheme> {
+    widget::stack!(
+        widget::column![e.into()],
+        widget::column![
+            widget::vertical_space(),
+            widget::horizontal_rule(1)
+                .style(|theme: &LauncherTheme| theme.style_rule(Color::Light, 1)),
+            widget::Space::with_height(1),
+        ]
+    )
 }
 
 pub fn center_x<'a>(e: impl Into<Element<'a>>) -> Element<'a> {
@@ -563,8 +575,7 @@ pub fn view_log_upload_result(url: &str, is_server: bool) -> Element {
                 .spacing(10)
                 .align_y(iced::Alignment::Center)
             )
-            .padding(10)
-            .style(|theme: &LauncherTheme| theme.style_container_box()),
+            .padding(10),
             widget::vertical_space(),
         ]
         .height(Length::Fill)

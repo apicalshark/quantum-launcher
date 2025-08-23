@@ -291,7 +291,7 @@ impl LauncherTheme {
         }
     }
 
-    pub fn style_container_box(&self) -> Style {
+    pub fn style_container_normal(&self) -> Style {
         Style {
             border: self.get_border(Color::SecondDark, true),
             ..Default::default()
@@ -308,13 +308,16 @@ impl LauncherTheme {
     }
 
     pub fn style_container_sharp_box(&self, width: f32, color: Color) -> Style {
+        self.style_container_round_box(width, color, 0.0)
+    }
+
+    pub fn style_container_round_box(&self, width: f32, color: Color, radius: f32) -> Style {
         Style {
             border: {
-                let (palette, color) = self.get_base(true, Color::Mid);
                 Border {
-                    color: palette.get(color),
+                    color: self.get(Color::Mid, true),
                     width,
-                    radius: 0.0.into(),
+                    radius: radius.into(),
                 }
             },
             background: Some(self.get_bg(color, true)),

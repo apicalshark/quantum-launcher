@@ -50,7 +50,7 @@ impl widget::container::Catalog for LauncherTheme {
     type Class<'a> = widget::container::StyleFn<'a, LauncherTheme>;
 
     fn default<'a>() -> <Self as widget::container::Catalog>::Class<'a> {
-        Box::new(Self::style_container_box)
+        Box::new(Self::style_container_normal)
     }
 
     fn style(
