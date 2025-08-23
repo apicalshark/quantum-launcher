@@ -50,9 +50,6 @@ impl Launcher {
                     },
                 }
             }
-            AccountMessage::LittleSkinDeviceCodeRequested => {
-                todo!("Handle LittleSkinDeviceCodeRequested");
-            }
             AccountMessage::LittleSkinDeviceCodeReady {
                 user_code,
                 verification_uri,
@@ -93,9 +90,6 @@ impl Launcher {
                     menu.is_loading = false;
                     menu.device_code_error = Some(err_msg);
                 }
-            }
-            AccountMessage::LittleSkinDeviceCodePollResult(_) => {
-                todo!("Handle LittleSkinDeviceCodePollResult");
             }
             AccountMessage::LogoutConfirm => {
                 let username = self.accounts_selected.clone().unwrap();

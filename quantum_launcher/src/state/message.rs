@@ -202,8 +202,6 @@ pub enum AccountMessage {
     AltLoginResponse(Res<ql_instances::auth::yggdrasil::Account>),
 
     LittleSkinOauthButtonClicked,
-    // LittleSkin Device Code Flow
-    LittleSkinDeviceCodeRequested,
     LittleSkinDeviceCodeReady {
         user_code: String,
         verification_uri: String,
@@ -212,7 +210,6 @@ pub enum AccountMessage {
         device_code: String,
     },
     LittleSkinDeviceCodeError(String),
-    LittleSkinDeviceCodePollResult(Res<ql_instances::auth::yggdrasil::Account>),
 }
 
 #[derive(Debug, Clone)]
