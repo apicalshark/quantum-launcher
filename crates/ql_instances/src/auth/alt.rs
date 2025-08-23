@@ -49,8 +49,8 @@ pub enum OauthError {
     NoMinecraftProfile,
 }
 
-impl From<ql_reqwest::Error> for Error {
-    fn from(value: ql_reqwest::Error) -> Self {
+impl From<reqwest::Error> for Error {
+    fn from(value: reqwest::Error) -> Self {
         Self::Request(RequestError::ReqwestError(value))
     }
 }

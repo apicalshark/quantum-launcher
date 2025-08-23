@@ -8,7 +8,8 @@ edition = "2021"
 [dependencies]
 ql_core = { path = "../ql_core" }
 ql_java_handler = { path = "../ql_java_handler" }
-ql_reqwest = { path = "../ql_reqwest" }
+
+reqwest = { workspace = true }
 
 serde = { workspace = true }
 serde_json = { workspace = true }

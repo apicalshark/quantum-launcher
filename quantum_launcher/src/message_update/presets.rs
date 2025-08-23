@@ -291,8 +291,11 @@ impl Launcher {
 
         let loader = Loader::try_from(mod_type.as_str());
         let loader = match loader {
-            Ok(loader) if is_empty => loader,
-            r @ (Err(_) | Ok(_)) => {
+            Ok(loader) if is_empty => {
+                self.state = State::ManagePresets(menu);
+                loader
+            }
+            r @ (Ok(_) | Err(_)) => {
                 if r.is_err() {
                     menu.recommended_mods = Some(Vec::new());
                 }

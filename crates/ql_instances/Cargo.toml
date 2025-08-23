@@ -13,12 +13,13 @@ simulate_macos_arm64 = []
 [dependencies]
 ql_core = { path = "../ql_core" }
 ql_java_handler = { path = "../ql_java_handler" }
-ql_reqwest = { path = "../ql_reqwest" }
+
 
 chrono = { workspace = true }
 semver = "1"
 zip = { workspace = true }
 
+reqwest = { workspace = true }
 tokio = { workspace = true }
 
 serde = { workspace = true }

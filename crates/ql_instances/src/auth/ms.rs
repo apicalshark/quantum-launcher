@@ -66,7 +66,7 @@
 //! ```
 
 use ql_core::{info, pt, retry, GenericProgress, IntoJsonError, JsonError, RequestError, CLIENT};
-use ql_reqwest::{Client, StatusCode};
+use reqwest::{Client, StatusCode};
 use serde::Deserialize;
 use serde_json::json;
 use std::collections::HashMap;
@@ -187,8 +187,8 @@ pub enum Error {
     DoesntOwnGame,
 }
 
-impl From<ql_reqwest::Error> for Error {
-    fn from(value: ql_reqwest::Error) -> Self {
+impl From<reqwest::Error> for Error {
+    fn from(value: reqwest::Error) -> Self {
         Self::Request(RequestError::ReqwestError(value))
     }
 }
