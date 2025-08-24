@@ -77,7 +77,7 @@ impl MenuEditMods {
         }
     }
 
-    fn get_mod_update_pane(&self, tick_timer: usize) -> Element {
+    fn get_mod_update_pane(&'_ self, tick_timer: usize) -> Element<'_> {
         if self.update_check_handle.is_some() {
             let dots = ".".repeat((tick_timer % 3) + 1);
             widget::text!("Checking for mod updates{dots}")
@@ -90,23 +90,29 @@ impl MenuEditMods {
                 widget::column!(
                     widget::text("Mod Updates Available!").size(15),
                     widget::column(self.available_updates.iter().enumerate().map(
-                        |(i, (id, name, is_enabled))| {
-                            widget::checkbox(
-                                format!(
-                                    "{} - {name}",
-                                    self.mods
-                                        .mods
-                                        .get(&id.get_index_str())
-                                        .map(|n| n.name.clone())
-                                        .unwrap_or_default()
-                                ),
-                                *is_enabled,
-                            )
-                            .on_toggle(move |b| {
-                                Message::ManageMods(ManageModsMessage::UpdateCheckToggle(i, b))
-                            })
-                            .text_size(12)
-                            .into()
+                        |(i, (id, update_name, is_enabled))| {
+                            let title = self
+                                .mods
+                                .mods
+                                .get(&id.get_index_str())
+                                .map(|n| n.name.clone())
+                                .unwrap_or_default();
+
+                            let text = if title.is_empty()
+                                || update_name.contains(&title)
+                                || update_name.contains(&title.replace(' ', ""))
+                            {
+                                update_name.clone()
+                            } else {
+                                format!("{title} - {update_name}")
+                            };
+
+                            widget::checkbox(text, *is_enabled)
+                                .on_toggle(move |b| {
+                                    Message::ManageMods(ManageModsMessage::UpdateCheckToggle(i, b))
+                                })
+                                .text_size(12)
+                                .into()
                         }
                     ))
                     .spacing(10),
@@ -121,7 +127,7 @@ impl MenuEditMods {
         }
     }
 
-    fn get_mod_installer_buttons(&self, selected_instance: &InstanceSelection) -> Element {
+    fn get_mod_installer_buttons(&'_ self, selected_instance: &InstanceSelection) -> Element<'_> {
         match self.config.mod_type.as_str() {
             "Vanilla" => match selected_instance {
                 InstanceSelection::Instance(_) => widget::column![
@@ -220,7 +226,7 @@ impl MenuEditMods {
         }
     }
 
-    fn get_uninstall_panel(mod_type: &str, uninstall_loader_message: Message) -> Element {
+    fn get_uninstall_panel(mod_type: &'_ str, uninstall_loader_message: Message) -> Element<'_> {
         widget::button(
             widget::row![
                 icon_manager::delete_with_size(14),
@@ -237,7 +243,7 @@ impl MenuEditMods {
         .into()
     }
 
-    fn open_mod_folder_button(selected_instance: &InstanceSelection) -> Element {
+    fn open_mod_folder_button(selected_instance: &'_ InstanceSelection) -> Element<'_> {
         let path = {
             let path = selected_instance.get_dot_minecraft_path().join("mods");
             path.exists().then_some(path)
@@ -248,7 +254,7 @@ impl MenuEditMods {
             .into()
     }
 
-    fn get_mod_list(&self) -> Element {
+    fn get_mod_list(&'_ self) -> Element<'_> {
         if self.sorted_mods_list.is_empty() {
             return widget::column!(
                 "Download some mods to get started",
@@ -298,6 +304,8 @@ impl MenuEditMods {
                                 13
                             )
                             .on_press(Message::ManageMods(ManageModsMessage::SelectAll)),
+                            button_with_icon(icon_manager::save_with_size(13), "Export text list", 13)
+                                .on_press(Message::ManageMods(ManageModsMessage::ExportMenuOpen)),
                         ]
                         .spacing(5)
                         .wrap()
@@ -312,7 +320,7 @@ impl MenuEditMods {
         .into()
     }
 
-    fn get_mod_list_contents(&self) -> Element {
+    fn get_mod_list_contents(&'_ self) -> Element<'_> {
         widget::scrollable(
             widget::row![
                 widget::column({
@@ -320,28 +328,45 @@ impl MenuEditMods {
                         .iter()
                         .map(|mod_list_entry| match mod_list_entry {
                             ModListEntry::Downloaded { id, config } => {
-                                widget::row!(if config.manually_installed {
-                                    widget::row!(widget::checkbox(
-                                        format!(
-                                            "{}{}",
-                                            if config.enabled { "" } else { "(DISABLED) " },
-                                            config.name
-                                        ),
+                                if config.manually_installed {
+                                    let is_enabled = config.enabled;
+                                    let checkbox = widget::checkbox(
+                                        &config.name,
                                         self.selected_mods.contains(&SelectedMod::Downloaded {
                                             name: config.name.clone(),
-                                            id: (*id).clone()
-                                        })
+                                            id: (*id).clone(),
+                                        }),
                                     )
+                                    .style(move |t: &LauncherTheme, status| {
+                                        t.style_checkbox(
+                                            status,
+                                            Some(if is_enabled {
+                                                Color::White
+                                            } else {
+                                                Color::Mid
+                                            }),
+                                        )
+                                    })
                                     .on_toggle(move |t| {
                                         Message::ManageMods(ManageModsMessage::ToggleCheckbox(
                                             (config.name.clone(), id.clone()),
                                             t,
                                         ))
-                                    }))
+                                    });
+
+                                    if is_enabled {
+                                        checkbox.into()
+                                    } else {
+                                        tooltip(
+                                            checkbox,
+                                            "Disabled",
+                                            widget::tooltip::Position::FollowCursor,
+                                        )
+                                        .into()
+                                    }
                                 } else {
-                                    widget::row!(widget::text!("- (DEPENDENCY) {}", config.name))
-                                },)
-                                .into()
+                                    widget::text!("- (DEPENDENCY) {}", config.name).into()
+                                }
                             }
                             ModListEntry::Local { file_name } => widget::checkbox(
                                 file_name.clone(),

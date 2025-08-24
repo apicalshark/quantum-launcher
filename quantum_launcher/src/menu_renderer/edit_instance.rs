@@ -11,7 +11,7 @@ use ql_core::InstanceSelection;
 use super::Element;
 
 impl MenuEditInstance {
-    pub fn view(&self, selected_instance: &InstanceSelection) -> Element {
+    pub fn view(&'_ self, selected_instance: &InstanceSelection) -> Element<'_> {
         let ts = |n: &LauncherTheme| n.style_text(Color::SecondLight);
 
         widget::scrollable(
@@ -94,22 +94,19 @@ impl MenuEditInstance {
     }
 
     fn item_args(&self) -> widget::Column<'_, Message, LauncherTheme> {
-        let current_mode = self
-            .config
-            .java_args_mode
-            .unwrap_or_else(JavaArgsMode::default);
+        let current_mode = self.config.java_args_mode.unwrap_or_default();
 
         widget::column!(
             widget::container(
                 widget::column![
                     widget::text("Interaction with global arguments:").size(14),
-                    widget::pick_list(JavaArgsMode::ALL, Some(current_mode.clone()), |mode| {
+                    widget::pick_list(JavaArgsMode::ALL, Some(current_mode), |mode| {
                         Message::EditInstance(EditInstanceMessage::JavaArgsModeChanged(mode))
                     })
                     .placeholder("Select mode...")
                     .width(150)
                     .text_size(14),
-                    self.get_mode_description(current_mode),
+                    Self::get_mode_description(current_mode),
                 ]
                 .padding(10)
                 .spacing(7)
@@ -144,13 +141,12 @@ impl MenuEditInstance {
         .width(Length::Fill)
     }
 
-    fn get_mode_description(&self, mode: JavaArgsMode) -> Element {
+    fn get_mode_description<'a>(mode: JavaArgsMode) -> widget::Text<'a, LauncherTheme> {
         let description = mode.get_description();
 
         widget::text(description)
             .size(12)
             .style(|theme: &LauncherTheme| theme.style_text(Color::SecondLight))
-            .into()
     }
 
     fn item_mem_alloc(&self) -> widget::Column<'_, Message, LauncherTheme> {

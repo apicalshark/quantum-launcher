@@ -14,7 +14,7 @@ use crate::{
 };
 
 impl MenuEditPresets {
-    pub fn view(&self, window_size: (f32, f32)) -> Element {
+    pub fn view(&'_ self, window_size: (f32, f32)) -> Element<'_> {
         if let Some(progress) = &self.progress {
             return widget::column!(
                 widget::text("Installing mods").size(20),
@@ -120,7 +120,7 @@ impl MenuEditPresets {
         }
     }
 
-    fn get_create_preset_page(&self) -> Element {
+    fn get_create_preset_page(&'_ self) -> Element<'_> {
         match &self.inner {
             MenuEditPresetsInner::Build {
                 selected_state,
@@ -225,7 +225,7 @@ impl MenuEditPresets {
     }
 }
 
-fn create_generic_tab_button(n: Element) -> widget::Button<'_, Message, LauncherTheme> {
+fn create_generic_tab_button(n: Element) -> widget::Button<Message, LauncherTheme> {
     widget::button(n)
         .padding(0)
         .style(|n, status| n.style_button(status, StyleButton::FlatExtraDark))

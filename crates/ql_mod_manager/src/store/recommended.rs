@@ -2,7 +2,7 @@ use std::sync::{mpsc::Sender, Arc, Mutex};
 
 use futures::StreamExt;
 use ql_core::{
-    info, json::VersionDetails, pt, GenericProgress, InstanceSelection, Loader, ModId,
+    info, info_no_log, json::VersionDetails, pt, GenericProgress, InstanceSelection, Loader, ModId,
     StoreBackendType,
 };
 
@@ -91,7 +91,7 @@ impl RecommendedMod {
                 })
                 .is_err()
             {
-                info!("Cancelled recommended mod check");
+                info_no_log!("Cancelled recommended mod check");
                 return None;
             }
         }

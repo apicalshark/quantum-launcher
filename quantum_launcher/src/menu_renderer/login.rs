@@ -8,7 +8,7 @@ use crate::{
 use super::{back_button, button_with_icon, center_x, Element};
 
 impl MenuLoginAlternate {
-    pub fn view(&self, tick_timer: usize) -> Element {
+    pub fn view(&'_ self, tick_timer: usize) -> Element<'_> {
         let status: Element =
             if self.is_loading {
                 let dots = ".".repeat((tick_timer % 3) + 1);
@@ -111,7 +111,7 @@ impl MenuLoginAlternate {
         }
     }
 
-    fn view_oauth(&self, oauth: &crate::state::LittleSkinOauth) -> Element {
+    fn view_oauth(&'_ self, oauth: &crate::state::LittleSkinOauth) -> Element<'_> {
         let time_left = {
             let now = std::time::Instant::now();
             if oauth.device_code_expires_at > now {

@@ -200,6 +200,10 @@ impl MenuEditMods {
     }
 }
 
+pub struct MenuExportMods {
+    pub selected_mods: HashSet<SelectedMod>,
+}
+
 pub struct MenuEditJarMods {
     pub jarmods: Option<JarMods>,
     pub selected_state: SelectedState,
@@ -399,6 +403,7 @@ pub enum State {
     UpdateFound(MenuLauncherUpdate),
 
     EditMods(MenuEditMods),
+    ExportMods(MenuExportMods),
     EditJarMods(MenuEditJarMods),
     ImportModpack(ProgressBar<GenericProgress>),
     CurseforgeManualDownload(MenuCurseforgeManualDownload),

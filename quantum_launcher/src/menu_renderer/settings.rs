@@ -2,7 +2,8 @@ use iced::{widget, Length};
 use ql_core::LAUNCHER_DIR;
 
 use super::{
-    back_button, button_with_icon, get_theme_selector, sidebar_button, Element, DISCORD, GITHUB,
+    back_button, button_with_icon, get_theme_selector, sidebar_button, underline, Element, DISCORD,
+    GITHUB,
 };
 use crate::menu_renderer::edit_instance::{global_java_args_dialog, resolution_dialog};
 use crate::{
@@ -222,14 +223,13 @@ impl LauncherSettingsTab {
             LauncherSettingsTab::About => {
                 let gpl3_button =
                     // widget::button(widget::rich_text![widget::span("GNU GPLv3 License").underline(true)].size(12))
-                    // iced bug (or maybe some dumb mistake I made),
-                    // putting underlines in buttons makes them unclickable.
-                    widget::button(widget::text("GNU GPLv3 License").size(12))
+
+                    // An Iced bug (or maybe some dumb mistake I made),
+                    // putting underlines in buttons the "official" way makes them unclickable.
+
+                    widget::button(underline(widget::text("GNU GPLv3 License").size(12)))
                         .padding(0)
-                        // .style(|n: &LauncherTheme, status| n.style_button(status, StyleButton::FlatExtraDark))
-                        // Since I can't underline the buttons,
-                        // I have to resort to making them pop out.
-                        .style(|n: &LauncherTheme, status| n.style_button(status, StyleButton::Flat))
+                        .style(|n: &LauncherTheme, status| n.style_button(status, StyleButton::FlatDark))
                         .on_press(Message::LicenseChangeTab(crate::state::LicenseTab::Gpl3));
 
                 let links = widget::row![

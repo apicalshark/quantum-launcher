@@ -13,7 +13,7 @@ use crate::{
 };
 
 impl Launcher {
-    pub fn view(&self) -> Element {
+    pub fn view(&'_ self) -> Element<'_> {
         widget::column![
             widget::column![self.view_menu()].height(
                 (self.window_size.1 / if self.is_log_open { 2.0 } else { 1.0 })
@@ -62,7 +62,7 @@ impl Launcher {
         .into()
     }
 
-    fn view_menu(&self) -> Element {
+    fn view_menu(&'_ self) -> Element<'_> {
         match &self.state {
             State::Launch(menu) => self.view_main_menu(menu),
             State::AccountLoginProgress(progress) => widget::column![
@@ -73,7 +73,6 @@ impl Launcher {
             .padding(10)
             .into(),
             State::GenericMessage(msg) => widget::column![widget::text(msg)].padding(10).into(),
-            State::LoginMS(menu) => menu.view(),
             State::AccountLogin => view_account_login(),
             State::EditMods(menu) => {
                 menu.view(self.selected_instance.as_ref().unwrap(), self.tick_timer)
@@ -89,8 +88,6 @@ impl Launcher {
             State::InstallFabric(menu) => {
                 menu.view(self.selected_instance.as_ref().unwrap(), self.tick_timer)
             }
-            State::InstallForge(menu) => menu.view(),
-            State::UpdateFound(menu) => menu.view(),
             State::InstallJava => widget::column!(widget::text("Downloading Java").size(20),)
                 .push_maybe(self.java_recv.as_ref().map(|n| n.view()))
                 .padding(10)
@@ -100,8 +97,6 @@ impl Launcher {
             // It's not needed right now, but could be in the future.
             State::ModsDownload(menu) => menu.view(&self.images, self.window_size, self.tick_timer),
             State::LauncherSettings(menu) => menu.view(&self.config, self.window_size),
-            State::InstallOptifine(menu) => menu.view(),
-            State::ServerCreate(menu) => menu.view(),
             State::InstallPaper => {
                 let dots = ".".repeat((self.tick_timer % 3) + 1);
                 widget::column!(widget::text!("Installing Paper{dots}").size(20))
@@ -137,13 +132,21 @@ impl Launcher {
                     .spacing(10)
                     .into()
             }
-            State::LoginAlternate(menu) => menu.view(self.tick_timer),
-            State::CurseforgeManualDownload(menu) => menu.view(),
-            State::ExportInstance(menu) => menu.view(self.tick_timer),
             State::LogUploadResult { url } => {
                 view_log_upload_result(url, self.selected_instance.as_ref().unwrap().is_server())
             }
+
+            State::LoginAlternate(menu) => menu.view(self.tick_timer),
+            State::ExportInstance(menu) => menu.view(self.tick_timer),
+
+            State::LoginMS(menu) => menu.view(),
+            State::CurseforgeManualDownload(menu) => menu.view(),
             State::License(menu) => menu.view(),
+            State::ExportMods(menu) => menu.view(),
+            State::InstallForge(menu) => menu.view(),
+            State::UpdateFound(menu) => menu.view(),
+            State::InstallOptifine(menu) => menu.view(),
+            State::ServerCreate(menu) => menu.view(),
         }
     }
 }

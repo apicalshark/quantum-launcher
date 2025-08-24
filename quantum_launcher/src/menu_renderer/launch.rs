@@ -307,7 +307,7 @@ impl Launcher {
             || (menu.is_viewing_server && self.server_processes.contains_key(name))
     }
 
-    fn get_accounts_bar(&self, menu: &MenuLaunch) -> Element {
+    fn get_accounts_bar<'a>(&'a self, menu: &MenuLaunch) -> Element<'a> {
         let something_is_happening = self.java_recv.is_some() || menu.login_progress.is_some();
 
         let dropdown: Element = if something_is_happening {
@@ -364,7 +364,7 @@ impl Launcher {
             || self.accounts_selected.as_deref() == Some(OFFLINE_ACCOUNT_NAME))
     }
 
-    fn get_client_play_button(&self, selected_instance: Option<&str>) -> Element {
+    fn get_client_play_button(&'_ self, selected_instance: Option<&str>) -> Element<'_> {
         let play_button = button_with_icon(icon_manager::play(), "Play", 16).width(98);
 
         let is_account_selected = self.is_account_selected();
@@ -505,7 +505,7 @@ fn get_mods_button(
         .width(98)
 }
 
-fn render_tab_button(n: LaunchTabId, menu: &MenuLaunch) -> Element {
+fn render_tab_button(n: LaunchTabId, menu: &'_ MenuLaunch) -> Element<'_> {
     let txt = widget::row!(
         widget::horizontal_space(),
         widget::text(n.to_string()),
@@ -545,7 +545,7 @@ fn get_no_logs_message<'a>() -> widget::Column<'a, Message, LauncherTheme> {
     }
 }
 
-fn get_footer_text(menu: &MenuLaunch) -> Element {
+fn get_footer_text(menu: &'_ MenuLaunch) -> Element<'_> {
     let version_message = widget::column!(
         widget::vertical_space(),
         widget::row!(

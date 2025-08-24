@@ -97,14 +97,28 @@ impl Launcher {
                                 None => {}
                             }
                         } else if let Key::Character(ch) = &key {
-                            let safe_to_exit = self.client_processes.is_empty()
-                                && self.server_processes.is_empty()
-                                && (self.key_escape_back(false).0
-                                    || matches!(self.state, State::Launch(_)));
+                            if modifiers.command() {
+                                if ch == "q" {
+                                    let safe_to_exit = self.client_processes.is_empty()
+                                        && self.server_processes.is_empty()
+                                        && (self.key_escape_back(false).0
+                                            || matches!(self.state, State::Launch(_)));
 
-                            if ch == "q" && modifiers.command() && safe_to_exit {
-                                info_no_log!("CTRL-Q pressed, closing launcher...");
-                                std::process::exit(1);
+                                    if safe_to_exit {
+                                        info_no_log!("CTRL-Q pressed, closing launcher...");
+                                        std::process::exit(1);
+                                    }
+                                } else if ch == "a" {
+                                    if let State::EditMods(_) = &self.state {
+                                        return Task::done(Message::ManageMods(
+                                            crate::state::ManageModsMessage::SelectAll,
+                                        ));
+                                    } else if let State::EditJarMods(_) = &self.state {
+                                        return Task::done(Message::ManageJarMods(
+                                            crate::state::ManageJarModsMessage::SelectAll,
+                                        ));
+                                    }
+                                }
                             }
                         }
 
@@ -316,7 +330,8 @@ impl Launcher {
             }
             State::InstallOptifine(MenuInstallOptifine::Choosing { .. })
             | State::InstallFabric(MenuInstallFabric::Loaded { progress: None, .. })
-            | State::EditJarMods(_) => {
+            | State::EditJarMods(_)
+            | State::ExportMods(_) => {
                 should_return_to_mods_screen = true;
             }
             State::ModsDownload(menu) if menu.opened_mod.is_some() => {

@@ -158,7 +158,10 @@ impl Launcher {
                         }));*/
 
                     let toggle_downloaded = Task::perform(
-                        ql_mod_manager::store::toggle_mods(ids_downloaded, instance_name.clone()),
+                        ql_mod_manager::store::toggle_mods(
+                            ids_downloaded.clone(),
+                            instance_name.clone(),
+                        ),
                         |n| Message::ManageMods(ManageModsMessage::ToggleFinished(n.strerr())),
                     );
                     let toggle_local = Task::perform(
@@ -250,6 +253,36 @@ impl Launcher {
                             menu.selected_state = SelectedState::All;
                         }
                     }
+                }
+            }
+            ManageModsMessage::ExportMenuOpen => {
+                if let State::EditMods(menu) = &mut self.state {
+                    // Navigate to the export menu with the current selection and mod data
+                    use crate::state::MenuExportMods;
+
+                    self.state = State::ExportMods(MenuExportMods {
+                        selected_mods: if menu.selected_mods.is_empty() {
+                            menu.mods
+                                .mods
+                                .iter()
+                                .filter_map(|(id, mod_info)| {
+                                    mod_info
+                                        .manually_installed
+                                        .then_some(SelectedMod::Downloaded {
+                                            name: mod_info.name.clone(),
+                                            id: ModId::from_index_str(id),
+                                        })
+                                })
+                                .chain(menu.locally_installed_mods.iter().map(|n| {
+                                    SelectedMod::Local {
+                                        file_name: n.clone(),
+                                    }
+                                }))
+                                .collect()
+                        } else {
+                            menu.selected_mods.clone()
+                        },
+                    });
                 }
             }
         }
@@ -482,6 +515,58 @@ impl Launcher {
         }
     }
 
+    fn export_mods_markdown(selected_mods: &HashSet<SelectedMod>) -> String {
+        let mut markdown_lines = Vec::new();
+
+        for selected_mod in selected_mods {
+            match selected_mod {
+                SelectedMod::Downloaded { name, id } => {
+                    let url = match id {
+                        ModId::Modrinth(mod_id) => {
+                            format!("https://modrinth.com/mod/{mod_id}")
+                        }
+                        ModId::Curseforge(mod_id) => {
+                            format!("https://www.curseforge.com/projects/{mod_id}")
+                        }
+                    };
+                    markdown_lines.push(format!("- [{name}]({url})"));
+                }
+                SelectedMod::Local { file_name } => {
+                    let display_name = file_name
+                        .strip_suffix(".jar")
+                        .or_else(|| file_name.strip_suffix(".zip"))
+                        .unwrap_or(file_name);
+                    markdown_lines.push(display_name.to_string());
+                }
+            }
+        }
+
+        markdown_lines.join("\n")
+    }
+
+    fn export_to_file(content: String) -> Task<Message> {
+        // Use a file dialog to save the exported content
+        if let Some(path) = rfd::FileDialog::new()
+            .set_title("Save exported mod list")
+            .add_filter("Text files", &["txt"])
+            .add_filter("Markdown files", &["md"])
+            .save_file()
+        {
+            match std::fs::write(&path, content) {
+                Ok(()) => {
+                    // Optionally, we could show a success message
+                    Task::none()
+                }
+                Err(_err) => {
+                    // Handle the error by setting an error message
+                    Task::none() // For now, just return none
+                }
+            }
+        } else {
+            Task::none()
+        }
+    }
+
     fn manage_jarmods_add_file_from_picker(&mut self) {
         if let Some(path) = rfd::FileDialog::new()
             .add_filter("jar/zip", &["jar", "zip"])
@@ -501,6 +586,56 @@ impl Launcher {
                 }
             }
         }
+    }
+
+    pub fn update_export_mods(&mut self, msg: crate::state::ExportModsMessage) -> Task<Message> {
+        use crate::state::ExportModsMessage;
+        match msg {
+            ExportModsMessage::ExportAsPlainText => {
+                if let State::ExportMods(menu) = &self.state {
+                    return Self::export_to_file(Self::export_mods_plain_text(&menu.selected_mods));
+                }
+            }
+            ExportModsMessage::ExportAsMarkdown => {
+                if let State::ExportMods(menu) = &self.state {
+                    return Self::export_to_file(Self::export_mods_markdown(&menu.selected_mods));
+                }
+            }
+            ExportModsMessage::CopyMarkdownToClipboard => {
+                if let State::ExportMods(menu) = &self.state {
+                    return iced::clipboard::write(Self::export_mods_markdown(&menu.selected_mods));
+                }
+            }
+            ExportModsMessage::CopyPlainTextToClipboard => {
+                if let State::ExportMods(menu) = &self.state {
+                    return iced::clipboard::write(Self::export_mods_plain_text(
+                        &menu.selected_mods,
+                    ));
+                }
+            }
+        }
+        Task::none()
+    }
+
+    fn export_mods_plain_text(selected_mods: &HashSet<SelectedMod>) -> String {
+        let mut lines = Vec::new();
+
+        for selected_mod in selected_mods {
+            match selected_mod {
+                SelectedMod::Downloaded { name, .. } => {
+                    lines.push(name.clone());
+                }
+                SelectedMod::Local { file_name } => {
+                    // Remove file extension for cleaner display
+                    let display_name = file_name
+                        .strip_suffix(".jar")
+                        .or_else(|| file_name.strip_suffix(".zip"))
+                        .unwrap_or(file_name);
+                    lines.push(display_name.to_string());
+                }
+            }
+        }
+        lines.join("\n")
     }
 }
 

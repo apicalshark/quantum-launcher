@@ -291,7 +291,7 @@ impl LauncherTheme {
         }
     }
 
-    pub fn style_container_box(&self) -> Style {
+    pub fn style_container_normal(&self) -> Style {
         Style {
             border: self.get_border(Color::SecondDark, true),
             ..Default::default()
@@ -308,13 +308,16 @@ impl LauncherTheme {
     }
 
     pub fn style_container_sharp_box(&self, width: f32, color: Color) -> Style {
+        self.style_container_round_box(width, color, 0.0)
+    }
+
+    pub fn style_container_round_box(&self, width: f32, color: Color, radius: f32) -> Style {
         Style {
             border: {
-                let (palette, color) = self.get_base(true, Color::Mid);
                 Border {
-                    color: palette.get(color),
+                    color: self.get(Color::Mid, true),
                     width,
-                    radius: 0.0.into(),
+                    radius: radius.into(),
                 }
             },
             background: Some(self.get_bg(color, true)),
@@ -371,6 +374,58 @@ impl LauncherTheme {
 
     pub fn style_rule_default(&self) -> widget::rule::Style {
         self.style_rule(Color::SecondDark, 2)
+    }
+
+    pub fn style_checkbox(
+        &self,
+        status: widget::checkbox::Status,
+        text_color: Option<Color>,
+    ) -> widget::checkbox::Style {
+        let text_color = text_color.map(|n| self.get(n, true));
+        match status {
+            widget::checkbox::Status::Active { is_checked } => widget::checkbox::Style {
+                background: if is_checked {
+                    self.get_bg(Color::Light, true)
+                } else {
+                    self.get_bg(Color::Dark, true)
+                },
+                icon_color: if is_checked {
+                    self.get(Color::Dark, true)
+                } else {
+                    self.get(Color::Light, true)
+                },
+                border: self.get_border(Color::Mid, true),
+                text_color,
+            },
+            widget::checkbox::Status::Hovered { is_checked } => widget::checkbox::Style {
+                background: if is_checked {
+                    self.get_bg(Color::White, true)
+                } else {
+                    self.get_bg(Color::SecondDark, true)
+                },
+                icon_color: if is_checked {
+                    self.get(Color::SecondDark, true)
+                } else {
+                    self.get(Color::White, true)
+                },
+                border: self.get_border(Color::Mid, true),
+                text_color,
+            },
+            widget::checkbox::Status::Disabled { is_checked } => widget::checkbox::Style {
+                background: if is_checked {
+                    self.get_bg(Color::SecondLight, true)
+                } else {
+                    self.get_bg(Color::ExtraDark, true)
+                },
+                icon_color: if is_checked {
+                    self.get(Color::ExtraDark, true)
+                } else {
+                    self.get(Color::SecondLight, true)
+                },
+                border: self.get_border(Color::SecondDark, true),
+                text_color,
+            },
+        }
     }
 
     pub fn style_button(

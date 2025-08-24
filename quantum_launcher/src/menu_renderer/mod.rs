@@ -34,10 +34,22 @@ pub fn link<'a>(
     e: impl Into<Element<'a>>,
     url: String,
 ) -> widget::Button<'a, Message, LauncherTheme> {
-    widget::button(e.into())
+    widget::button(underline(e))
         .on_press(Message::CoreOpenLink(url))
         .padding(0)
-        .style(|n: &LauncherTheme, status| n.style_button(status, StyleButton::Flat))
+        .style(|n: &LauncherTheme, status| n.style_button(status, StyleButton::FlatDark))
+}
+
+pub fn underline<'a>(e: impl Into<Element<'a>>) -> widget::Stack<'a, Message, LauncherTheme> {
+    widget::stack!(
+        widget::column![e.into()],
+        widget::column![
+            widget::vertical_space(),
+            widget::horizontal_rule(1)
+                .style(|theme: &LauncherTheme| theme.style_rule(Color::Light, 1)),
+            widget::Space::with_height(1),
+        ]
+    )
 }
 
 pub fn center_x<'a>(e: impl Into<Element<'a>>) -> Element<'a> {
@@ -104,7 +116,7 @@ fn sidebar_button<'a, A: PartialEq>(
 }
 
 impl MenuCreateInstance {
-    pub fn view(&self, list: Option<&Vec<String>>) -> Element {
+    pub fn view(&'_ self, list: Option<&Vec<String>>) -> Element<'_> {
         match self {
             MenuCreateInstance::LoadingList { .. } => widget::column![
                 widget::row![
@@ -226,7 +238,7 @@ impl MenuCreateInstance {
 }
 
 impl MenuLauncherUpdate {
-    pub fn view(&self) -> Element {
+    pub fn view(&'_ self) -> Element<'_> {
         if let Some(progress) = &self.progress {
             widget::column!("Updating QuantumLauncher...", progress.view())
         } else {
@@ -262,7 +274,7 @@ impl MenuLauncherUpdate {
     }
 }
 
-pub fn get_theme_selector(config: &LauncherConfig) -> (Element, Element) {
+pub fn get_theme_selector(config: &'_ LauncherConfig) -> (Element<'_>, Element<'_>) {
     const PADDING: iced::Padding = iced::Padding {
         top: 5.0,
         bottom: 5.0,
@@ -297,7 +309,7 @@ pub fn get_theme_selector(config: &LauncherConfig) -> (Element, Element) {
     (light, dark)
 }
 
-fn get_color_schemes(config: &LauncherConfig) -> Element {
+fn get_color_schemes(config: &'_ LauncherConfig) -> Element<'_> {
     // HOOK: Add more themes
     let styles = [
         "Brown".to_owned(),
@@ -330,7 +342,7 @@ fn back_to_launch_screen(
 }
 
 impl<T: Progress> ProgressBar<T> {
-    pub fn view(&self) -> Element {
+    pub fn view(&'_ self) -> Element<'_> {
         let total = T::total();
         if let Some(message) = &self.message {
             widget::column!(
@@ -346,7 +358,7 @@ impl<T: Progress> ProgressBar<T> {
 }
 
 impl MenuCurseforgeManualDownload {
-    pub fn view(&self) -> Element {
+    pub fn view(&'_ self) -> Element<'_> {
         widget::column![
             "Some Curseforge mods have blocked this launcher!\nYou need to manually download the files and add them to your mods",
 
@@ -389,7 +401,7 @@ impl MenuCurseforgeManualDownload {
 }
 
 impl MenuServerCreate {
-    pub fn view(&self) -> Element {
+    pub fn view(&'_ self) -> Element<'_> {
         match self {
             MenuServerCreate::LoadingList => {
                 widget::column!(widget::text("Loading version list...").size(20),)
@@ -431,7 +443,7 @@ impl MenuServerCreate {
 }
 
 impl MenuLicense {
-    pub fn view(&self) -> Element {
+    pub fn view(&'_ self) -> Element<'_> {
         widget::row![
             self.view_sidebar(),
             widget::scrollable(
@@ -444,7 +456,7 @@ impl MenuLicense {
         .into()
     }
 
-    fn view_sidebar(&self) -> Element {
+    fn view_sidebar(&'_ self) -> Element<'_> {
         widget::column![
             widget::column![back_button().on_press(Message::LauncherSettings(
                 LauncherSettingsMessage::ChangeTab(crate::state::LauncherSettingsTab::About)
@@ -505,7 +517,7 @@ pub fn view_account_login<'a>() -> Element<'a> {
     .into()
 }
 
-pub fn view_error(error: &str) -> Element {
+pub fn view_error(error: &'_ str) -> Element<'_> {
     widget::scrollable(
         widget::column!(
             widget::text!("Error: {error}"),
@@ -531,7 +543,7 @@ pub fn view_error(error: &str) -> Element {
     .into()
 }
 
-pub fn view_log_upload_result(url: &str, is_server: bool) -> Element {
+pub fn view_log_upload_result(url: &'_ str, is_server: bool) -> Element<'_> {
     widget::column![
         back_button().on_press(Message::LaunchScreenOpen {
             message: None,
@@ -563,8 +575,7 @@ pub fn view_log_upload_result(url: &str, is_server: bool) -> Element {
                 .spacing(10)
                 .align_y(iced::Alignment::Center)
             )
-            .padding(10)
-            .style(|theme: &LauncherTheme| theme.style_container_box()),
+            .padding(10),
             widget::vertical_space(),
         ]
         .height(Length::Fill)
