@@ -17,6 +17,7 @@ mod create_instance;
 mod edit_instance;
 mod manage_mods;
 mod presets;
+mod recommended;
 
 use crate::{
     state::{

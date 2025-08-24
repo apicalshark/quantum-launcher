@@ -334,6 +334,19 @@ pub enum MenuEditPresetsInner {
     },
 }
 
+pub enum MenuRecommendedMods {
+    Loading {
+        progress: ProgressBar<GenericProgress>,
+        config: InstanceConfigJson,
+    },
+    Loaded {
+        mods: Vec<(bool, RecommendedMod)>,
+        config: InstanceConfigJson,
+    },
+    InstallALoader,
+    NotSupported,
+}
+
 pub const PRESET_INNER_BUILD: &str = "Create";
 pub const PRESET_INNER_RECOMMENDED: &str = "Recommended";
 
@@ -442,6 +455,7 @@ pub enum State {
     LauncherSettings(MenuLauncherSettings),
     ServerCreate(MenuServerCreate),
     ManagePresets(MenuEditPresets),
+    RecommendedMods(MenuRecommendedMods),
 
     LogUploadResult {
         url: String,

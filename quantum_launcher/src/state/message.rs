@@ -168,6 +168,15 @@ pub enum EditPresetsMessage {
     RecommendedDownloadEnd(Res<HashSet<CurseforgeNotAllowed>>),
 }
 
+#[derive(Debug, Clone)]
+pub enum RecommendedModMessage {
+    Open,
+    ModCheckResult(Res<Vec<RecommendedMod>>),
+    Toggle(usize, bool),
+    Download,
+    DownloadEnd(Res<HashSet<CurseforgeNotAllowed>>),
+}
+
 // FIXME: Look at the unused messages
 #[allow(unused)]
 #[derive(Debug, Clone)]
@@ -256,6 +265,7 @@ pub enum Message {
     InstallFabric(InstallFabricMessage),
     EditPresets(EditPresetsMessage),
     LauncherSettings(LauncherSettingsMessage),
+    RecommendedMods(RecommendedModMessage),
 
     LaunchInstanceSelected {
         name: String,

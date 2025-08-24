@@ -15,7 +15,8 @@ use crate::state::{
     EditInstanceMessage, ImageState, InstallModsMessage, InstanceLog, LaunchTabId, Launcher,
     ManageJarModsMessage, MenuCreateInstance, MenuEditMods, MenuEditPresetsInner,
     MenuExportInstance, MenuInstallFabric, MenuInstallOptifine, MenuLaunch, MenuLoginMS,
-    MenuModsDownload, MenuServerCreate, Message, ModListEntry, ServerProcess, State,
+    MenuModsDownload, MenuRecommendedMods, MenuServerCreate, Message, ModListEntry, ServerProcess,
+    State,
 };
 
 impl Launcher {
@@ -131,6 +132,11 @@ impl Launcher {
                     progress.tick();
                 }
                 if let MenuEditPresetsInner::Recommended { progress, .. } = &mut menu.inner {
+                    progress.tick();
+                }
+            }
+            State::RecommendedMods(menu) => {
+                if let MenuRecommendedMods::Loading { progress, .. } = menu {
                     progress.tick();
                 }
             }

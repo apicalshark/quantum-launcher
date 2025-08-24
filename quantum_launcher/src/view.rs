@@ -105,6 +105,7 @@ impl Launcher {
                     .into()
             }
             State::ManagePresets(menu) => menu.view(self.window_size),
+            State::RecommendedMods(menu) => menu.view(),
             State::ChangeLog => {
                 let back_msg = Message::LaunchScreenOpen {
                     message: None,

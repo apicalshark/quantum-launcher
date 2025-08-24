@@ -5,10 +5,11 @@ use ql_core::SelectedMod;
 
 use crate::{
     icon_manager,
-    menu_renderer::{button_with_icon, launch::TAB_HEIGHT, Element},
+    menu_renderer::{back_button, button_with_icon, launch::TAB_HEIGHT, Element},
     state::{
-        EditPresetsMessage, ManageModsMessage, MenuEditPresets, MenuEditPresetsInner, Message,
-        ModListEntry, SelectedState, PRESET_INNER_BUILD, PRESET_INNER_RECOMMENDED,
+        EditPresetsMessage, ManageModsMessage, MenuEditPresets, MenuEditPresetsInner,
+        MenuRecommendedMods, Message, ModListEntry, SelectedState, PRESET_INNER_BUILD,
+        PRESET_INNER_RECOMMENDED,
     },
     stylesheet::{color::Color, styles::LauncherTheme, widgets::StyleButton},
 };
@@ -74,7 +75,7 @@ impl MenuEditPresets {
 
             widget::scrollable(
                 widget::container(
-                    self.get_create_preset_page()
+                    self.get_page_contents()
                 )
                 .padding(10)
                 .width(window_size.0)
@@ -120,7 +121,7 @@ impl MenuEditPresets {
         }
     }
 
-    fn get_create_preset_page(&'_ self) -> Element<'_> {
+    fn get_page_contents(&'_ self) -> Element<'_> {
         match &self.inner {
             MenuEditPresetsInner::Build {
                 selected_state,
@@ -230,4 +231,58 @@ fn create_generic_tab_button(n: Element) -> widget::Button<Message, LauncherThem
         .padding(0)
         .style(|n, status| n.style_button(status, StyleButton::FlatExtraDark))
         .height(TAB_HEIGHT)
+}
+
+impl MenuRecommendedMods {
+    pub fn view(&'_ self) -> Element<'_> {
+        let back_button = back_button().on_press(Message::ManageMods(
+            ManageModsMessage::ScreenOpenWithoutUpdate,
+        ));
+
+        match self {
+            MenuRecommendedMods::Loading { progress, .. } => progress.view(),
+            MenuRecommendedMods::InstallALoader => {
+                widget::column![
+                    back_button,
+                    "Install a mod loader (like Fabric/Forge/NeoForge/Quilt/etc, whichever is compatible)",
+                    "You need one before you can install mods"
+                ].padding(10).spacing(5).into()
+            }
+            MenuRecommendedMods::NotSupported => {
+                widget::column![
+                    back_button,
+                    "No recommended mods found :)"
+                ].padding(10).spacing(5).into()
+            }
+            MenuRecommendedMods::Loaded { mods, .. } => {
+                let content: Element =
+                    widget::column!(
+                        back_button,
+                        button_with_icon(icon_manager::download(), "Download Recommended Mods", 16)
+                            .on_press(Message::EditPresets(
+                                EditPresetsMessage::RecommendedDownload
+                            )),
+                        widget::column(mods.iter().enumerate().map(|(i, (e, n))| {
+                            let elem: Element = widget::checkbox(n.name, *e)
+                                .on_toggle(move |n| {
+                                    Message::EditPresets(EditPresetsMessage::RecommendedToggle(
+                                        i, n,
+                                    ))
+                                })
+                                .into();
+                            widget::column!(elem, widget::text(n.description).size(12))
+                                .spacing(5)
+                                .into()
+                        }))
+                        .spacing(10)
+                    )
+                    .spacing(10)
+                    .into();
+
+                widget::scrollable(widget::column![content].padding(10))
+                    .style(|t: &LauncherTheme, status| t.style_scrollable_flat_dark(status))
+                    .into()
+            }
+        }
+    }
 }
