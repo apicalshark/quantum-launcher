@@ -92,27 +92,34 @@ pub async fn get_java_binary(
         install_java(version, java_install_progress_sender).await?;
     }
 
-    let bin_path = find_java_bin(name, &java_dir)?;
+    let bin_path = find_java_bin(name, &java_dir).await?;
     Ok(bin_path.canonicalize().path(bin_path)?)
 }
 
-fn find_java_bin(name: &str, java_dir: &Path) -> Result<PathBuf, JavaInstallError> {
+async fn find_java_bin(name: &str, java_dir: &Path) -> Result<PathBuf, JavaInstallError> {
     let names = [
         format!("bin/{name}"),
-        format!("bin/{name}.exe"),
-        format!("Contents/Home/bin/{name}.exe"),
+        format!("Contents/Home/bin/{name}"),
         format!("jre.bundle/Contents/Home/bin/{name}"),
         format!("jdk1.8.0_231/{name}"),
+        format!("jdk1.8.0_231/bin/{name}"),
     ];
 
     for name in names {
-        let path = java_dir.join(name);
+        let path = java_dir.join(&name);
         if path.exists() {
-            return Ok(path); // Early return if the path exists
+            return Ok(path);
+        }
+
+        let path2 = java_dir.join(format!("{name}.exe"));
+        if path2.exists() {
+            return Ok(path2);
         }
     }
 
-    Err(JavaInstallError::NoJavaBinFound) // If no valid path is found, return an error
+    let entries = file_utils::read_filenames_from_dir(java_dir).await;
+
+    Err(JavaInstallError::NoJavaBinFound(entries))
 }
 
 async fn install_java(
@@ -127,7 +134,6 @@ async fn install_java(
     let install_dir = get_install_dir(version).await?;
     let lock_file = lock_init(&install_dir).await?;
 
-    info!("Started installing {}", version.to_string());
     send_progress(java_install_progress_sender, GenericProgress::default());
 
     let java_list_json = JavaListJson::download().await?;
@@ -300,8 +306,8 @@ pub enum JavaInstallError {
     Json(#[from] JsonError),
     #[error("{JAVA_INSTALL_ERR_PREFIX}{0}")]
     Io(#[from] IoError),
-    #[error("{JAVA_INSTALL_ERR_PREFIX}couldn't find java binary")]
-    NoJavaBinFound,
+    #[error("{JAVA_INSTALL_ERR_PREFIX}couldn't find java binary\n{0:?}")]
+    NoJavaBinFound(Result<Vec<String>, IoError>),
 
     #[error("on your platform, only Java 8 (Minecraft 1.16.5 and below) is supported!\n")]
     UnsupportedOnlyJava8,

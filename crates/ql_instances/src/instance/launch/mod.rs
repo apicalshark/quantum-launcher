@@ -77,10 +77,12 @@ pub async fn launch(
 
     print_censored_args(auth.as_ref(), &mut game_arguments);
 
-    let mut command = game_launcher
+    let (mut command, path) = game_launcher
         .get_command(game_arguments, java_arguments)
         .await?;
-    let child = command.spawn().map_err(GameLaunchError::CommandError)?;
+    let child = command
+        .spawn()
+        .map_err(|err| GameLaunchError::CommandError(err, path))?;
     if let Some(id) = child.id() {
         info!("Launched! PID: {id}");
     } else {

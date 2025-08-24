@@ -3,48 +3,58 @@
 //!
 //! # Here is a table representing java platform support.
 //!
-//! - In this, any entry with numbers filled in represents "official"
-//!   mojang support, i.e. they provide the java install files
-//!   for these platforms.
-//!
-//! - Any entry with `##` represents a version not supported by
-//!   mojang, but supported through *Amazon Corretto Java*
+//! - ✅: Official support from Mojang (installed from their servers)
+//! - 🟢: Supported through *Amazon Corretto Java*
 //!   which we provide an alternate installer for.
-//!
-//! - Any entry with `@@` represents a version not supported by
-//!   mojang, but installed from
+//! - 🟢³: Installed from
 //!   <https://github.com/Mrmayman/get-jdk>
+//! - 🟢²: Uses later version of Java (with backwards compatibility)
 //!
-//! - Any entry with `__` represents a version not supported at all.
+//! | Platforms   | 8  | 16 | 17 | 21 |
+//! |-------------|----|----|----|----|
+//! | Linux   x86_64  | ✅ | ✅ | ✅ | ✅ |
+//! | Linux   i686¹   | ✅ |    |    |   |
+//! | Linux   aarch64 | 🟢 | 🟢 | 🟢 | 🟢 |
+//! | Linux   arm32¹  | 🟢³|    |    |    |
+//! | Linux   sparc64 |    |    |    |    |
+//! | | | | |
+//! | FreeBSD x86_64¹ | 🟢³|    |    |    |
+//! | FreeBSD aarch64 |    |    |    |    |
+//! | FreeBSD i686    |    |    |    |    |
+//! | | | | |
+//! | Solaris x86_64¹ | 🟢³|    |    |    |
+//! | Solaris sparc64¹| 🟢³|    |    |    |
+//! | | | | |
+//! | macOS   x86_64  | 🟢 | ✅  | ✅ | ✅ |
+//! | macOS   aarch64 | 🟢 | 🟢  | ✅ | ✅ |
+//! | | | | |
+//! | Windows x86_64  | 🟢 | ✅ | ✅ | ✅  |
+//! | Windows i686    | 🟢 | ✅ | ✅ | 🟢³|
+//! | Windows aarch64²| 🟢²|🟢²| ✅ | ✅ |
 //!
-//! ```txt
-//! Linux   x64 :  8 16 17 21
-//! Linux   x32 :  8 __ __ __  <- (only Java 8: MC 1.16.5 and below)
-//! Linux   a64 : ## ## ## ##  <- Corretto
-//! Linux   a32 : @@ __ __ __  <- GitHub (only Java 8)
+//! ¹ Only Java 8 is supported on these platforms,
+//!   you can only play Minecraft 1.16.5 and below.
 //!
-//! Solaris x64 : @@ __ __ __
-//! Solaris S64 : @@ __ __ __
+//! ² Only Java 17+ is supported here,
+//!   most versions should run fine through Java backwards compatibility
+//!   but some mods may break.
 //!
-//! FreeBSD x64 : @@ __ __ __
+//! ³ This version uses `get-jdk` as mentioned previously
 //!
-//! macOS   x64 :  8 16 17 21
-//! macOS   a64 : ## ## 17 21
+//! # Future support
 //!
-//! Windows x64 :  8 16 17 21
-//! Windows x32 :  8 16 17 @@
-//! Windows a64 : __ __ 17 21  <- only java 17+; mostly fine,
-//!                             but some things like ModLoader might break
-//! -------------------
-//! x64   means x86_64 (64 bit)
-//! x32   means x86    (32 bit)
-//! a64   means aarch64 or ARM (64 bit)
-//! a32   means ARM 32 bit
-//! S64   means sparc64 (64 bit)
-//! -------------------
-//! ```
+//! ## Linux
+//! - RiscV
+//! - PowerPC
+//! - Iaarch64
+//! - Alpha
+//! - S390 (IBM Z)
+//! - SPARC
+//! - MIPS
 //!
-//! WTF: So... yeah, enjoy this mess
+//! ## macOS
+//! - i686
+//! - PowerPC
 
 use std::{io::Cursor, path::Path, sync::mpsc::Sender};
 

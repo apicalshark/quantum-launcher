@@ -642,7 +642,7 @@ pub async fn find_item_in_dir<F: FnMut(&Path, &str) -> bool>(
 /// Extract a ZIP archive to a directory using the new zip crate API
 ///
 /// # Arguments
-/// * `reader` - A reader that implements Read + Seek (e.g., Cursor<Vec<u8>>)
+/// * `reader` - A reader that implements Read + Seek (e.g., `Cursor<Vec<u8>>`)
 /// * `extract_to` - The target directory to extract files to
 /// * `strip_toplevel` - If true, removes common root directory (matches old zip-extract behavior)
 ///

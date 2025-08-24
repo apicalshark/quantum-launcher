@@ -734,10 +734,10 @@ impl GameLauncher {
         Ok(())
     }
 
-    pub async fn get_java_command(&mut self) -> Result<Command, GameLaunchError> {
+    pub async fn get_java_command(&mut self) -> Result<(Command, PathBuf), GameLaunchError> {
         if let Some(java_override) = &self.config_json.java_override {
             if !java_override.is_empty() {
-                return Ok(Command::new(java_override));
+                return Ok((Command::new(java_override), PathBuf::from(java_override)));
             }
         }
         let version = if let Some(version) = self.version_json.javaVersion.clone() {
@@ -757,7 +757,7 @@ impl GameLauncher {
         )
         .await?;
         info!("Java: {program:?}");
-        Ok(Command::new(program))
+        Ok((Command::new(&program), program))
     }
 
     pub async fn cleanup_junk_files(&self) -> Result<(), GameLaunchError> {
@@ -783,8 +783,8 @@ impl GameLauncher {
         &mut self,
         game_arguments: Vec<String>,
         java_arguments: Vec<String>,
-    ) -> Result<Command, GameLaunchError> {
-        let mut command = self.get_java_command().await?;
+    ) -> Result<(Command, PathBuf), GameLaunchError> {
+        let (mut command, path) = self.get_java_command().await?;
         command.args(
             java_arguments
                 .iter()
@@ -816,7 +816,7 @@ impl GameLauncher {
                 // contact me if there's a better way
             }
         }
-        Ok(command)
+        Ok((command, path))
     }
 }
 

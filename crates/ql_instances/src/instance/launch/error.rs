@@ -30,7 +30,7 @@ pub enum GameLaunchError {
     #[error("{GAME_ERR_PREFIX}couldn't convert PathBuf to string: {0:?}")]
     PathBufToString(PathBuf),
     #[error("{GAME_ERR_PREFIX}couldn't run java command: {0}")]
-    CommandError(std::io::Error),
+    CommandError(std::io::Error, PathBuf),
 
     #[error("{GAME_ERR_PREFIX}{0}")]
     Download(#[from] DownloadError),
