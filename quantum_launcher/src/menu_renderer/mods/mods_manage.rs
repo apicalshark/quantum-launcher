@@ -2,7 +2,6 @@ use iced::widget::tooltip::Position;
 use iced::{widget, Length};
 use ql_core::{InstanceSelection, SelectedMod};
 
-use crate::state::PRESET_INNER_RECOMMENDED;
 use crate::{
     icon_manager,
     menu_renderer::{back_button, back_to_launch_screen, button_with_icon, tooltip, Element},
@@ -28,39 +27,7 @@ impl MenuEditMods {
         }
 
         let menu_main = widget::row!(
-            widget::container(
-                widget::scrollable(
-                    widget::column!(
-                        widget::row![
-                            back_button().on_press(back_to_launch_screen(selected_instance, None)),
-                            button_with_icon(icon_manager::create_with_size(14), "Add File", 14)
-                                .on_press(Message::ManageMods(ManageModsMessage::AddFile))
-                        ]
-                        .spacing(7),
-                        self.get_mod_installer_buttons(selected_instance),
-                        widget::column!(
-                            button_with_icon(
-                                icon_manager::download_with_size(14),
-                                "Download Content",
-                                15
-                            )
-                            .on_press(Message::InstallMods(InstallModsMessage::Open)),
-                            button_with_icon(icon_manager::save(), "Mod Presets", 15)
-                                .on_press(Message::EditPresets(EditPresetsMessage::Open)),
-                            button_with_icon(icon_manager::jar_file(), "Jarmod Patches", 15)
-                                .on_press(Message::ManageJarMods(ManageJarModsMessage::Open))
-                        )
-                        .spacing(5),
-                        Self::open_mod_folder_button(selected_instance),
-                        self.get_mod_update_pane(tick_timer),
-                    )
-                    .padding(10)
-                    .spacing(10)
-                )
-                .style(LauncherTheme::style_scrollable_flat_dark)
-                .height(Length::Fill)
-            )
-            .style(|n| n.style_container_sharp_box(0.0, Color::Dark)),
+            self.get_sidebar(selected_instance, tick_timer),
             self.get_mod_list()
         );
 
@@ -75,6 +42,39 @@ impl MenuEditMods {
         } else {
             menu_main.into()
         }
+    }
+
+    fn get_sidebar<'a>(
+        &'a self,
+        selected_instance: &'a InstanceSelection,
+        tick_timer: usize,
+    ) -> widget::Scrollable<'a, Message, LauncherTheme> {
+        widget::scrollable(
+            widget::column!(
+                widget::row![
+                    back_button().on_press(back_to_launch_screen(selected_instance, None)),
+                    button_with_icon(icon_manager::create_with_size(14), "Add File", 14)
+                        .on_press(Message::ManageMods(ManageModsMessage::AddFile))
+                ]
+                .spacing(7),
+                self.get_mod_installer_buttons(selected_instance),
+                widget::column!(
+                    button_with_icon(icon_manager::download_with_size(14), "Download Content", 15)
+                        .on_press(Message::InstallMods(InstallModsMessage::Open)),
+                    button_with_icon(icon_manager::save(), "Mod Presets", 15)
+                        .on_press(Message::EditPresets(EditPresetsMessage::Open)),
+                    button_with_icon(icon_manager::jar_file(), "Jarmod Patches", 15)
+                        .on_press(Message::ManageJarMods(ManageJarModsMessage::Open))
+                )
+                .spacing(5),
+                Self::open_mod_folder_button(selected_instance),
+                self.get_mod_update_pane(tick_timer),
+            )
+            .padding(10)
+            .spacing(10),
+        )
+        .style(LauncherTheme::style_scrollable_flat_dark)
+        .height(Length::Fill)
     }
 
     fn get_mod_update_pane(&'_ self, tick_timer: usize) -> Element<'_> {
@@ -258,14 +258,9 @@ impl MenuEditMods {
         if self.sorted_mods_list.is_empty() {
             return widget::column!(
                 "Download some mods to get started",
-                widget::button("View Recommended Mods").on_press_with(|| {
-                    Message::Multiple(vec![
-                        Message::EditPresets(EditPresetsMessage::Open),
-                        Message::EditPresets(EditPresetsMessage::TabChange(
-                            PRESET_INNER_RECOMMENDED.to_owned(),
-                        )),
-                    ])
-                })
+                widget::button("View Recommended Mods").on_press(Message::RecommendedMods(
+                    crate::state::RecommendedModMessage::Open
+                ))
             )
             .spacing(10)
             .padding(10)

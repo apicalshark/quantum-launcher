@@ -146,7 +146,7 @@ impl Launcher {
                 return self.install_forge(is_neoforge);
             }
             Message::InstallForgeEnd(Ok(())) | Message::UninstallLoaderEnd(Ok(())) => {
-                return self.go_to_edit_mods_menu_without_update_check();
+                return self.go_to_edit_mods_menu(false);
             }
             Message::LaunchEndedLog(Ok((status, name))) => {
                 info!("Game exited with status: {status}");
@@ -353,7 +353,7 @@ impl Launcher {
                 if let Err(err) = result {
                     self.set_error(err);
                 } else {
-                    return self.go_to_edit_mods_menu_without_update_check();
+                    return self.go_to_edit_mods_menu(false);
                 }
             }
             Message::UninstallLoaderPaperStart => {

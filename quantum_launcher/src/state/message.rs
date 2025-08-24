@@ -154,7 +154,6 @@ pub enum InstallOptifineMessage {
 #[derive(Debug, Clone)]
 pub enum EditPresetsMessage {
     Open,
-    TabChange(String),
     ToggleCheckbox((String, ModId), bool),
     ToggleCheckboxLocal(String, bool),
     SelectAll,
@@ -162,10 +161,6 @@ pub enum EditPresetsMessage {
     BuildYourOwnEnd(Res<Vec<u8>>),
     Load,
     LoadComplete(Res<HashSet<CurseforgeNotAllowed>>),
-    RecommendedModCheck(Res<Vec<RecommendedMod>>),
-    RecommendedToggle(usize, bool),
-    RecommendedDownload,
-    RecommendedDownloadEnd(Res<HashSet<CurseforgeNotAllowed>>),
 }
 
 #[derive(Debug, Clone)]
@@ -249,6 +244,7 @@ pub enum LauncherSettingsMessage {
 pub enum Message {
     #[allow(unused)]
     Nothing,
+    #[allow(unused)]
     Multiple(Vec<Message>),
 
     WelcomeContinueToTheme,

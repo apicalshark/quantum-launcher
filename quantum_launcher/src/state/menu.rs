@@ -314,24 +314,13 @@ impl LauncherSettingsTab {
 }
 
 pub struct MenuEditPresets {
-    pub inner: MenuEditPresetsInner,
-    pub recommended_mods: Option<Vec<(bool, RecommendedMod)>>,
+    pub selected_mods: HashSet<SelectedMod>,
+    pub selected_state: SelectedState,
+    pub is_building: bool,
+
     pub progress: Option<ProgressBar<GenericProgress>>,
-    pub config: InstanceConfigJson,
     pub sorted_mods_list: Vec<ModListEntry>,
     pub drag_and_drop_hovered: bool,
-}
-
-pub enum MenuEditPresetsInner {
-    Build {
-        selected_mods: HashSet<SelectedMod>,
-        selected_state: SelectedState,
-        is_building: bool,
-    },
-    Recommended {
-        error: Option<String>,
-        progress: ProgressBar<GenericProgress>,
-    },
 }
 
 pub enum MenuRecommendedMods {
@@ -345,19 +334,6 @@ pub enum MenuRecommendedMods {
     },
     InstallALoader,
     NotSupported,
-}
-
-pub const PRESET_INNER_BUILD: &str = "Create";
-pub const PRESET_INNER_RECOMMENDED: &str = "Recommended";
-
-impl MenuEditPresetsInner {
-    #[must_use]
-    pub const fn id(&self) -> &'static str {
-        match self {
-            MenuEditPresetsInner::Build { .. } => PRESET_INNER_BUILD,
-            MenuEditPresetsInner::Recommended { .. } => PRESET_INNER_RECOMMENDED,
-        }
-    }
 }
 
 pub enum MenuWelcome {

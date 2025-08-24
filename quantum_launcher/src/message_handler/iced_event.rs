@@ -372,7 +372,7 @@ impl Launcher {
                 return (true, self.go_to_launch_screen::<String>(None));
             }
             if should_return_to_mods_screen {
-                return (true, self.go_to_edit_mods_menu_without_update_check());
+                return (true, self.go_to_edit_mods_menu(false));
             }
             if should_return_to_download_screen {
                 if let State::ModsDownload(menu) = &mut self.state {
