@@ -120,7 +120,7 @@ impl MenuExportMods {
                 back_button().on_press(Message::ManageMods(
                     ManageModsMessage::ScreenOpenWithoutUpdate
                 )),
-                widget::text("Export Mods")
+                widget::text("Export Mods List")
                     .size(24)
                     .style(|theme: &LauncherTheme| { theme.style_text(Color::Light) }),
             ]

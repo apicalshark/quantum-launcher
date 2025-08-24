@@ -304,7 +304,7 @@ impl MenuEditMods {
                                 13
                             )
                             .on_press(Message::ManageMods(ManageModsMessage::SelectAll)),
-                            button_with_icon(icon_manager::save_with_size(13), "Export...", 13)
+                            button_with_icon(icon_manager::save_with_size(13), "Export text list", 13)
                                 .on_press(Message::ManageMods(ManageModsMessage::ExportMenuOpen)),
                         ]
                         .spacing(5)
