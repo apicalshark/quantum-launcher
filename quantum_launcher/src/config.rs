@@ -101,6 +101,9 @@ pub struct LauncherConfig {
     // Since: v0.4.2
     pub global_settings: Option<GlobalSettings>,
     pub extra_java_args: Option<Vec<String>>,
+    /// Global pre-launch prefix commands to prepend to the launch command.
+    /// Example: ["prime-run"] to use NVIDIA GPU on Linux with Optimus.
+    pub pre_launch_prefix: Option<Vec<String>>,
 }
 
 impl Default for LauncherConfig {
@@ -120,6 +123,7 @@ impl Default for LauncherConfig {
             window: None,
             global_settings: None,
             extra_java_args: None,
+            pre_launch_prefix: None,
         }
     }
 }

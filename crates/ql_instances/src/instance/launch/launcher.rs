@@ -47,6 +47,8 @@ pub struct GameLauncher {
     /// can be overridden by `config_json.global_settings`.
     global_settings: Option<GlobalSettings>,
     extra_java_args: Vec<String>,
+    /// Commands to prepend to the launch command (e.g., "prime-run")
+    pre_launch_prefix: Vec<String>,
 }
 
 impl GameLauncher {
@@ -56,6 +58,7 @@ impl GameLauncher {
         java_install_progress_sender: Option<Sender<GenericProgress>>,
         global_settings: Option<GlobalSettings>,
         extra_java_args: Vec<String>,
+        pre_launch_prefix: Vec<String>,
     ) -> Result<Self, GameLaunchError> {
         let instance_dir = get_instance_dir(&instance_name).await?;
 
@@ -80,6 +83,7 @@ impl GameLauncher {
             version_json,
             global_settings,
             extra_java_args,
+            pre_launch_prefix,
         })
     }
 
@@ -786,13 +790,59 @@ impl GameLauncher {
         game_arguments: Vec<String>,
         java_arguments: Vec<String>,
     ) -> Result<(Command, PathBuf), GameLaunchError> {
-        let (mut command, path) = self.get_java_command().await?;
-        command.args(
-            java_arguments
+        let (mut command, mut path) = self.get_java_command().await?;
+        
+        // If pre-launch prefix is specified, create a new command with prefix
+        if !self.pre_launch_prefix.is_empty() {
+            let prefix_commands: Vec<String> = self.pre_launch_prefix
                 .iter()
-                .chain(game_arguments.iter())
-                .filter(|n| !n.is_empty()),
-        );
+                .filter(|cmd| !cmd.trim().is_empty())
+                .cloned()
+                .collect();
+                
+            if !prefix_commands.is_empty() {
+                let original_java_path = path.to_string_lossy().to_string();
+                
+                // Create command starting with the first prefix command
+                let mut new_command = Command::new(&prefix_commands[0]);
+                
+                // Add remaining prefix commands as arguments
+                if prefix_commands.len() > 1 {
+                    new_command.args(&prefix_commands[1..]);
+                }
+                
+                // Add the original Java command as an argument
+                new_command.arg(original_java_path);
+                
+                // Add Java and game arguments
+                new_command.args(
+                    java_arguments
+                        .iter()
+                        .chain(game_arguments.iter())
+                        .filter(|n| !n.is_empty()),
+                );
+                
+                command = new_command;
+                path = PathBuf::from(&prefix_commands[0]);
+            } else {
+                // No valid prefix commands, use normal Java command
+                command.args(
+                    java_arguments
+                        .iter()
+                        .chain(game_arguments.iter())
+                        .filter(|n| !n.is_empty()),
+                );
+            }
+        } else {
+            // No prefix, use normal Java command
+            command.args(
+                java_arguments
+                    .iter()
+                    .chain(game_arguments.iter())
+                    .filter(|n| !n.is_empty()),
+            );
+        }
+        
         command.current_dir(&self.minecraft_dir);
         if self.config_json.enable_logger.unwrap_or(true) {
             command.stdout(Stdio::piped()).stderr(Stdio::piped());

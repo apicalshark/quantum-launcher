@@ -174,6 +174,7 @@ pub fn launch_instance(
         // No global defaults in CLI mode
         None,
         Vec::new(),
+        Vec::new(), // No pre-launch prefix in CLI mode
     ))?;
 
     if let (Some(stdout), Some(stderr)) = {
