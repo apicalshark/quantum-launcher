@@ -91,6 +91,30 @@ impl Launcher {
             EditInstanceMessage::GameArgShiftDown(idx) => {
                 self.e_game_arg_shift_down(idx);
             }
+            EditInstanceMessage::PreLaunchPrefixAdd => {
+                self.e_pre_launch_prefix_add();
+            }
+            EditInstanceMessage::PreLaunchPrefixEdit(msg, idx) => {
+                self.e_pre_launch_prefix_edit(msg, idx);
+            }
+            EditInstanceMessage::PreLaunchPrefixDelete(idx) => {
+                self.e_pre_launch_prefix_delete(idx);
+            }
+            EditInstanceMessage::PreLaunchPrefixShiftUp(idx) => {
+                self.e_pre_launch_prefix_shift_up(idx);
+            }
+            EditInstanceMessage::PreLaunchPrefixShiftDown(idx) => {
+                self.e_pre_launch_prefix_shift_down(idx);
+            }
+            EditInstanceMessage::PreLaunchPrefixModeChanged(mode) => {
+                if let State::Launch(MenuLaunch {
+                    edit_instance: Some(menu),
+                    ..
+                }) = &mut self.state
+                {
+                    menu.config.pre_launch_prefix_mode = Some(mode);
+                }
+            }
             EditInstanceMessage::RenameEdit(n) => {
                 if let State::Launch(MenuLaunch {
                     edit_instance: Some(menu),
@@ -337,6 +361,77 @@ impl Launcher {
             return;
         };
         let Some(args) = &mut menu.config.game_args else {
+            return;
+        };
+        if idx + 1 < args.len() {
+            args.swap(idx, idx + 1);
+        }
+    }
+
+    fn e_pre_launch_prefix_add(&mut self) {
+        if let State::Launch(MenuLaunch {
+            edit_instance: Some(menu),
+            ..
+        }) = &mut self.state
+        {
+            menu.config
+                .pre_launch_prefix
+                .get_or_insert_with(Vec::new)
+                .push(String::new());
+        }
+    }
+
+    fn e_pre_launch_prefix_edit(&mut self, msg: String, idx: usize) {
+        let State::Launch(MenuLaunch {
+            edit_instance: Some(menu),
+            ..
+        }) = &mut self.state
+        else {
+            return;
+        };
+        let Some(args) = menu.config.pre_launch_prefix.as_mut() else {
+            return;
+        };
+        add_to_arguments_list(msg, args, idx);
+    }
+
+    fn e_pre_launch_prefix_delete(&mut self, idx: usize) {
+        if let State::Launch(MenuLaunch {
+            edit_instance: Some(menu),
+            ..
+        }) = &mut self.state
+        {
+            if let Some(args) = &mut menu.config.pre_launch_prefix {
+                args.remove(idx);
+            }
+        }
+    }
+
+    fn e_pre_launch_prefix_shift_up(&mut self, idx: usize) {
+        let State::Launch(MenuLaunch {
+            edit_instance: Some(menu),
+            ..
+        }) = &mut self.state
+        else {
+            return;
+        };
+        let Some(args) = &mut menu.config.pre_launch_prefix else {
+            return;
+        };
+        if idx > 0 {
+            args.swap(idx, idx - 1);
+        }
+    }
+
+    fn e_pre_launch_prefix_shift_down(&mut self, idx: usize) {
+        let State::Launch(MenuLaunch {
+            edit_instance: Some(menu),
+            ..
+        }) = &mut self.state
+        else {
+            return;
+        };
+        let Some(args) = &mut menu.config.pre_launch_prefix else {
             return;
         };
         if idx + 1 < args.len() {

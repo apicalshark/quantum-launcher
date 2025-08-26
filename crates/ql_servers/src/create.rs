@@ -106,6 +106,7 @@ async fn write_config(
         enable_logger: Some(true),
         java_args: None,
         game_args: None,
+        pre_launch_prefix: None,
 
         is_server: Some(true),
         is_classic_server: is_classic_server.then_some(true),
@@ -122,6 +123,7 @@ async fn write_config(
         close_on_start: None,
         global_settings: None,
         java_args_mode: None,
+        pre_launch_prefix_mode: None,
     };
     let server_config_path = server_dir.join("config.json");
     tokio::fs::write(
