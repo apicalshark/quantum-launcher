@@ -316,6 +316,7 @@ impl GameDownloader {
             enable_logger: Some(true),
             java_args: None,
             game_args: None,
+            pre_launch_prefix: None,
             is_classic_server: None,
             do_gc_tuning: None,
             close_on_start: None,
@@ -323,6 +324,7 @@ impl GameDownloader {
             omniarchive: None,
             global_settings: None,
             java_args_mode: None,
+            pre_launch_prefix_mode: None,
         };
         let config_json = serde_json::to_string(&config_json).json_to()?;
 

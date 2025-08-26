@@ -135,6 +135,32 @@ impl MenuEditInstance {
                 button_with_icon(icon_manager::create(), "Add", 16)
                     .on_press(Message::EditInstance(EditInstanceMessage::GameArgsAdd))
             ),
+            widget::text("Pre-launch prefix:").size(20),
+            widget::container(
+                widget::column![
+                    widget::text("Interaction with global pre-launch prefix:").size(14),
+                    widget::pick_list(JavaArgsMode::ALL, Some(self.config.pre_launch_prefix_mode.unwrap_or_default()), |mode| {
+                        Message::EditInstance(EditInstanceMessage::PreLaunchPrefixModeChanged(mode))
+                    })
+                    .placeholder("Select mode...")
+                    .width(150)
+                    .text_size(14),
+                    Self::get_mode_description(self.config.pre_launch_prefix_mode.unwrap_or_default()),
+                ]
+                .padding(10)
+                .spacing(7)
+            ),
+            widget::column!(
+                Self::get_java_args_list(
+                    self.config.pre_launch_prefix.as_deref(),
+                    |n| Message::EditInstance(EditInstanceMessage::PreLaunchPrefixDelete(n)),
+                    |n| Message::EditInstance(EditInstanceMessage::PreLaunchPrefixShiftUp(n)),
+                    |n| Message::EditInstance(EditInstanceMessage::PreLaunchPrefixShiftDown(n)),
+                    &|n, i| Message::EditInstance(EditInstanceMessage::PreLaunchPrefixEdit(n, i))
+                ),
+                button_with_icon(icon_manager::create(), "Add", 16)
+                    .on_press(Message::EditInstance(EditInstanceMessage::PreLaunchPrefixAdd))
+            ),
         )
         .padding(10)
         .spacing(10)

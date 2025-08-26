@@ -790,47 +790,34 @@ impl GameLauncher {
     ) -> Result<(Command, PathBuf), GameLaunchError> {
         let (mut command, mut path) = self.get_java_command().await?;
         
+        // Get combined pre-launch prefix (global + instance)
+        let prefix_commands = self.config_json.get_pre_launch_prefix(&self.pre_launch_prefix);
+        
         // If pre-launch prefix is specified, create a new command with prefix
-        if !self.pre_launch_prefix.is_empty() {
-            let prefix_commands: Vec<String> = self.pre_launch_prefix
-                .iter()
-                .filter(|cmd| !cmd.trim().is_empty())
-                .cloned()
-                .collect();
-                
-            if !prefix_commands.is_empty() {
-                let original_java_path = path.to_string_lossy().to_string();
-                
-                // Create command starting with the first prefix command
-                let mut new_command = Command::new(&prefix_commands[0]);
-                
-                // Add remaining prefix commands as arguments
-                if prefix_commands.len() > 1 {
-                    new_command.args(&prefix_commands[1..]);
-                }
-                
-                // Add the original Java command as an argument
-                new_command.arg(original_java_path);
-                
-                // Add Java and game arguments
-                new_command.args(
-                    java_arguments
-                        .iter()
-                        .chain(game_arguments.iter())
-                        .filter(|n| !n.is_empty()),
-                );
-                
-                command = new_command;
-                path = PathBuf::from(&prefix_commands[0]);
-            } else {
-                // No valid prefix commands, use normal Java command
-                command.args(
-                    java_arguments
-                        .iter()
-                        .chain(game_arguments.iter())
-                        .filter(|n| !n.is_empty()),
-                );
+        if !prefix_commands.is_empty() {
+            let original_java_path = path.to_string_lossy().to_string();
+            
+            // Create command starting with the first prefix command
+            let mut new_command = Command::new(&prefix_commands[0]);
+            
+            // Add remaining prefix commands as arguments
+            if prefix_commands.len() > 1 {
+                new_command.args(&prefix_commands[1..]);
             }
+            
+            // Add the original Java command as an argument
+            new_command.arg(original_java_path);
+            
+            // Add Java and game arguments
+            new_command.args(
+                java_arguments
+                    .iter()
+                    .chain(game_arguments.iter())
+                    .filter(|n| !n.is_empty()),
+            );
+            
+            command = new_command;
+            path = PathBuf::from(&prefix_commands[0]);
         } else {
             // No prefix, use normal Java command
             command.args(

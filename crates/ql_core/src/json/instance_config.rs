@@ -87,6 +87,9 @@ pub struct InstanceConfigJson {
     /// This is an optional list of additional
     /// arguments to pass to the game.
     pub game_args: Option<Vec<String>>,
+    /// This is an optional list of commands to prepend 
+    /// to the launch command (e.g., "prime-run" for NVIDIA GPU usage on Linux).
+    pub pre_launch_prefix: Option<Vec<String>>,
     /// DEPRECATED in v0.4.2
     ///
     /// This used to indicate whether a version
@@ -170,6 +173,15 @@ pub struct InstanceConfigJson {
     /// - `Override`: Instance args completely replace global args (ignore global when instance has args)
     /// - `Combine`: Global args are prepended to instance args (both are used together)
     pub java_args_mode: Option<JavaArgsMode>,
+
+    /// Controls how this instance's pre-launch prefix commands interact with global pre-launch prefix.
+    ///
+    /// **Default: `JavaArgsMode::Combine`**
+    ///
+    /// - `Fallback`: Use global prefix only when instance has no meaningful prefix (backward compatible)
+    /// - `Override`: Instance prefix completely replace global prefix (ignore global when instance has prefix)
+    /// - `Combine`: Global prefix are prepended to instance prefix (both are used together)
+    pub pre_launch_prefix_mode: Option<JavaArgsMode>,
 }
 
 impl InstanceConfigJson {
@@ -284,6 +296,55 @@ impl InstanceConfigJson {
                 combined.extend(global_args.iter().filter(|n| !n.trim().is_empty()).cloned());
                 if has_meaningful_instance_args {
                     combined.extend(instance_args.unwrap().iter().cloned());
+                }
+
+                combined
+            }
+        }
+    }
+
+    /// Gets pre-launch prefix commands with global fallback/combination support.
+    /// 
+    /// The behavior depends on the instance's `pre_launch_prefix_mode`:
+    /// - `Fallback`: Returns instance prefix if meaningful, otherwise global prefix
+    /// - `Override`: Returns instance prefix only (ignores global even if instance is empty)
+    /// - `Combine`: Returns global prefix + instance prefix (global first)
+    /// 
+    /// Returns an empty vector if no prefixes should be used.
+    #[must_use]
+    pub fn get_pre_launch_prefix(&self, global_prefix: &[String]) -> Vec<String> {
+        let mode = self
+            .pre_launch_prefix_mode
+            .as_ref()
+            .unwrap_or(&JavaArgsMode::Combine);
+        let instance_prefix = self.pre_launch_prefix.as_ref();
+
+        let has_meaningful_instance_prefix =
+            instance_prefix.is_some_and(|prefix| prefix.iter().any(|cmd| !cmd.trim().is_empty()));
+
+        match mode {
+            // Use instance if meaningful, otherwise global
+            JavaArgsMode::Fallback => {
+                if has_meaningful_instance_prefix {
+                    instance_prefix.unwrap().clone()
+                } else {
+                    global_prefix.to_owned()
+                }
+            }
+            // Use instance prefix only, ignore global completely
+            JavaArgsMode::Disable => {
+                if has_meaningful_instance_prefix {
+                    instance_prefix.unwrap().clone()
+                } else {
+                    Vec::new()
+                }
+            }
+            // Combine both instance and global prefix
+            JavaArgsMode::Combine => {
+                let mut combined = Vec::new();
+                combined.extend(global_prefix.iter().filter(|n| !n.trim().is_empty()).cloned());
+                if has_meaningful_instance_prefix {
+                    combined.extend(instance_prefix.unwrap().iter().cloned());
                 }
 
                 combined
