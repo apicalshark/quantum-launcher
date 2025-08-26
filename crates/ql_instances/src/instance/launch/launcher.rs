@@ -48,7 +48,7 @@ pub struct GameLauncher {
     global_settings: Option<GlobalSettings>,
     extra_java_args: Vec<String>,
     /// Commands to prepend to the launch command (e.g., "prime-run")
-    pre_launch_prefix: Vec<String>,
+    pub pre_launch_prefix: Vec<String>,
 }
 
 impl GameLauncher {
