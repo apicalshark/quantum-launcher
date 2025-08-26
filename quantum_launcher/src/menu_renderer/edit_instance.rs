@@ -310,3 +310,30 @@ You can override or customize their behaviour on a per-instance basis too."
     ]
     .spacing(5)
 }
+
+pub fn global_pre_launch_prefix_dialog<'a>(
+    prefix_args: Option<&'a [String]>,
+    add_msg: Message,
+    delete_msg: impl Fn(usize) -> Message + 'a,
+    edit_msg: &'a dyn Fn(String, usize) -> Message,
+    up_msg: impl Fn(usize) -> Message + 'a,
+    down_msg: impl Fn(usize) -> Message + 'a,
+) -> widget::Column<'a, Message, LauncherTheme> {
+    let ts = |n: &LauncherTheme| n.style_text(Color::SecondLight);
+
+    widget::column![
+        "Global Pre-Launch Prefix:",
+        widget::text(
+            r"Commands to prepend to the game launch command.
+Example: Use 'prime-run' to force NVIDIA GPU usage on Linux with Optimus graphics."
+        )
+        .size(12)
+        .style(ts),
+        widget::column!(
+            MenuEditInstance::get_java_args_list(prefix_args, delete_msg, up_msg, down_msg, edit_msg),
+            button_with_icon(icon_manager::create(), "Add Command", 16).on_press(add_msg)
+        )
+        .spacing(5),
+    ]
+    .spacing(5)
+}

@@ -234,6 +234,13 @@ pub enum LauncherSettingsMessage {
     GlobalJavaArgDelete(usize),
     GlobalJavaArgShiftUp(usize),
     GlobalJavaArgShiftDown(usize),
+
+    // Global pre-launch prefix
+    GlobalPreLaunchPrefixAdd,
+    GlobalPreLaunchPrefixEdit(String, usize),
+    GlobalPreLaunchPrefixDelete(usize),
+    GlobalPreLaunchPrefixShiftUp(usize),
+    GlobalPreLaunchPrefixShiftDown(usize),
 }
 
 #[derive(Debug, Clone)]
