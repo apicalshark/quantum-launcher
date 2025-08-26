@@ -228,6 +228,7 @@ impl Launcher {
                 drag_and_drop_hovered: false,
                 update_check_handle,
                 version_json,
+                submenu1_shown: false,
             });
 
             Ok(Task::batch([update_local_mods_task, update_cmd]))
@@ -446,6 +447,9 @@ impl Launcher {
         )) {
             Ok(mods) => {
                 let (sender, receiver) = std::sync::mpsc::channel();
+                if let State::EditMods(_) = &self.state {
+                    self.go_to_edit_presets_menu();
+                }
                 if let State::ManagePresets(menu) = &mut self.state {
                     menu.progress = Some(ProgressBar::with_recv(receiver));
                 }

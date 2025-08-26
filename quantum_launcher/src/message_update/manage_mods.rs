@@ -283,6 +283,11 @@ impl Launcher {
                     });
                 }
             }
+            ManageModsMessage::ToggleSubmenu1 => {
+                if let State::EditMods(menu) = &mut self.state {
+                    menu.submenu1_shown = !menu.submenu1_shown;
+                }
+            }
         }
         Task::none()
     }

@@ -100,6 +100,7 @@ pub enum ManageModsMessage {
     AddFile,
     AddFileDone(Res<HashSet<CurseforgeNotAllowed>>),
     ExportMenuOpen,
+    ToggleSubmenu1,
 }
 
 #[derive(Debug, Clone)]

@@ -110,7 +110,7 @@ impl Launcher {
         }
     }
 
-    fn go_to_edit_presets_menu(&mut self) {
+    pub fn go_to_edit_presets_menu(&mut self) {
         let State::EditMods(menu) = &self.state else {
             return;
         };

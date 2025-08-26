@@ -2,6 +2,7 @@ use iced::widget::tooltip::Position;
 use iced::{widget, Length};
 use ql_core::{InstanceSelection, SelectedMod};
 
+use crate::stylesheet::styles::{BORDER_RADIUS, BORDER_WIDTH};
 use crate::{
     icon_manager,
     menu_renderer::{back_button, back_to_launch_screen, button_with_icon, tooltip, Element},
@@ -37,6 +38,39 @@ impl MenuEditMods {
                 widget::center(widget::button(
                     widget::text("Drag and drop mod files to add them").size(20)
                 ))
+            )
+            .into()
+        } else if self.submenu1_shown {
+            let submenu = widget::column![
+                ctx_button("Export list as text")
+                    .on_press(Message::ManageMods(ManageModsMessage::ExportMenuOpen)),
+                ctx_button("Export QMP Preset")
+                    .on_press(Message::EditPresets(EditPresetsMessage::Open)),
+                widget::horizontal_rule(1)
+                    .style(|t: &LauncherTheme| t.style_rule(Color::SecondDark, 1)),
+                ctx_button("Import Modpack")
+                    .on_press(Message::ManageMods(ManageModsMessage::AddFile)),
+                ctx_button("See recommended mods").on_press(Message::RecommendedMods(
+                    crate::state::RecommendedModMessage::Open
+                )),
+            ]
+            .spacing(4);
+
+            widget::stack!(
+                menu_main,
+                widget::row![
+                    widget::horizontal_space(),
+                    widget::column![
+                        widget::Space::with_height(60),
+                        widget::container(submenu).padding(10).width(200).style(
+                            |t: &LauncherTheme| t.style_container_round_box(
+                                BORDER_WIDTH,
+                                Color::Dark,
+                                BORDER_RADIUS
+                            )
+                        )
+                    ]
+                ]
             )
             .into()
         } else {
@@ -299,8 +333,11 @@ impl MenuEditMods {
                                 13
                             )
                             .on_press(Message::ManageMods(ManageModsMessage::SelectAll)),
-                            button_with_icon(icon_manager::save_with_size(13), "Export text list", 13)
-                                .on_press(Message::ManageMods(ManageModsMessage::ExportMenuOpen)),
+                            widget::button(
+                                widget::row![icon_manager::three_lines_with_size(13)]
+                                    .align_y(iced::alignment::Vertical::Center)
+                                    .padding(3),
+                            ).on_press(Message::ManageMods(ManageModsMessage::ToggleSubmenu1)),
                         ]
                         .spacing(5)
                         .wrap()
@@ -404,6 +441,15 @@ impl MenuEditMods {
     }
 }
 
-fn install_ldr(fabric: &str) -> widget::Button<'_, Message, LauncherTheme, iced::Renderer> {
+fn install_ldr(fabric: &str) -> widget::Button<'_, Message, LauncherTheme> {
     widget::button(fabric).width(97)
+}
+
+fn ctx_button(e: &'_ str) -> widget::Button<'_, Message, LauncherTheme> {
+    widget::button(widget::text(e).size(13))
+        .width(Length::Fill)
+        .style(|t: &LauncherTheme, s| {
+            t.style_button(s, crate::stylesheet::widgets::StyleButton::FlatDark)
+        })
+        .padding(2)
 }

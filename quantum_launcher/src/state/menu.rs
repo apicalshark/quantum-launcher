@@ -147,6 +147,7 @@ pub struct MenuEditMods {
     pub update_check_handle: Option<iced::task::Handle>,
     pub available_updates: Vec<(ModId, String, bool)>,
     pub drag_and_drop_hovered: bool,
+    pub submenu1_shown: bool,
 }
 
 impl MenuEditMods {

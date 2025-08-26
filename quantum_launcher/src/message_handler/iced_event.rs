@@ -164,6 +164,9 @@ impl Launcher {
                             menu.sidebar_dragging = true;
                         }
                     }
+                    if let iced::event::Status::Ignored = status {
+                        self.hide_submenu();
+                    }
                 }
                 iced::mouse::Event::ButtonReleased(button) => {
                     if let (State::Launch(menu), iced::mouse::Button::Left) =
@@ -394,6 +397,12 @@ impl Launcher {
                 | should_return_to_download_screen,
             Task::none(),
         )
+    }
+
+    fn hide_submenu(&mut self) {
+        if let State::EditMods(menu) = &mut self.state {
+            menu.submenu1_shown = false;
+        }
     }
 
     fn key_change_selected_instance(&mut self, down: bool) -> Task<Message> {
