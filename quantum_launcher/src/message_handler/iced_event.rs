@@ -2,9 +2,9 @@ use super::{SIDEBAR_DRAG_LEEWAY, SIDEBAR_LIMIT_LEFT, SIDEBAR_LIMIT_RIGHT};
 use crate::message_update::MSG_RESIZE;
 use crate::state::{
     Launcher, LauncherSettingsMessage, LauncherSettingsTab, MenuCreateInstance, MenuEditJarMods,
-    MenuEditMods, MenuExportInstance, MenuInstallFabric, MenuInstallOptifine, MenuLaunch,
-    MenuLauncherSettings, MenuLauncherUpdate, MenuLoginAlternate, MenuLoginMS, MenuRecommendedMods,
-    MenuServerCreate, Message, State,
+    MenuEditMods, MenuEditPresets, MenuExportInstance, MenuInstallFabric, MenuInstallOptifine,
+    MenuLaunch, MenuLauncherSettings, MenuLauncherUpdate, MenuLoginAlternate, MenuLoginMS,
+    MenuRecommendedMods, MenuServerCreate, Message, State,
 };
 use iced::{
     keyboard::{key::Named, Key},
@@ -335,6 +335,11 @@ impl Launcher {
             | State::InstallFabric(MenuInstallFabric::Loaded { progress: None, .. })
             | State::EditJarMods(_)
             | State::ExportMods(_)
+            | State::ManagePresets(MenuEditPresets {
+                is_building: false,
+                progress: None,
+                ..
+            })
             | State::RecommendedMods(
                 MenuRecommendedMods::Loaded { .. }
                 | MenuRecommendedMods::InstallALoader

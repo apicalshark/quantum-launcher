@@ -95,8 +95,6 @@ impl MenuEditMods {
                 widget::column!(
                     button_with_icon(icon_manager::download_with_size(14), "Download Content", 15)
                         .on_press(Message::InstallMods(InstallModsMessage::Open)),
-                    button_with_icon(icon_manager::save(), "Mod Presets", 15)
-                        .on_press(Message::EditPresets(EditPresetsMessage::Open)),
                     button_with_icon(icon_manager::jar_file(), "Jarmod Patches", 15)
                         .on_press(Message::ManageJarMods(ManageJarModsMessage::Open))
                 )

@@ -62,7 +62,6 @@ impl Launcher {
                     Err(err) => self.set_error(err),
                 }
             }
-            EditPresetsMessage::Load => return self.load_preset(),
             EditPresetsMessage::LoadComplete(result) => {
                 match result.map(|not_allowed| {
                     if not_allowed.is_empty() {
@@ -131,18 +130,6 @@ impl Launcher {
         };
 
         self.state = State::ManagePresets(menu);
-    }
-
-    fn load_preset(&mut self) -> Task<Message> {
-        let Some(file) = rfd::FileDialog::new()
-            .add_filter("QuantumLauncher Mod Preset", &["qmp"])
-            .set_title("Select Mod Preset to Load")
-            .pick_file()
-        else {
-            return Task::none();
-        };
-
-        self.load_qmp_from_path(&file)
     }
 
     fn build_end(&mut self, preset: Vec<u8>) -> Task<Message> {

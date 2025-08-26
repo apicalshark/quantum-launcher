@@ -33,29 +33,50 @@ impl MenuEditPresets {
                 .into();
         }
 
-        let p_main = widget::scrollable(
+        let p_main = widget::row![
             widget::column![
-                widget::row![
-                    back_button().on_press(Message::ManageMods(
-                        ManageModsMessage::ScreenOpenWithoutUpdate
-                    )),
-                    widget::tooltip(
-                        button_with_icon(icon_manager::folder_with_size(14), "Import", 14)
-                            .on_press(Message::EditPresets(EditPresetsMessage::Load)),
-                        widget::column![
-                            widget::text("Note: Sideloaded .jar mods in untrusted presets could have viruses").size(12),
-                            widget::text("To get rid of them, after installing remove all mods in the list ending in \".jar\"").size(12)
-                        ],
-                        widget::tooltip::Position::Bottom
-                    )
-                    .style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::ExtraDark)),
-                ].spacing(5),
-                self.get_page_contents()
+                back_button().on_press(Message::ManageMods(
+                    ManageModsMessage::ScreenOpenWithoutUpdate
+                )),
+                widget::text(
+                    r"Mod Presets (.qmp files) are a
+simple, way to share
+your mods/configuration with
+other QuantumLauncher users"
+                )
+                .size(13),
+                // TODO: Add modrinth/curseforge modpack export
+                widget::text(
+                    r"In the future, you'll also get
+the option to export as
+Modrinth/Curseforge modpack"
+                )
+                .style(|t: &LauncherTheme| t.style_text(Color::SecondLight))
+                .size(12),
+                button_with_icon(icon_manager::save(), "Build Preset", 16)
+                    .on_press(Message::EditPresets(EditPresetsMessage::BuildYourOwn)),
             ]
             .padding(10)
-            .spacing(10)
-            .width(Length::Fill)
-        ).style(|t: &LauncherTheme, s| t.style_scrollable_flat_dark(s));
+            .spacing(10),
+            widget::container(
+                widget::column![
+                    widget::column![widget::button(
+                        if let SelectedState::All = self.selected_state {
+                            "Unselect All"
+                        } else {
+                            "Select All"
+                        }
+                    )
+                    .on_press(Message::EditPresets(EditPresetsMessage::SelectAll)),]
+                    .padding(10),
+                    widget::scrollable(self.get_mods_list(&self.selected_mods).padding(10))
+                        .style(|t: &LauncherTheme, s| t.style_scrollable_flat_extra_dark(s))
+                        .width(Length::Fill),
+                ]
+                .spacing(10)
+            )
+            .style(|t: &LauncherTheme| t.style_container_sharp_box(0.0, Color::ExtraDark))
+        ];
 
         if self.drag_and_drop_hovered {
             widget::stack!(
@@ -68,39 +89,6 @@ impl MenuEditPresets {
         } else {
             p_main.into()
         }
-    }
-
-    fn get_page_contents(&'_ self) -> Element<'_> {
-        widget::column!(
-            widget::text("Share and import a collection of mods!")
-                .size(14)
-                .style(|t: &LauncherTheme| t.style_text(Color::SecondLight)),
-            if self.sorted_mods_list.is_empty() {
-                widget::column![
-                    "You have no mods installed!",
-                    widget::button("View Recommended Mods").on_press(Message::RecommendedMods(
-                        crate::state::RecommendedModMessage::Open
-                    ))
-                ]
-            } else {
-                widget::column![
-                    widget::text("Create Modpack").size(20),
-                    "Select Mods to keep",
-                    widget::button(if let SelectedState::All = self.selected_state {
-                        "Unselect All"
-                    } else {
-                        "Select All"
-                    })
-                    .on_press(Message::EditPresets(EditPresetsMessage::SelectAll)),
-                    widget::container(self.get_mods_list(&self.selected_mods).padding(10)),
-                    button_with_icon(icon_manager::save(), "Build Preset", 16)
-                        .on_press(Message::EditPresets(EditPresetsMessage::BuildYourOwn)),
-                ]
-            }
-            .spacing(10)
-        )
-        .spacing(10)
-        .into()
     }
 
     fn get_mods_list<'a>(

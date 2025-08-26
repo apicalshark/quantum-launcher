@@ -160,7 +160,6 @@ pub enum EditPresetsMessage {
     SelectAll,
     BuildYourOwn,
     BuildYourOwnEnd(Res<Vec<u8>>),
-    Load,
     LoadComplete(Res<HashSet<CurseforgeNotAllowed>>),
 }
 
