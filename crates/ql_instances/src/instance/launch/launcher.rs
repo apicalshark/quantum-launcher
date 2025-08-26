@@ -946,6 +946,7 @@ fn remove_substring(original: &str, to_remove: &str) -> Option<String> {
 fn deduplicate_game_args(arr1: &[String], arr2: &[String]) -> Vec<String> {
     // Helper function to insert key-value pairs in order
     fn insert_pairs(arr: &[String], result: &mut Vec<String>, seen_keys: &mut HashSet<String>) {
+        let arr: Vec<String> = arr.iter().filter(|n| !n.is_empty()).cloned().collect();
         for i in (0..arr.len()).step_by(2) {
             let key = arr[i].clone();
             let value = arr[i + 1].clone();
