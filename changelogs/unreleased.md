@@ -15,3 +15,4 @@
 # Fixes
 - CurseForge mods that don't specify a loader
   can now be installed
+- You can now open instances created in newer versions, in v0.4.1
