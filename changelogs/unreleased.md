@@ -11,3 +11,7 @@
 - You can now export your mods as a text list, making it easy to share with others.
 - The list includes mods, and can optionally include links and instance details.
 - Anyone can view the list and manually install mods, regardless of their launcher.
+
+# Fixes
+- CurseForge mods that don't specify a loader
+  can now be installed
