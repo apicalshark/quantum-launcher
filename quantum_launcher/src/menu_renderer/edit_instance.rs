@@ -5,7 +5,7 @@ use crate::{
     stylesheet::{color::Color, styles::LauncherTheme},
 };
 use iced::{widget, Length};
-use ql_core::json::{instance_config::JavaArgsMode, GlobalSettings};
+use ql_core::json::{instance_config::{JavaArgsMode, PreLaunchPrefixMode}, GlobalSettings};
 use ql_core::InstanceSelection;
 
 use super::Element;
@@ -139,13 +139,13 @@ impl MenuEditInstance {
             widget::container(
                 widget::column![
                     widget::text("Interaction with global pre-launch prefix:").size(14),
-                    widget::pick_list(JavaArgsMode::ALL, Some(self.config.pre_launch_prefix_mode.unwrap_or_default()), |mode| {
+                    widget::pick_list(PreLaunchPrefixMode::ALL, Some(self.config.pre_launch_prefix_mode.unwrap_or_default()), |mode| {
                         Message::EditInstance(EditInstanceMessage::PreLaunchPrefixModeChanged(mode))
                     })
                     .placeholder("Select mode...")
-                    .width(150)
+                    .width(200)
                     .text_size(14),
-                    Self::get_mode_description(self.config.pre_launch_prefix_mode.unwrap_or_default()),
+                    Self::get_prefix_mode_description(self.config.pre_launch_prefix_mode.unwrap_or_default()),
                 ]
                 .padding(10)
                 .spacing(7)
@@ -168,6 +168,14 @@ impl MenuEditInstance {
     }
 
     fn get_mode_description<'a>(mode: JavaArgsMode) -> widget::Text<'a, LauncherTheme> {
+        let description = mode.get_description();
+
+        widget::text(description)
+            .size(12)
+            .style(|theme: &LauncherTheme| theme.style_text(Color::SecondLight))
+    }
+
+    fn get_prefix_mode_description<'a>(mode: PreLaunchPrefixMode) -> widget::Text<'a, LauncherTheme> {
         let description = mode.get_description();
 
         widget::text(description)

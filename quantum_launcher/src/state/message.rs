@@ -74,7 +74,7 @@ pub enum EditInstanceMessage {
     PreLaunchPrefixDelete(usize),
     PreLaunchPrefixShiftUp(usize),
     PreLaunchPrefixShiftDown(usize),
-    PreLaunchPrefixModeChanged(ql_core::json::instance_config::JavaArgsMode),
+    PreLaunchPrefixModeChanged(ql_core::json::instance_config::PreLaunchPrefixMode),
     RenameEdit(String),
     RenameApply,
     WindowWidthChanged(String),
