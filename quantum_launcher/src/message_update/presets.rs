@@ -51,7 +51,7 @@ impl Launcher {
                     let selected_instance = self.selected_instance.clone().unwrap();
                     let selected_mods = selected_mods.clone();
                     return Task::perform(
-                        ql_mod_manager::PresetJson::generate(selected_instance, selected_mods),
+                        ql_mod_manager::Preset::generate(selected_instance, selected_mods),
                         |n| Message::EditPresets(EditPresetsMessage::BuildYourOwnEnd(n.strerr())),
                     );
                 });

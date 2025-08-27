@@ -35,6 +35,8 @@ pub enum ModError {
     ParseInt(#[from] ParseIntError),
     #[error("{MOD_ERR_PREFIX}{0}")]
     Pack(#[from] Box<PackError>),
+    #[error("{MOD_ERR_PREFIX}not a valid modpack or QMP preset!")]
+    NotValidPack,
 }
 
 impl_3_errs_jri!(ModError, Json, RequestError, Io);

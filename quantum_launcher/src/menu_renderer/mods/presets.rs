@@ -40,7 +40,7 @@ impl MenuEditPresets {
                 )),
                 widget::text(
                     r"Mod Presets (.qmp files) are a
-simple, way to share
+simple way to share
 your mods/configuration with
 other QuantumLauncher users"
                 )
@@ -68,7 +68,10 @@ Modrinth/Curseforge modpack"
                         }
                     )
                     .on_press(Message::EditPresets(EditPresetsMessage::SelectAll)),]
-                    .padding(10),
+                    .padding({
+                        let p: iced::Padding = 10.into();
+                        p.bottom(0)
+                    }),
                     widget::scrollable(self.get_mods_list(&self.selected_mods).padding(10))
                         .style(|t: &LauncherTheme, s| t.style_scrollable_flat_extra_dark(s))
                         .width(Length::Fill),

@@ -441,9 +441,10 @@ impl Launcher {
                 return Task::none();
             }
         };
-        match tokio::runtime::Handle::current().block_on(ql_mod_manager::PresetJson::load(
+        match tokio::runtime::Handle::current().block_on(ql_mod_manager::Preset::load(
             self.selected_instance.clone().unwrap(),
             file,
+            true,
         )) {
             Ok(mods) => {
                 let (sender, receiver) = std::sync::mpsc::channel();
@@ -455,7 +456,11 @@ impl Launcher {
                 }
                 let instance_name = self.selected_instance.clone().unwrap();
                 Task::perform(
-                    ql_mod_manager::store::download_mods_bulk(mods, instance_name, Some(sender)),
+                    ql_mod_manager::store::download_mods_bulk(
+                        mods.to_install,
+                        instance_name,
+                        Some(sender),
+                    ),
                     |n| Message::EditPresets(EditPresetsMessage::LoadComplete(n.strerr())),
                 )
             }
