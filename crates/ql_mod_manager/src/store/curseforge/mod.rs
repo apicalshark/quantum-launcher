@@ -6,7 +6,9 @@ use std::{
 
 use chrono::DateTime;
 use download::ModDownloader;
-use ql_core::{pt, GenericProgress, IntoJsonError, JsonDownloadError, ModId, RequestError, CLIENT};
+use ql_core::{
+    err, pt, GenericProgress, IntoJsonError, JsonDownloadError, ModId, RequestError, CLIENT,
+};
 use reqwest::header::HeaderValue;
 use serde::Deserialize;
 
@@ -58,17 +60,46 @@ impl Mod {
         loader: Option<&str>,
         query_type: QueryType,
     ) -> Result<(CurseforgeFileQuery, i32), ModError> {
-        let Some(file) = self.latestFilesIndexes.iter().find(|n| {
-            let is_loader_compatible = loader == n.modLoader.map(|n| n.to_string()).as_deref();
-            let is_version_compatible = n.gameVersion == version;
-            (query_type != QueryType::Mods) || (is_version_compatible && is_loader_compatible)
-        }) else {
+        let Some(file) = self
+            .get_downloads_iter(version.to_owned(), query_type)
+            .find(|n| {
+                let is_loader_compatible = if let (Some(l), Some(n)) =
+                    (loader, n.modLoader.map(|n| n.to_string()).as_deref())
+                {
+                    l == n
+                } else {
+                    false
+                };
+                (query_type != QueryType::Mods) || is_loader_compatible
+            })
+            .or_else(|| {
+                if loader.is_none() {
+                    err!("You haven't installed a valid mod loader!");
+                } else {
+                    err!("Can't find a version of this mod compatible with your mod loader!");
+                }
+                pt!("Installing an arbitrary version anyway...");
+
+                self.get_downloads_iter(version.to_owned(), query_type)
+                    .next()
+            })
+        else {
             return Err(ModError::NoCompatibleVersionFound(title));
         };
 
         let file_query = CurseforgeFileQuery::load(id, file.fileId).await?;
 
         Ok((file_query, file.fileId))
+    }
+
+    fn get_downloads_iter(
+        &self,
+        version: String,
+        query_type: QueryType,
+    ) -> impl Iterator<Item = &CurseforgeFileIdx> {
+        self.latestFilesIndexes
+            .iter()
+            .filter(move |n| (query_type != QueryType::Mods) || (n.gameVersion == version))
     }
 }
 
