@@ -61,27 +61,24 @@ impl Mod {
         query_type: QueryType,
     ) -> Result<(CurseforgeFileQuery, i32), ModError> {
         let Some(file) = self
-            .get_downloads_iter(version.to_owned(), query_type)
+            .latestFilesIndexes
+            .iter()
+            .filter(move |n| (query_type != QueryType::Mods) || (n.gameVersion == version))
             .find(|n| {
                 let is_loader_compatible = if let (Some(l), Some(n)) =
                     (loader, n.modLoader.map(|n| n.to_string()).as_deref())
                 {
                     l == n
                 } else {
-                    false
+                    if loader.is_none() {
+                        err!("You haven't installed a valid mod loader!");
+                    } else {
+                        err!("Can't find a version of this mod compatible with your mod loader!");
+                    }
+                    pt!("Installing an arbitrary version anyway...");
+                    true
                 };
                 (query_type != QueryType::Mods) || is_loader_compatible
-            })
-            .or_else(|| {
-                if loader.is_none() {
-                    err!("You haven't installed a valid mod loader!");
-                } else {
-                    err!("Can't find a version of this mod compatible with your mod loader!");
-                }
-                pt!("Installing an arbitrary version anyway...");
-
-                self.get_downloads_iter(version.to_owned(), query_type)
-                    .next()
             })
         else {
             return Err(ModError::NoCompatibleVersionFound(title));
@@ -90,16 +87,6 @@ impl Mod {
         let file_query = CurseforgeFileQuery::load(id, file.fileId).await?;
 
         Ok((file_query, file.fileId))
-    }
-
-    fn get_downloads_iter(
-        &self,
-        version: String,
-        query_type: QueryType,
-    ) -> impl Iterator<Item = &CurseforgeFileIdx> {
-        self.latestFilesIndexes
-            .iter()
-            .filter(move |n| (query_type != QueryType::Mods) || (n.gameVersion == version))
     }
 }
 
