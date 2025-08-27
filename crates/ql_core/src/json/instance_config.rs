@@ -46,6 +46,61 @@ impl std::fmt::Display for JavaArgsMode {
     }
 }
 
+/// Defines how instance pre-launch prefix commands should interact with global pre-launch prefix commands
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum PreLaunchPrefixMode {
+    /// Use global prefix only if instance prefix is empty,
+    /// as a *fallback*.
+    #[serde(rename = "fallback")]
+    Fallback,
+    /// Use instance prefix only,
+    /// **ignoring** global prefix entirely
+    #[serde(rename = "override")]
+    Override,
+    /// Combine global prefix with instance prefix,
+    /// Global commands first, then instance commands.
+    #[serde(rename = "combine_global_local")]
+    #[default]
+    CombineGlobalLocal,
+    /// Combine instance prefix with global prefix,
+    /// Instance commands first, then global commands.
+    #[serde(rename = "combine_local_global")]
+    CombineLocalGlobal,
+}
+
+impl PreLaunchPrefixMode {
+    pub const ALL: &[Self] = &[
+        Self::CombineGlobalLocal,
+        Self::CombineLocalGlobal,
+        Self::Override,
+        Self::Fallback,
+    ];
+
+    pub fn get_description(self) -> &'static str {
+        match self {
+            PreLaunchPrefixMode::Fallback => "Use global prefix only when instance has no prefix",
+            PreLaunchPrefixMode::Override => "Use only instance prefix, ignore global prefix",
+            PreLaunchPrefixMode::CombineGlobalLocal => {
+                "Combine global + instance prefix (global first, then instance)"
+            }
+            PreLaunchPrefixMode::CombineLocalGlobal => {
+                "Combine instance + global prefix (instance first, then global)"
+            }
+        }
+    }
+}
+
+impl std::fmt::Display for PreLaunchPrefixMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PreLaunchPrefixMode::Fallback => write!(f, "Fallback"),
+            PreLaunchPrefixMode::Override => write!(f, "Override"),
+            PreLaunchPrefixMode::CombineGlobalLocal => write!(f, "Combine Global+Local (default)"),
+            PreLaunchPrefixMode::CombineLocalGlobal => write!(f, "Combine Local+Global"),
+        }
+    }
+}
+
 /// Configuration for a specific instance.
 /// Not to be confused with [`crate::json::VersionDetails`]. That one
 /// is launcher agnostic data provided from mojang, this one is
@@ -176,12 +231,13 @@ pub struct InstanceConfigJson {
 
     /// Controls how this instance's pre-launch prefix commands interact with global pre-launch prefix.
     ///
-    /// **Default: `JavaArgsMode::Combine`**
+    /// **Default: `PreLaunchPrefixMode::CombineGlobalLocal`**
     ///
     /// - `Fallback`: Use global prefix only when instance has no meaningful prefix (backward compatible)
     /// - `Override`: Instance prefix completely replace global prefix (ignore global when instance has prefix)
-    /// - `Combine`: Global prefix are prepended to instance prefix (both are used together)
-    pub pre_launch_prefix_mode: Option<JavaArgsMode>,
+    /// - `CombineGlobalLocal`: Global prefix are prepended to instance prefix (global first, then instance)
+    /// - `CombineLocalGlobal`: Instance prefix are prepended to global prefix (instance first, then global)
+    pub pre_launch_prefix_mode: Option<PreLaunchPrefixMode>,
 }
 
 impl InstanceConfigJson {
@@ -308,7 +364,8 @@ impl InstanceConfigJson {
     /// The behavior depends on the instance's `pre_launch_prefix_mode`:
     /// - `Fallback`: Returns instance prefix if meaningful, otherwise global prefix
     /// - `Override`: Returns instance prefix only (ignores global even if instance is empty)
-    /// - `Combine`: Returns global prefix + instance prefix (global first)
+    /// - `CombineGlobalLocal`: Returns global prefix + instance prefix (global first, then instance)
+    /// - `CombineLocalGlobal`: Returns instance prefix + global prefix (instance first, then global)
     /// 
     /// Returns an empty vector if no prefixes should be used.
     #[must_use]
@@ -316,7 +373,7 @@ impl InstanceConfigJson {
         let mode = self
             .pre_launch_prefix_mode
             .as_ref()
-            .unwrap_or(&JavaArgsMode::Combine);
+            .unwrap_or(&PreLaunchPrefixMode::CombineGlobalLocal);
         let instance_prefix = self.pre_launch_prefix.as_ref();
 
         let has_meaningful_instance_prefix =
@@ -324,7 +381,7 @@ impl InstanceConfigJson {
 
         match mode {
             // Use instance if meaningful, otherwise global
-            JavaArgsMode::Fallback => {
+            PreLaunchPrefixMode::Fallback => {
                 if has_meaningful_instance_prefix {
                     instance_prefix.unwrap().clone()
                 } else {
@@ -332,21 +389,29 @@ impl InstanceConfigJson {
                 }
             }
             // Use instance prefix only, ignore global completely
-            JavaArgsMode::Disable => {
+            PreLaunchPrefixMode::Override => {
                 if has_meaningful_instance_prefix {
                     instance_prefix.unwrap().clone()
                 } else {
                     Vec::new()
                 }
             }
-            // Combine both instance and global prefix
-            JavaArgsMode::Combine => {
+            // Combine global first, then instance prefix
+            PreLaunchPrefixMode::CombineGlobalLocal => {
                 let mut combined = Vec::new();
                 combined.extend(global_prefix.iter().filter(|n| !n.trim().is_empty()).cloned());
                 if has_meaningful_instance_prefix {
-                    combined.extend(instance_prefix.unwrap().iter().cloned());
+                    combined.extend(instance_prefix.unwrap().iter().filter(|n| !n.trim().is_empty()).cloned());
                 }
-
+                combined
+            }
+            // Combine instance first, then global prefix
+            PreLaunchPrefixMode::CombineLocalGlobal => {
+                let mut combined = Vec::new();
+                if has_meaningful_instance_prefix {
+                    combined.extend(instance_prefix.unwrap().iter().filter(|n| !n.trim().is_empty()).cloned());
+                }
+                combined.extend(global_prefix.iter().filter(|n| !n.trim().is_empty()).cloned());
                 combined
             }
         }
