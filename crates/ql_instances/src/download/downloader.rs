@@ -316,7 +316,6 @@ impl GameDownloader {
             enable_logger: Some(true),
             java_args: None,
             game_args: None,
-            pre_launch_prefix: None,
             is_classic_server: None,
             do_gc_tuning: None,
             close_on_start: None,

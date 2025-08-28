@@ -374,10 +374,7 @@ impl Launcher {
             ..
         }) = &mut self.state
         {
-            menu.config
-                .pre_launch_prefix
-                .get_or_insert_with(Vec::new)
-                .push(String::new());
+            menu.config.get_launch_prefix().push(String::new());
         }
     }
 
@@ -389,10 +386,7 @@ impl Launcher {
         else {
             return;
         };
-        let Some(args) = menu.config.pre_launch_prefix.as_mut() else {
-            return;
-        };
-        add_to_arguments_list(msg, args, idx);
+        add_to_arguments_list(msg, menu.config.get_launch_prefix(), idx);
     }
 
     fn e_pre_launch_prefix_delete(&mut self, idx: usize) {
@@ -401,9 +395,7 @@ impl Launcher {
             ..
         }) = &mut self.state
         {
-            if let Some(args) = &mut menu.config.pre_launch_prefix {
-                args.remove(idx);
-            }
+            menu.config.get_launch_prefix().remove(idx);
         }
     }
 
@@ -415,11 +407,8 @@ impl Launcher {
         else {
             return;
         };
-        let Some(args) = &mut menu.config.pre_launch_prefix else {
-            return;
-        };
         if idx > 0 {
-            args.swap(idx, idx - 1);
+            menu.config.get_launch_prefix().swap(idx, idx - 1);
         }
     }
 
@@ -431,9 +420,7 @@ impl Launcher {
         else {
             return;
         };
-        let Some(args) = &mut menu.config.pre_launch_prefix else {
-            return;
-        };
+        let args = menu.config.get_launch_prefix();
         if idx + 1 < args.len() {
             args.swap(idx, idx + 1);
         }

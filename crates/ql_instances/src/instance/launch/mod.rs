@@ -27,7 +27,6 @@ pub async fn launch(
     auth: Option<AccountData>,
     global_settings: Option<GlobalSettings>,
     extra_java_args: Vec<String>,
-    pre_launch_prefix: Vec<String>,
 ) -> Result<Arc<Mutex<Child>>, GameLaunchError> {
     if username.is_empty() {
         return Err(GameLaunchError::UsernameIsEmpty);
@@ -42,7 +41,6 @@ pub async fn launch(
         java_install_progress_sender,
         global_settings,
         extra_java_args,
-        pre_launch_prefix,
     )
     .await?;
 
@@ -87,12 +85,6 @@ pub async fn launch(
     java_arguments.push(main_class);
 
     info!("Java args: {java_arguments:?}\n");
-    
-    // Log pre-launch prefix args
-    let prefix_commands = game_launcher.config_json.get_pre_launch_prefix(&game_launcher.pre_launch_prefix);
-    if !prefix_commands.is_empty() {
-        info!("Pre args: {prefix_commands:?}");
-    }
 
     print_censored_args(auth.as_ref(), &mut game_arguments);
 

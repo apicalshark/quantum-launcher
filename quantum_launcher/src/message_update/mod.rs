@@ -563,35 +563,27 @@ impl Launcher {
                 }
             }
             LauncherSettingsMessage::GlobalPreLaunchPrefixAdd => {
-                self.config
-                    .pre_launch_prefix
-                    .get_or_insert_with(Vec::new)
-                    .push(String::new());
+                self.config.get_launch_prefix().push(String::new());
             }
             LauncherSettingsMessage::GlobalPreLaunchPrefixEdit(arg, idx) => {
-                if let Some(args) = self.config.pre_launch_prefix.as_mut() {
-                    add_to_arguments_list(arg, args, idx);
-                }
+                add_to_arguments_list(arg, self.config.get_launch_prefix(), idx);
             }
             LauncherSettingsMessage::GlobalPreLaunchPrefixDelete(idx) => {
-                if let Some(args) = self.config.pre_launch_prefix.as_mut() {
-                    if idx < args.len() {
-                        args.remove(idx);
-                    }
+                let args = self.config.get_launch_prefix();
+                if idx < args.len() {
+                    args.remove(idx);
                 }
             }
             LauncherSettingsMessage::GlobalPreLaunchPrefixShiftUp(idx) => {
-                if let Some(args) = self.config.pre_launch_prefix.as_mut() {
-                    if idx > 0 && idx < args.len() {
-                        args.swap(idx, idx - 1);
-                    }
+                let args = self.config.get_launch_prefix();
+                if idx > 0 && idx < args.len() {
+                    args.swap(idx, idx - 1);
                 }
             }
             LauncherSettingsMessage::GlobalPreLaunchPrefixShiftDown(idx) => {
-                if let Some(args) = self.config.pre_launch_prefix.as_mut() {
-                    if idx + 1 < args.len() {
-                        args.swap(idx, idx + 1);
-                    }
+                let args = self.config.get_launch_prefix();
+                if idx + 1 < args.len() {
+                    args.swap(idx, idx + 1);
                 }
             }
         }
