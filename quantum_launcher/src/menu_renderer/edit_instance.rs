@@ -5,7 +5,10 @@ use crate::{
     stylesheet::{color::Color, styles::LauncherTheme},
 };
 use iced::{widget, Length};
-use ql_core::json::{instance_config::{JavaArgsMode, PreLaunchPrefixMode}, GlobalSettings};
+use ql_core::json::{
+    instance_config::{JavaArgsMode, PreLaunchPrefixMode},
+    GlobalSettings,
+};
 use ql_core::InstanceSelection;
 
 use super::Element;
@@ -139,27 +142,39 @@ impl MenuEditInstance {
             widget::container(
                 widget::column![
                     widget::text("Interaction with global pre-launch prefix:").size(14),
-                    widget::pick_list(PreLaunchPrefixMode::ALL, Some(self.config.pre_launch_prefix_mode.unwrap_or_default()), |mode| {
-                        Message::EditInstance(EditInstanceMessage::PreLaunchPrefixModeChanged(mode))
-                    })
+                    widget::pick_list(
+                        PreLaunchPrefixMode::ALL,
+                        Some(self.config.pre_launch_prefix_mode.unwrap_or_default()),
+                        |mode| {
+                            Message::EditInstance(EditInstanceMessage::PreLaunchPrefixModeChanged(
+                                mode,
+                            ))
+                        }
+                    )
                     .placeholder("Select mode...")
                     .width(200)
                     .text_size(14),
-                    Self::get_prefix_mode_description(self.config.pre_launch_prefix_mode.unwrap_or_default()),
+                    Self::get_prefix_mode_description(
+                        self.config.pre_launch_prefix_mode.unwrap_or_default()
+                    ),
                 ]
                 .padding(10)
                 .spacing(7)
             ),
             widget::column!(
                 Self::get_java_args_list(
-                    self.config.pre_launch_prefix.as_deref(),
+                    self.config
+                        .global_settings
+                        .as_ref()
+                        .and_then(|n| n.pre_launch_prefix.as_deref()),
                     |n| Message::EditInstance(EditInstanceMessage::PreLaunchPrefixDelete(n)),
                     |n| Message::EditInstance(EditInstanceMessage::PreLaunchPrefixShiftUp(n)),
                     |n| Message::EditInstance(EditInstanceMessage::PreLaunchPrefixShiftDown(n)),
                     &|n, i| Message::EditInstance(EditInstanceMessage::PreLaunchPrefixEdit(n, i))
                 ),
-                button_with_icon(icon_manager::create(), "Add", 16)
-                    .on_press(Message::EditInstance(EditInstanceMessage::PreLaunchPrefixAdd))
+                button_with_icon(icon_manager::create(), "Add", 16).on_press(
+                    Message::EditInstance(EditInstanceMessage::PreLaunchPrefixAdd)
+                )
             ),
         )
         .padding(10)
@@ -175,7 +190,9 @@ impl MenuEditInstance {
             .style(|theme: &LauncherTheme| theme.style_text(Color::SecondLight))
     }
 
-    fn get_prefix_mode_description<'a>(mode: PreLaunchPrefixMode) -> widget::Text<'a, LauncherTheme> {
+    fn get_prefix_mode_description<'a>(
+        mode: PreLaunchPrefixMode,
+    ) -> widget::Text<'a, LauncherTheme> {
         let description = mode.get_description();
 
         widget::text(description)
@@ -364,7 +381,13 @@ Example: Use 'prime-run' to force NVIDIA GPU usage on Linux with Optimus graphic
         .size(12)
         .style(ts),
         widget::column!(
-            MenuEditInstance::get_java_args_list(prefix_args, delete_msg, up_msg, down_msg, edit_msg),
+            MenuEditInstance::get_java_args_list(
+                prefix_args,
+                delete_msg,
+                up_msg,
+                down_msg,
+                edit_msg
+            ),
             button_with_icon(icon_manager::create(), "Add Command", 16).on_press(add_msg)
         )
         .spacing(5),

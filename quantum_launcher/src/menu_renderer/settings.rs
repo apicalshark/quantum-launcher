@@ -5,7 +5,9 @@ use super::{
     back_button, button_with_icon, get_theme_selector, sidebar_button, underline, Element, DISCORD,
     GITHUB,
 };
-use crate::menu_renderer::edit_instance::{global_java_args_dialog, global_pre_launch_prefix_dialog, resolution_dialog};
+use crate::menu_renderer::edit_instance::{
+    global_java_args_dialog, global_pre_launch_prefix_dialog, resolution_dialog,
+};
 use crate::{
     config::LauncherConfig,
     icon_manager,
@@ -207,17 +209,20 @@ impl LauncherSettingsTab {
                 .spacing(10),
                 widget::horizontal_rule(1),
                 widget::column![global_pre_launch_prefix_dialog(
-                    config.pre_launch_prefix.as_deref(),
+                    config
+                        .global_settings
+                        .as_ref()
+                        .and_then(|n| n.pre_launch_prefix.as_deref()),
                     Message::LauncherSettings(LauncherSettingsMessage::GlobalPreLaunchPrefixAdd),
-                    |idx| Message::LauncherSettings(LauncherSettingsMessage::GlobalPreLaunchPrefixDelete(
-                        idx
-                    )),
+                    |idx| Message::LauncherSettings(
+                        LauncherSettingsMessage::GlobalPreLaunchPrefixDelete(idx)
+                    ),
                     &|arg, idx| Message::LauncherSettings(
                         LauncherSettingsMessage::GlobalPreLaunchPrefixEdit(arg, idx)
                     ),
-                    |idx| Message::LauncherSettings(LauncherSettingsMessage::GlobalPreLaunchPrefixShiftUp(
-                        idx
-                    )),
+                    |idx| Message::LauncherSettings(
+                        LauncherSettingsMessage::GlobalPreLaunchPrefixShiftUp(idx)
+                    ),
                     |idx| Message::LauncherSettings(
                         LauncherSettingsMessage::GlobalPreLaunchPrefixShiftDown(idx)
                     ),
