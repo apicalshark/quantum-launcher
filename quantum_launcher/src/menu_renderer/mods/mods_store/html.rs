@@ -151,47 +151,12 @@ fn render_html<'a>(
             false
         }
         "a" => {
-            if let Some(attr) = attrs
-                .iter()
-                .find(|attr| attr.name.local.to_string().as_str() == "href")
-            {
-                let url = attr.value.to_string();
-                let children_empty = { node.children.borrow().is_empty() };
-
-                let mut children: Element = widget::column![].into();
-                draw_children!(info, &mut children);
-
-                if children_empty {
-                    children = widget::column!(widget::text(url.clone())).into();
-                }
-                *element = widget::button(children)
-                    .on_press(Message::CoreOpenLink(url))
-                    .into();
-            } else {
-                *element = widget::text("[HTML error: malformed link]]").into();
-            }
+            draw_link(node, element, &attrs, info);
             false
         }
         "head" | "br" => true,
         "img" => {
-            if let Some(attr) = attrs
-                .iter()
-                .find(|attr| attr.name.local.to_string().as_str() == "src")
-            {
-                let url = attr.value.to_string();
-                *element = if let Some(image) = images.bitmap.get(&url) {
-                    // Image
-                    widget::image(image.clone()).into()
-                } else if let Some(image) = images.svg.get(&url) {
-                    widget::svg(image.clone()).into()
-                } else {
-                    let mut images_to_load = images.to_load.lock().unwrap();
-                    images_to_load.insert(url);
-                    widget::text("(Loading image...)").into()
-                }
-            } else {
-                *element = widget::text("[HTML error: malformed image]]").into();
-            }
+            draw_image(element, images, &attrs);
             true
         }
         "code" => {
@@ -225,6 +190,57 @@ fn render_html<'a>(
             *element = widget::text!("[HTML todo: {name}]").into();
             true
         }
+    }
+}
+
+fn draw_image<'a>(
+    element: &mut Element<'a>,
+    images: &'a ImageState,
+    attrs: &[html5ever::Attribute],
+) {
+    if let Some(attr) = attrs
+        .iter()
+        .find(|attr| attr.name.local.to_string().as_str() == "src")
+    {
+        let url = attr.value.to_string();
+        *element = if let Some(image) = images.bitmap.get(&url) {
+            widget::image(image.clone()).into()
+        } else if let Some(image) = images.svg.get(&url) {
+            widget::svg(image.clone()).into()
+        } else {
+            let mut images_to_load = images.to_load.lock().unwrap();
+            images_to_load.insert(url);
+            widget::text("(Loading image...)").into()
+        }
+    } else {
+        *element = widget::text("[HTML error: malformed image]]").into();
+    }
+}
+
+fn draw_link<'a>(
+    node: &Node,
+    element: &mut Element<'a>,
+    attrs: &std::cell::Ref<'_, Vec<html5ever::Attribute>>,
+    info: (&Node, &'a ImageState, (f32, f32)),
+) {
+    if let Some(attr) = attrs
+        .iter()
+        .find(|attr| attr.name.local.to_string().as_str() == "href")
+    {
+        let url = attr.value.to_string();
+        let children_empty = { node.children.borrow().is_empty() };
+
+        let mut children: Element = widget::column![].into();
+        draw_children!(info, &mut children);
+
+        if children_empty {
+            children = widget::column!(widget::text(url.clone())).into();
+        }
+        *element = widget::button(children)
+            .on_press(Message::CoreOpenLink(url))
+            .into();
+    } else {
+        *element = widget::text("[HTML error: malformed link]]").into();
     }
 }
 

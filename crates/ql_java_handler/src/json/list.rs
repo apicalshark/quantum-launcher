@@ -6,7 +6,7 @@ use serde::Deserialize;
 
 use crate::JsonDownloadError;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum JavaVersion {
     Java16,
     Java17,
@@ -60,13 +60,19 @@ impl JavaListJson {
     }
 
     pub fn get_url(&self, version: JavaVersion) -> Option<String> {
+        if (cfg!(target_os = "windows")
+            || (cfg!(target_os = "macos") && cfg!(target_arch = "x86_64")))
+            && version == JavaVersion::Java8
+        {
+            return None;
+        }
+
         let java_list = if cfg!(target_os = "linux") {
             if cfg!(target_arch = "x86_64") {
                 &self.linux
             } else if cfg!(target_arch = "x86") {
                 &self.linux_i386
             } else {
-                // TODO: Add RISC-V and PowerPC support.
                 return None;
             }
         } else if cfg!(target_os = "macos") {
@@ -76,7 +82,6 @@ impl JavaListJson {
             } else if cfg!(target_arch = "x86_64") {
                 &self.mac_os
             } else {
-                // TODO: Add x86 and PowerPC support.
                 return None;
             }
         } else if cfg!(target_os = "windows") {

@@ -8,8 +8,8 @@ use std::{
 use ql_core::{
     file_utils, impl_3_errs_jri, info, jarmod,
     json::{optifine::JsonOptifine, VersionDetails},
-    no_window, GenericProgress, InstanceSelection, IntoIoError, IntoJsonError, IoError, JsonError,
-    Progress, RequestError, CLASSPATH_SEPARATOR, LAUNCHER_DATA_DIR,
+    no_window, pt, GenericProgress, InstanceSelection, IntoIoError, IntoJsonError, IoError,
+    JsonError, Progress, RequestError, CLASSPATH_SEPARATOR, LAUNCHER_DATA_DIR,
 };
 use ql_java_handler::{get_java_binary, JavaInstallError, JavaVersion, JAVA};
 use thiserror::Error;
@@ -20,8 +20,10 @@ pub async fn install_b173(
     instance: InstanceSelection,
     url: &'static str,
 ) -> Result<(), OptifineError> {
+    info!("Installing OptiFine for Beta 1.7.3...");
     let bytes = file_utils::download_file_to_bytes(url, true).await?;
     jarmod::insert(instance, bytes, "Optifine").await?;
+    pt!("Finished! It can be found in Jarmods");
 
     Ok(())
 }
@@ -104,7 +106,7 @@ pub async fn install(
             "Optifine",
         )
         .await?;
-        info!("Finished installing OptiFine for Beta 1.7.3");
+        pt!("Finished installing OptiFine (old version)");
         return Ok(());
     }
 
@@ -124,7 +126,7 @@ pub async fn install(
         .await
         .path(path_to_installer)?;
 
-    info!("Compiling OptifineInstaller.java");
+    pt!("Compiling OptifineInstaller.java");
     send_progress(progress_sender, OptifineInstallProgress::P2CompilingHook);
     compile_hook(
         &new_installer_path,
@@ -133,14 +135,14 @@ pub async fn install(
     )
     .await?;
 
-    info!("Running OptifineInstaller.java");
+    pt!("Running OptifineInstaller.java");
     send_progress(progress_sender, OptifineInstallProgress::P3RunningHook);
     run_hook(&new_installer_path, &optifine_path).await?;
 
     download_libraries(&instance_name, &dot_minecraft_path, progress_sender).await?;
     change_instance_type(&instance_path, "OptiFine".to_owned()).await?;
     send_progress(progress_sender, OptifineInstallProgress::P5Done);
-    info!("Finished installing OptiFine");
+    pt!("Finished installing OptiFine");
 
     Ok(())
 }
@@ -312,8 +314,8 @@ async fn create_details_json(instance_path: &Path) -> Result<(), OptifineError> 
 
     let new_details_path = instance_path
         .join(".minecraft/versions")
-        .join(&details.id)
-        .join(format!("{}.json", details.id));
+        .join(details.get_id())
+        .join(format!("{}.json", details.get_id()));
 
     tokio::fs::copy(&details_path, &new_details_path)
         .await

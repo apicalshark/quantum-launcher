@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #![doc = include_str!("../../README.md")]
 #![windows_subsystem = "windows"]
 #![allow(clippy::doc_nested_refdefs)]
+#![allow(clippy::doc_markdown)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_sign_loss)]
@@ -61,6 +62,8 @@ mod view;
 /// (called by [`view`]).
 mod menu_renderer;
 
+/// Handles mclo.gs log uploads
+mod mclog_upload;
 /// Child functions of the
 /// [`Launcher::update`] function.
 mod message_handler;
@@ -168,7 +171,11 @@ fn main() {
     info_no_log!("Starting up the launcher... (OS: {OS_NAME})");
 
     let icon = load_icon();
-    let (scale, config) = load_ui_scale(launcher_dir.is_some());
+    let (scale, mut config) = load_ui_scale(launcher_dir.is_some());
+    let (width, height) = config.as_mut().ok().map_or(
+        (WINDOW_WIDTH * scale, WINDOW_HEIGHT * scale),
+        LauncherConfig::read_window_size,
+    );
 
     iced::application("QuantumLauncher", Launcher::update, Launcher::view)
         .subscription(Launcher::subscription)
@@ -187,10 +194,7 @@ fn main() {
         .window(iced::window::Settings {
             icon,
             exit_on_close_request: false,
-            size: iced::Size {
-                width: WINDOW_WIDTH * scale,
-                height: WINDOW_HEIGHT * scale,
-            },
+            size: iced::Size { width, height },
             min_size: Some(iced::Size {
                 width: 420.0,
                 height: 300.0,

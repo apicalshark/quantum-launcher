@@ -7,23 +7,26 @@ use tokio::process::Child;
 pub(super) mod error;
 mod launcher;
 pub use launcher::GameLauncher;
+use ql_core::json::GlobalSettings;
 
-/// Launches the specified instance with the specified username.
-/// Will error if instance isn't created.
+/// Launches a Minecraft instance.
 ///
-/// This auto downloads the required version of Java
-/// if it's not already installed.
-///
-/// If you want, you can hook this up to a progress bar
-/// (since installing Java takes a while), by using a
-/// `std::sync::mpsc::channel::<JavaInstallMessage>()`, giving the
-/// sender to this function and polling the receiver frequently.
-/// If not needed, simply pass `None` to the function.
+/// # Arguments
+/// - `instance_name` - The name of the instance to launch.
+/// - `username` - The username to use in the game.
+/// - `java_install_progress_sender` - (Optional) Sends progress updates for Java installation.
+///   To track progress, connect a progress bar receiver and poll it frequently.
+/// - `auth` - (Optional) Account authentication data. Pass `None` for offline play.
+/// - `global_settings` - (Optional) Global launcher-level settings that apply to instance
+///   like window width/height, etc.
+/// - `pre_launch_prefix` - Commands to prepend to the launch command (e.g., "prime-run")
 pub async fn launch(
     instance_name: String,
     username: String,
     java_install_progress_sender: Option<Sender<GenericProgress>>,
     auth: Option<AccountData>,
+    global_settings: Option<GlobalSettings>,
+    extra_java_args: Vec<String>,
 ) -> Result<Arc<Mutex<Child>>, GameLaunchError> {
     if username.is_empty() {
         return Err(GameLaunchError::UsernameIsEmpty);
@@ -32,8 +35,14 @@ pub async fn launch(
         return Err(GameLaunchError::UsernameHasSpaces);
     }
 
-    let mut game_launcher =
-        GameLauncher::new(instance_name, username, java_install_progress_sender).await?;
+    let mut game_launcher = GameLauncher::new(
+        instance_name,
+        username,
+        java_install_progress_sender,
+        global_settings,
+        extra_java_args,
+    )
+    .await?;
 
     game_launcher.migrate_old_instances().await?;
     game_launcher.create_mods_dir().await?;
@@ -69,10 +78,12 @@ pub async fn launch(
 
     print_censored_args(auth.as_ref(), &mut game_arguments);
 
-    let mut command = game_launcher
+    let (mut command, path) = game_launcher
         .get_command(game_arguments, java_arguments)
         .await?;
-    let child = command.spawn().map_err(GameLaunchError::CommandError)?;
+    let child = command
+        .spawn()
+        .map_err(|err| GameLaunchError::CommandError(err, path))?;
     if let Some(id) = child.id() {
         info!("Launched! PID: {id}");
     } else {

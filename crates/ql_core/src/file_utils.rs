@@ -8,7 +8,7 @@ use std::{
 };
 
 use futures::StreamExt;
-use ql_reqwest::header::InvalidHeaderValue;
+use reqwest::header::InvalidHeaderValue;
 use serde::de::DeserializeOwned;
 use thiserror::Error;
 use tokio::fs::DirEntry;
@@ -208,17 +208,11 @@ pub async fn download_file_to_string(url: &str, user_agent: bool) -> Result<Stri
             );
         }
         let response = get.send().await?;
-        if response.status().is_success() {
-            Ok(response.text().await?)
-        } else {
-            Err(RequestError::DownloadError {
-                code: response.status(),
-                url: response.url().clone(),
-            })
-        }
+        check_for_success(&response)?;
+        Ok(response.text().await?)
     }
 
-    retry(async || inner(url, user_agent).await).await
+    retry(|| async { inner(url, user_agent).await }).await
 }
 
 /// Downloads a file from the given URL into a JSON.
@@ -249,7 +243,7 @@ pub async fn download_file_to_json<T: DeserializeOwned>(
         Ok(serde_json::from_str(&text).json(text)?)
     }
 
-    retry(async || inner(url, user_agent).await).await
+    retry(|| async { inner(url, user_agent).await }).await
 }
 
 /// Downloads a file from the given URL into a `Vec<u8>`.
@@ -272,17 +266,11 @@ pub async fn download_file_to_bytes(url: &str, user_agent: bool) -> Result<Vec<u
             get = get.header("User-Agent", "quantumlauncher");
         }
         let response = get.send().await?;
-        if response.status().is_success() {
-            Ok(response.bytes().await?.to_vec())
-        } else {
-            Err(RequestError::DownloadError {
-                code: response.status(),
-                url: response.url().clone(),
-            })
-        }
+        check_for_success(&response)?;
+        Ok(response.bytes().await?.to_vec())
     }
 
-    retry(async || inner(url, user_agent).await).await
+    retry(|| async { inner(url, user_agent).await }).await
 }
 
 /// Downloads a file from the given URL and saves it to a path.
@@ -313,32 +301,25 @@ pub async fn download_file_to_path(
             get = get.header("User-Agent", "quantumlauncher");
         }
         let response = get.send().await?;
+        check_for_success(&response)?;
 
-        if response.status().is_success() {
-            let stream = response
-                .bytes_stream()
-                .map(|n| n.map_err(std::io::Error::other));
-            let mut stream = StreamReader::new(stream);
+        let stream = response
+            .bytes_stream()
+            .map(|n| n.map_err(std::io::Error::other));
+        let mut stream = StreamReader::new(stream);
 
-            if let Some(parent) = path.parent() {
-                if !parent.is_dir() {
-                    tokio::fs::create_dir_all(&parent).await.path(parent)?;
-                }
+        if let Some(parent) = path.parent() {
+            if !parent.is_dir() {
+                tokio::fs::create_dir_all(&parent).await.path(parent)?;
             }
-
-            let mut file = tokio::fs::File::create(&path).await.path(path)?;
-            tokio::io::copy(&mut stream, &mut file).await.path(path)?;
-            Ok(())
-        } else {
-            Err(RequestError::DownloadError {
-                code: response.status(),
-                url: response.url().clone(),
-            }
-            .into())
         }
+
+        let mut file = tokio::fs::File::create(&path).await.path(path)?;
+        tokio::io::copy(&mut stream, &mut file).await.path(path)?;
+        Ok(())
     }
 
-    retry(async || inner(url, user_agent, path).await).await
+    retry(|| async { inner(url, user_agent, path).await }).await
 }
 
 /// Downloads a file from the given URL into a `Vec<u8>`,
@@ -365,17 +346,22 @@ pub async fn download_file_to_bytes_with_agent(
             .header("User-Agent", user_agent)
             .send()
             .await?;
-        if response.status().is_success() {
-            Ok(response.bytes().await?.to_vec())
-        } else {
-            Err(RequestError::DownloadError {
-                code: response.status(),
-                url: response.url().clone(),
-            })
-        }
+        check_for_success(&response)?;
+        Ok(response.bytes().await?.to_vec())
     }
 
-    retry(async || inner(url, user_agent).await).await
+    retry(|| async { inner(url, user_agent).await }).await
+}
+
+pub fn check_for_success(response: &Response) -> Result<(), RequestError> {
+    if response.status().is_success() {
+        Ok(())
+    } else {
+        Err(RequestError::DownloadError {
+            code: response.status(),
+            url: response.url().clone(),
+        })
+    }
 }
 
 const NETWORK_ERROR_MSG: &str = r"
@@ -389,11 +375,11 @@ const NETWORK_ERROR_MSG: &str = r"
 pub enum RequestError {
     #[error("Download Error (code {code}){NETWORK_ERROR_MSG}Url: {url}")]
     DownloadError {
-        code: ql_reqwest::StatusCode,
-        url: ql_reqwest::Url,
+        code: reqwest::StatusCode,
+        url: reqwest::Url,
     },
     #[error("Network Request Error{NETWORK_ERROR_MSG}{0}")]
-    ReqwestError(#[from] ql_reqwest::Error),
+    ReqwestError(#[from] reqwest::Error),
     #[error("Download Error (invalid header value){NETWORK_ERROR_MSG}")]
     InvalidHeaderValue(#[from] InvalidHeaderValue),
 }
@@ -419,6 +405,7 @@ pub async fn set_executable(path: &Path) -> Result<(), IoError> {
 #[cfg(unix)]
 use std::os::unix::fs::symlink;
 
+use reqwest::Response;
 #[cfg(windows)]
 use std::os::windows::fs::{symlink_dir, symlink_file};
 
@@ -667,6 +654,41 @@ pub async fn find_item_in_dir<F: FnMut(&Path, &str) -> bool>(
         }
     }
     Ok(None)
+}
+
+/// Extract a ZIP archive to a directory using the new zip crate API
+///
+/// # Arguments
+/// * `reader` - A reader that implements Read + Seek (e.g., `Cursor<Vec<u8>>`)
+/// * `extract_to` - The target directory to extract files to
+/// * `strip_toplevel` - If true, removes common root directory (matches old zip-extract behavior)
+///
+/// # Examples
+/// ```rust
+/// use std::io::Cursor;
+/// use ql_core::file_utils::extract_zip_archive;
+///
+/// let zip_data = vec![/* zip file bytes */];
+/// extract_zip_archive(Cursor::new(zip_data), "/path/to/extract", true)?;
+/// ```
+pub fn extract_zip_archive<R: std::io::Read + std::io::Seek>(
+    reader: R,
+    extract_to: &Path,
+    strip_toplevel: bool,
+) -> Result<(), zip::result::ZipError> {
+    use zip::ZipArchive;
+
+    let mut archive = ZipArchive::new(reader)?;
+
+    if strip_toplevel {
+        // Use the new extract_unwrapped_root_dir method when stripping top level
+        archive.extract_unwrapped_root_dir(extract_to, zip::read::root_dir_common_filter)?;
+    } else {
+        // Use the standard extract method
+        archive.extract(extract_to)?;
+    }
+
+    Ok(())
 }
 
 pub async fn zip_directory_to_bytes<P: AsRef<Path>>(dir: P) -> std::io::Result<Vec<u8>> {

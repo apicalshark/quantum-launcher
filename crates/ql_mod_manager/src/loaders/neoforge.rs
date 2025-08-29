@@ -1,5 +1,3 @@
-use std::{fmt::Write, io::Cursor, path::Path, sync::mpsc::Sender};
-
 use chrono::DateTime;
 use ql_core::{
     file_utils, info, json::VersionDetails, no_window, pt, GenericProgress, InstanceSelection,
@@ -7,6 +5,7 @@ use ql_core::{
 };
 use ql_java_handler::{get_java_binary, JavaVersion, JAVA};
 use serde::Deserialize;
+use std::{fmt::Write, io::Cursor, path::Path, sync::mpsc::Sender};
 use tokio::process::Command;
 
 use crate::loaders::change_instance_type;
@@ -29,28 +28,12 @@ pub async fn install(
     f_progress: Option<Sender<ForgeInstallProgress>>,
     j_progress: Option<Sender<GenericProgress>>,
 ) -> Result<(), ForgeInstallError> {
+    let f_progress = f_progress.as_ref();
+
     info!("Installing NeoForge");
-    let (neoforge_version, json) = if let Some(n) = neoforge_version {
-        (n, VersionDetails::load(&instance).await?)
-    } else {
-        pt!("Checking NeoForge versions");
-        send_progress(f_progress.as_ref(), ForgeInstallProgress::P2DownloadingJson);
-        let (versions, version_json) = get_versions(instance.clone()).await?;
-
-        let neoforge_version = versions
-            .last()
-            .ok_or(ForgeInstallError::NoForgeVersionFound)?
-            .clone();
-
-        (neoforge_version, version_json)
-    };
-
-    send_progress(
-        f_progress.as_ref(),
-        ForgeInstallProgress::P3DownloadingInstaller,
-    );
-    let installer_url = format!("https://maven.neoforged.net/releases/net/neoforged/neoforge/{neoforge_version}/neoforge-{neoforge_version}-installer.jar");
-    let installer_bytes = file_utils::download_file_to_bytes(&installer_url, false).await?;
+    let (neoforge_version, json) =
+        get_version_and_json(neoforge_version, &instance, f_progress).await?;
+    let installer_bytes = get_installer(f_progress, &neoforge_version).await?;
 
     let instance_dir = instance.get_instance_path();
     let neoforge_dir = instance_dir.join("forge");
@@ -69,7 +52,7 @@ pub async fn install(
     compile_and_run_installer(
         &neoforge_dir,
         j_progress.as_ref(),
-        f_progress.as_ref(),
+        f_progress,
         instance.is_server(),
     )
     .await?;
@@ -80,84 +63,7 @@ pub async fn install(
     delete(&neoforge_dir, "launcher_profiles_microsoft_store.json").await?;
 
     if !instance.is_server() {
-        let jar_version_json = get_version_json(&installer_bytes, &neoforge_dir, &json).await?;
-
-        let libraries_path = neoforge_dir.join("libraries");
-        tokio::fs::create_dir_all(&libraries_path)
-            .await
-            .path(&libraries_path)?;
-
-        let mut classpath = String::new();
-        let mut clean_classpath = String::new();
-
-        let len = jar_version_json.libraries.len();
-        for (i, library) in jar_version_json
-            .libraries
-            .iter()
-            .filter(|n| n.clientreq.unwrap_or(true))
-            .enumerate()
-        {
-            info!("Downloading library {i}/{len}: {}", library.name);
-            send_progress(
-                f_progress.as_ref(),
-                ForgeInstallProgress::P5DownloadingLibrary {
-                    num: i,
-                    out_of: len,
-                },
-            );
-            let parts: Vec<&str> = library.name.split(':').collect();
-
-            let class = parts[0];
-            let lib = parts[1];
-            let ver = parts[2];
-
-            _ = writeln!(clean_classpath, "{class}:{lib}\n");
-
-            let (url, path) = if let Some(downloads) = &library.downloads {
-                (
-                    downloads.artifact.url.clone(),
-                    downloads.artifact.path.clone(),
-                )
-            } else {
-                let base = library
-                    .url
-                    .clone()
-                    .unwrap_or("https://libraries.minecraft.net/".to_owned());
-                let path = format!("{}/{lib}/{ver}/{lib}-{ver}.jar", class.replace('.', "/"));
-
-                let url = base + &path;
-                (url, path)
-            };
-
-            _ = write!(classpath, "../forge/libraries/{path}");
-            classpath.push(CLASSPATH_SEPARATOR);
-
-            let file_path = libraries_path.join(&path);
-            if file_path.exists() {
-                continue;
-            }
-
-            let dir_path = file_path.parent().unwrap();
-            tokio::fs::create_dir_all(dir_path).await.path(dir_path)?;
-
-            // WTF: I am NOT dealing with the unpack200 augmented library NONSENSE
-            // because I haven't seen the launcher using it ONCE.
-            // Please open an issue if you actually need it.
-            let file_bytes = file_utils::download_file_to_bytes(&url, false).await?;
-            tokio::fs::write(&file_path, &file_bytes)
-                .await
-                .path(&file_path)?;
-        }
-
-        let classpath_path = neoforge_dir.join("classpath.txt");
-        tokio::fs::write(&classpath_path, &classpath)
-            .await
-            .path(&classpath_path)?;
-
-        let classpath_path = neoforge_dir.join("clean_classpath.txt");
-        tokio::fs::write(&classpath_path, &clean_classpath)
-            .await
-            .path(&classpath_path)?;
+        download_libraries(f_progress, &json, &installer_bytes, &neoforge_dir).await?;
     }
 
     info!("Finished installing NeoForge");
@@ -165,6 +71,124 @@ pub async fn install(
     change_instance_type(&instance_dir, "NeoForge".to_owned()).await?;
 
     Ok(())
+}
+
+async fn download_libraries(
+    f_progress: Option<&Sender<ForgeInstallProgress>>,
+    json: &VersionDetails,
+    installer_bytes: &[u8],
+    neoforge_dir: &Path,
+) -> Result<(), ForgeInstallError> {
+    let jar_version_json = get_version_json(installer_bytes, neoforge_dir, json).await?;
+
+    let libraries_path = neoforge_dir.join("libraries");
+    tokio::fs::create_dir_all(&libraries_path)
+        .await
+        .path(&libraries_path)?;
+
+    let mut classpath = String::new();
+    let mut clean_classpath = String::new();
+
+    let len = jar_version_json.libraries.len();
+    for (i, library) in jar_version_json
+        .libraries
+        .iter()
+        .filter(|n| n.clientreq.unwrap_or(true))
+        .enumerate()
+    {
+        info!("Downloading library {i}/{len}: {}", library.name);
+        send_progress(
+            f_progress,
+            ForgeInstallProgress::P5DownloadingLibrary {
+                num: i,
+                out_of: len,
+            },
+        );
+        let parts: Vec<&str> = library.name.split(':').collect();
+
+        let class = parts[0];
+        let lib = parts[1];
+        let ver = parts[2];
+
+        _ = writeln!(clean_classpath, "{class}:{lib}\n");
+
+        let (url, path) = if let Some(downloads) = &library.downloads {
+            (
+                downloads.artifact.url.clone(),
+                downloads.artifact.path.clone(),
+            )
+        } else {
+            let base = library
+                .url
+                .clone()
+                .unwrap_or("https://libraries.minecraft.net/".to_owned());
+            let path = format!("{}/{lib}/{ver}/{lib}-{ver}.jar", class.replace('.', "/"));
+
+            let url = base + &path;
+            (url, path)
+        };
+
+        _ = write!(classpath, "../forge/libraries/{path}");
+        classpath.push(CLASSPATH_SEPARATOR);
+
+        let file_path = libraries_path.join(&path);
+        if file_path.exists() {
+            continue;
+        }
+
+        let dir_path = file_path.parent().unwrap();
+        tokio::fs::create_dir_all(dir_path).await.path(dir_path)?;
+
+        // WTF: I am NOT dealing with the unpack200 augmented library NONSENSE
+        // because I haven't seen the launcher using it ONCE.
+        // Please open an issue if you actually need it.
+        let file_bytes = file_utils::download_file_to_bytes(&url, false).await?;
+        tokio::fs::write(&file_path, &file_bytes)
+            .await
+            .path(&file_path)?;
+    }
+
+    let classpath_path = neoforge_dir.join("classpath.txt");
+    tokio::fs::write(&classpath_path, &classpath)
+        .await
+        .path(&classpath_path)?;
+
+    let classpath_path = neoforge_dir.join("clean_classpath.txt");
+    tokio::fs::write(&classpath_path, &clean_classpath)
+        .await
+        .path(&classpath_path)?;
+    Ok(())
+}
+
+async fn get_installer(
+    f_progress: Option<&Sender<ForgeInstallProgress>>,
+    neoforge_version: &str,
+) -> Result<Vec<u8>, ForgeInstallError> {
+    pt!("Downloading installer");
+    send_progress(f_progress, ForgeInstallProgress::P3DownloadingInstaller);
+    let installer_url = format!("https://maven.neoforged.net/releases/net/neoforged/neoforge/{neoforge_version}/neoforge-{neoforge_version}-installer.jar");
+    Ok(file_utils::download_file_to_bytes(&installer_url, false).await?)
+}
+
+async fn get_version_and_json(
+    neoforge_version: Option<String>,
+    instance: &InstanceSelection,
+    f_progress: Option<&Sender<ForgeInstallProgress>>,
+) -> Result<(String, VersionDetails), ForgeInstallError> {
+    Ok(if let Some(n) = neoforge_version {
+        (n, VersionDetails::load(instance).await?)
+    } else {
+        pt!("Checking NeoForge versions");
+        send_progress(f_progress, ForgeInstallProgress::P2DownloadingJson);
+        let (versions, version_json) = get_versions(instance.clone()).await?;
+
+        let neoforge_version = versions
+            .last()
+            .ok_or(ForgeInstallError::NoForgeVersionFound)?
+            .clone();
+
+        (neoforge_version, version_json)
+    })
 }
 
 async fn get_version_json(
@@ -195,7 +219,7 @@ async fn get_version_json(
         }
     }
 
-    Err(ForgeInstallError::NoInstallJson(json.id.clone()))
+    Err(ForgeInstallError::NoInstallJson(json.get_id().to_owned()))
 }
 
 fn send_progress(f_progress: Option<&Sender<ForgeInstallProgress>>, message: ForgeInstallProgress) {
@@ -218,12 +242,13 @@ pub async fn get_versions(
         return Err(ForgeInstallError::NeoforgeOutdatedMinecraft);
     }
 
-    let start_pattern = if REGEX_SNAPSHOT.is_match(&version_json.id) {
+    let version = version_json.get_id();
+    let start_pattern = if REGEX_SNAPSHOT.is_match(version) {
         // Snapshot version
-        format!("0.{}", version_json.id)
+        format!("0.{version}")
     } else {
         // Release version
-        let mut start_pattern = version_json.id[2..].to_owned();
+        let mut start_pattern = version[2..].to_owned();
         if !start_pattern.contains('.') {
             // "20" (in 1.20) -> "20.0" (in 1.20.0)
             // Ensures there are a constant number of parts in the version.

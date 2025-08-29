@@ -169,19 +169,28 @@ pub fn launch_instance(
         instance_name.clone(),
         username.clone(),
         None,
-        account,
+        account.clone(),
+        // No global defaults in CLI mode
+        None,
+        Vec::new(),
     ))?;
 
     if let (Some(stdout), Some(stderr)) = {
         let mut child = child.lock().unwrap();
         (child.stdout.take(), child.stderr.take())
     } {
+        let mut censors = Vec::new();
+        if let Some(token) = account.as_ref().and_then(|n| n.access_token.as_ref()) {
+            censors.push(token.clone());
+        }
+
         match runtime.block_on(ql_instances::read_logs(
             stdout,
             stderr,
             child,
             None,
             instance_name.clone(),
+            censors,
         )) {
             Ok((s, _)) => {
                 info!("Game exited with code {s}");

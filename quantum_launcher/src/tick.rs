@@ -14,8 +14,8 @@ use ql_mod_manager::store::{ModConfig, ModIndex};
 use crate::state::{
     EditInstanceMessage, ImageState, InstallModsMessage, InstanceLog, LaunchTabId, Launcher,
     ManageJarModsMessage, MenuCreateInstance, MenuEditMods, MenuEditPresetsInner,
-    MenuExportInstance, MenuInstallFabric, MenuLaunch, MenuLoginMS, MenuModsDownload,
-    MenuServerCreate, Message, ModListEntry, ServerProcess, State,
+    MenuExportInstance, MenuInstallFabric, MenuInstallOptifine, MenuLaunch, MenuLoginMS,
+    MenuModsDownload, MenuServerCreate, Message, ModListEntry, ServerProcess, State,
 };
 
 impl Launcher {
@@ -40,11 +40,13 @@ impl Launcher {
                 self.tick_client_processes_and_logs();
                 self.tick_server_processes_and_logs();
 
-                let launcher_config = self.config.clone();
-                commands.push(Task::perform(
-                    async move { launcher_config.save().await.strerr() },
-                    Message::CoreTickConfigSaved,
-                ));
+                if self.tick_timer % 5 == 0 {
+                    let launcher_config = self.config.clone();
+                    commands.push(Task::perform(
+                        async move { launcher_config.save().await.strerr() },
+                        Message::CoreTickConfigSaved,
+                    ));
+                }
                 return Task::batch(commands);
             }
             State::Create(menu) => menu.tick(),
@@ -107,16 +109,22 @@ impl Launcher {
                     }
                 }
             }
-            State::InstallOptifine(menu) => {
-                if let Some(optifine_progress) = &mut menu.optifine_install_progress {
-                    optifine_progress.tick();
-                }
-                if let Some(java_progress) = &mut menu.java_install_progress {
-                    if java_progress.tick() {
-                        menu.is_java_being_installed = true;
+            State::InstallOptifine(menu) => match menu {
+                MenuInstallOptifine::Choosing { .. } | MenuInstallOptifine::InstallingB173 => {}
+                MenuInstallOptifine::Installing {
+                    optifine_install_progress,
+                    java_install_progress,
+                    is_java_being_installed,
+                    ..
+                } => {
+                    optifine_install_progress.tick();
+                    if let Some(java_progress) = java_install_progress {
+                        if java_progress.tick() {
+                            *is_java_being_installed = true;
+                        }
                     }
                 }
-            }
+            },
             State::ServerCreate(menu) => menu.tick(),
             State::ManagePresets(menu) => {
                 if let Some(progress) = &mut menu.progress {
@@ -147,7 +155,9 @@ impl Launcher {
             | State::LoginMS(MenuLoginMS { .. })
             | State::GenericMessage(_)
             | State::CurseforgeManualDownload(_)
-            | State::InstallPaper => {}
+            | State::LogUploadResult { .. }
+            | State::InstallPaper
+            | State::ExportMods(_) => {}
         }
 
         Task::none()
@@ -323,7 +333,7 @@ impl MenuModsDownload {
         images: &mut ImageState,
     ) -> Task<Message> {
         let index_cmd = Task::perform(
-            async move { ModIndex::get(&selected_instance).await },
+            async move { ModIndex::load(&selected_instance).await },
             |n| Message::InstallMods(InstallModsMessage::IndexUpdated(n.strerr())),
         );
 

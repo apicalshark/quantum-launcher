@@ -1,5 +1,7 @@
+use std::path::Path;
 use std::str::FromStr;
 
+use iced::futures::executor::block_on;
 use iced::{
     widget::{image::Handle, scrollable::AbsoluteOffset},
     Task,
@@ -25,17 +27,13 @@ use crate::{
     stylesheet::styles::{LauncherThemeColor, LauncherThemeLightness},
 };
 
+pub const MSG_RESIZE: &str = "Resize your window to apply the changes.";
+
 impl Launcher {
     pub fn update_install_fabric(&mut self, message: InstallFabricMessage) -> Task<Message> {
         match message {
             InstallFabricMessage::End(result) => match result {
-                Ok(is_quilt) => {
-                    return self.go_to_main_menu_with_message(Some(if is_quilt {
-                        "Installed Quilt"
-                    } else {
-                        "Installed Fabric"
-                    }));
-                }
+                Ok(()) => return self.go_to_edit_mods_menu_without_update_check(),
                 Err(err) => self.set_error(err),
             },
             InstallFabricMessage::VersionSelected(selection) => {
@@ -126,6 +124,7 @@ impl Launcher {
             InstallModsMessage::SearchResult(Ok(search)) => {
                 if let State::ModsDownload(menu) = &mut self.state {
                     menu.is_loading_continuation = false;
+                    menu.has_continuation_ended = search.reached_end;
 
                     if search.start_time > menu.latest_load {
                         menu.latest_load = search.start_time;
@@ -145,8 +144,15 @@ impl Launcher {
                 let scroll_px = absolute_offset.y;
 
                 if let State::ModsDownload(menu) = &mut self.state {
+                    if menu.results.is_none() {
+                        menu.has_continuation_ended = false;
+                    }
+
                     menu.scroll_offset = absolute_offset;
-                    if (scroll_px > total_height) && !menu.is_loading_continuation {
+                    if (scroll_px > total_height)
+                        && !menu.is_loading_continuation
+                        && !menu.has_continuation_ended
+                    {
                         menu.is_loading_continuation = true;
 
                         let offset = if let Some(results) = &menu.results {
@@ -303,7 +309,7 @@ impl Launcher {
         };
 
         menu.mods_download_in_progress
-            .insert(ModId::Modrinth(hit.id.clone()));
+            .insert(ModId::Modrinth(hit.id.clone()), hit.title.clone());
 
         let project_id = hit.id.clone();
         let backend = menu.backend;
@@ -333,17 +339,12 @@ impl Launcher {
     pub fn update_install_optifine(&mut self, message: InstallOptifineMessage) -> Task<Message> {
         match message {
             InstallOptifineMessage::ScreenOpen => {
-                let optifine_unique_version =
-                    OptifineUniqueVersion::get(self.selected_instance.as_ref().unwrap());
+                let optifine_unique_version = block_on(OptifineUniqueVersion::get(
+                    self.selected_instance.as_ref().unwrap(),
+                ));
 
                 if let Some(version @ OptifineUniqueVersion::B1_7_3) = optifine_unique_version {
-                    self.state = State::InstallOptifine(MenuInstallOptifine {
-                        optifine_install_progress: None,
-                        java_install_progress: None,
-                        is_java_being_installed: false,
-                        is_b173_being_installed: true,
-                        optifine_unique_version: Some(version),
-                    });
+                    self.state = State::InstallOptifine(MenuInstallOptifine::InstallingB173);
 
                     let selected_instance = self.selected_instance.clone().unwrap();
                     let url = version.get_url().0;
@@ -353,13 +354,20 @@ impl Launcher {
                     );
                 }
 
-                self.state = State::InstallOptifine(MenuInstallOptifine {
-                    optifine_install_progress: None,
-                    java_install_progress: None,
-                    is_java_being_installed: false,
-                    is_b173_being_installed: false,
+                self.state = State::InstallOptifine(MenuInstallOptifine::Choosing {
                     optifine_unique_version,
+                    delete_installer: true,
+                    drag_and_drop_hovered: false,
                 });
+            }
+            InstallOptifineMessage::DeleteInstallerToggle(t) => {
+                if let State::InstallOptifine(MenuInstallOptifine::Choosing {
+                    delete_installer,
+                    ..
+                }) = &mut self.state
+                {
+                    *delete_installer = t;
+                }
             }
             InstallOptifineMessage::SelectInstallerStart => {
                 if let Some(path) = rfd::FileDialog::new()
@@ -367,51 +375,77 @@ impl Launcher {
                     .set_title("Select OptiFine Installer")
                     .pick_file()
                 {
-                    let (p_sender, p_recv) = std::sync::mpsc::channel();
-                    let (j_sender, j_recv) = std::sync::mpsc::channel();
-
-                    let instance = self.selected_instance.as_ref().unwrap();
-                    let optifine_unique_version = OptifineUniqueVersion::get(instance);
-
-                    if let Some(OptifineUniqueVersion::B1_7_3) = optifine_unique_version {}
-
-                    self.state = State::InstallOptifine(MenuInstallOptifine {
-                        optifine_install_progress: Some(ProgressBar::with_recv(p_recv)),
-                        java_install_progress: Some(ProgressBar::with_recv(j_recv)),
-                        is_java_being_installed: false,
-                        is_b173_being_installed: false,
-                        optifine_unique_version,
-                    });
-
-                    let get_name = self
-                        .selected_instance
-                        .as_ref()
-                        .unwrap()
-                        .get_name()
-                        .to_owned();
-                    return Task::perform(
-                        // Note: OptiFine does not support servers
-                        // so it's safe to assume we've selected an instance.
-                        loaders::optifine::install(
-                            get_name,
-                            path,
-                            Some(p_sender),
-                            Some(j_sender),
-                            optifine_unique_version.is_some(),
-                        ),
-                        |n| Message::InstallOptifine(InstallOptifineMessage::End(n.strerr())),
-                    );
+                    return self.install_optifine_confirm(&path);
                 }
             }
             InstallOptifineMessage::End(result) => {
                 if let Err(err) = result {
                     self.set_error(err);
                 } else {
-                    return self.go_to_launch_screen(Some("Installed OptiFine".to_owned()));
+                    return self.go_to_edit_mods_menu_without_update_check();
                 }
             }
         }
         Task::none()
+    }
+
+    pub fn install_optifine_confirm(&mut self, installer_path: &Path) -> Task<Message> {
+        let (p_sender, p_recv) = std::sync::mpsc::channel();
+        let (j_sender, j_recv) = std::sync::mpsc::channel();
+
+        let instance = self.selected_instance.as_ref().unwrap();
+        let optifine_unique_version = block_on(OptifineUniqueVersion::get(instance));
+
+        let delete_installer = if let State::InstallOptifine(MenuInstallOptifine::Choosing {
+            delete_installer,
+            ..
+        }) = &self.state
+        {
+            *delete_installer
+        } else {
+            false
+        };
+
+        self.state = State::InstallOptifine(MenuInstallOptifine::Installing {
+            optifine_install_progress: ProgressBar::with_recv(p_recv),
+            java_install_progress: Some(ProgressBar::with_recv(j_recv)),
+            is_java_being_installed: false,
+        });
+
+        let get_name = self
+            .selected_instance
+            .as_ref()
+            .unwrap()
+            .get_name()
+            .to_owned();
+
+        let installer_path = installer_path.to_owned();
+
+        Task::perform(
+            // Note: OptiFine does not support servers
+            // so it's safe to assume we've selected an instance.
+            loaders::optifine::install(
+                get_name,
+                installer_path.clone(),
+                Some(p_sender),
+                Some(j_sender),
+                optifine_unique_version.is_some(),
+            ),
+            |n| Message::InstallOptifine(InstallOptifineMessage::End(n.strerr())),
+        )
+        .chain(Task::perform(
+            async move {
+                if delete_installer
+                    && installer_path.extension().is_some_and(|n| {
+                        let n = n.to_ascii_lowercase();
+                        n == "jar" || n == "zip"
+                    })
+                {
+                    _ = tokio::fs::remove_file(installer_path).await;
+                }
+            },
+            |()| Message::Nothing,
+        ))
     }
 
     pub fn update_launcher_settings(&mut self, msg: LauncherSettingsMessage) -> Task<Message> {
@@ -442,6 +476,7 @@ impl Launcher {
             LauncherSettingsMessage::UiScaleApply => {
                 if let State::LauncherSettings(menu) = &self.state {
                     self.config.ui_scale = Some(menu.temp_scale);
+                    self.state = State::GenericMessage(MSG_RESIZE.to_owned());
                 }
             }
             LauncherSettingsMessage::ClearJavaInstalls => {
@@ -468,6 +503,88 @@ impl Launcher {
             LauncherSettingsMessage::ToggleAntialiasing(t) => {
                 self.config.antialiasing = Some(t);
             }
+            LauncherSettingsMessage::ToggleWindowSize(t) => {
+                self.config
+                    .window
+                    .get_or_insert_with(Default::default)
+                    .save_window_size = t;
+            }
+            LauncherSettingsMessage::DefaultMinecraftWidthChanged(input) => {
+                self.config
+                    .global_settings
+                    .get_or_insert_with(Default::default)
+                    .window_width = if input.trim().is_empty() {
+                    None
+                } else {
+                    input.trim().parse::<u32>().ok()
+                };
+            }
+            LauncherSettingsMessage::DefaultMinecraftHeightChanged(input) => {
+                self.config
+                    .global_settings
+                    .get_or_insert_with(Default::default)
+                    .window_height = if input.trim().is_empty() {
+                    None
+                } else {
+                    input.trim().parse::<u32>().ok()
+                };
+            }
+            LauncherSettingsMessage::GlobalJavaArgsAdd => {
+                self.config
+                    .extra_java_args
+                    .get_or_insert_with(Vec::new)
+                    .push(String::new());
+            }
+            LauncherSettingsMessage::GlobalJavaArgEdit(arg, idx) => {
+                if let Some(args) = self.config.extra_java_args.as_mut() {
+                    add_to_arguments_list(arg, args, idx);
+                }
+            }
+            LauncherSettingsMessage::GlobalJavaArgDelete(idx) => {
+                if let Some(args) = self.config.extra_java_args.as_mut() {
+                    if idx < args.len() {
+                        args.remove(idx);
+                    }
+                }
+            }
+            LauncherSettingsMessage::GlobalJavaArgShiftUp(idx) => {
+                if let Some(args) = self.config.extra_java_args.as_mut() {
+                    if idx > 0 && idx < args.len() {
+                        args.swap(idx, idx - 1);
+                    }
+                }
+            }
+            LauncherSettingsMessage::GlobalJavaArgShiftDown(idx) => {
+                if let Some(args) = self.config.extra_java_args.as_mut() {
+                    if idx + 1 < args.len() {
+                        args.swap(idx, idx + 1);
+                    }
+                }
+            }
+            LauncherSettingsMessage::GlobalPreLaunchPrefixAdd => {
+                self.config.get_launch_prefix().push(String::new());
+            }
+            LauncherSettingsMessage::GlobalPreLaunchPrefixEdit(arg, idx) => {
+                add_to_arguments_list(arg, self.config.get_launch_prefix(), idx);
+            }
+            LauncherSettingsMessage::GlobalPreLaunchPrefixDelete(idx) => {
+                let args = self.config.get_launch_prefix();
+                if idx < args.len() {
+                    args.remove(idx);
+                }
+            }
+            LauncherSettingsMessage::GlobalPreLaunchPrefixShiftUp(idx) => {
+                let args = self.config.get_launch_prefix();
+                if idx > 0 && idx < args.len() {
+                    args.swap(idx, idx - 1);
+                }
+            }
+            LauncherSettingsMessage::GlobalPreLaunchPrefixShiftDown(idx) => {
+                let args = self.config.get_launch_prefix();
+                if idx + 1 < args.len() {
+                    args.swap(idx, idx + 1);
+                }
+            }
         }
         Task::none()
     }
@@ -480,5 +597,18 @@ impl Launcher {
             temp_scale: self.config.ui_scale.unwrap_or(1.0),
             selected_tab: state::LauncherSettingsTab::UserInterface,
         });
+    }
+}
+
+fn add_to_arguments_list(msg: String, args: &mut Vec<String>, idx: usize) {
+    if msg.contains(' ') {
+        args.remove(idx);
+        let mut insert_idx = idx;
+        for s in msg.split(' ').filter(|n| !n.is_empty()) {
+            args.insert(insert_idx, s.to_owned());
+            insert_idx += 1;
+        }
+    } else if let Some(arg) = args.get_mut(idx) {
+        *arg = msg;
     }
 }

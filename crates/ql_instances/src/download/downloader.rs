@@ -3,6 +3,7 @@ use std::{
     sync::mpsc::Sender,
 };
 
+use crate::json_profiles::ProfileJson;
 use ql_core::{
     do_jobs,
     file_utils::{self, LAUNCHER_DATA_DIR},
@@ -13,8 +14,6 @@ use ql_core::{
 };
 use thiserror::Error;
 use tokio::sync::Mutex;
-
-use crate::json_profiles::ProfileJson;
 
 use super::constants::DEFAULT_RAM_MB_FOR_INSTANCE;
 
@@ -35,7 +34,7 @@ pub enum DownloadError {
     #[error("{DOWNLOAD_ERR_PREFIX}in assets JSON, field not found: \"{0}\"")]
     AssetsJsonFieldNotFound(String),
     #[error("{DOWNLOAD_ERR_PREFIX}could not extract native libraries:\n{0}")]
-    NativesExtractError(#[from] zip_extract::ZipExtractError),
+    NativesExtractError(#[from] zip::result::ZipError),
     #[error("{DOWNLOAD_ERR_PREFIX}tried to remove natives outside folder. POTENTIAL SECURITY RISK AVOIDED")]
     NativesOutsideDirRemove,
 }
@@ -101,12 +100,12 @@ impl GameDownloader {
             .instance_dir
             .join(".minecraft")
             .join("versions")
-            .join(&self.version_json.id);
+            .join(self.version_json.get_id());
         tokio::fs::create_dir_all(&version_dir)
             .await
             .path(&version_dir)?;
 
-        let jar_path = version_dir.join(format!("{}.jar", self.version_json.id));
+        let jar_path = version_dir.join(format!("{}.jar", self.version_json.get_id()));
 
         file_utils::download_file_to_path(
             &self.version_json.downloads.client.url,
@@ -322,6 +321,9 @@ impl GameDownloader {
             close_on_start: None,
             is_server: Some(false),
             omniarchive: None,
+            global_settings: None,
+            java_args_mode: None,
+            pre_launch_prefix_mode: None,
         };
         let config_json = serde_json::to_string(&config_json).json_to()?;
 
@@ -392,29 +394,20 @@ impl GameDownloader {
         // Custom LWJGL 2.9.3 FreeBSD natives compiled by me.
         // See `/assets/binaries/README.md` for more info.
         #[cfg(all(target_os = "freebsd", target_arch = "x86_64"))]
-        if !self.version_json.id.ends_with("lwjgl3") {
+        if !self.version_json.id.ends_with("-lwjgl3") {
             const FREEBSD_LWJGL2: &[u8] =
                 include_bytes!("../../../../assets/binaries/freebsd/liblwjgl64_x86_64.so");
+            const V_1_12_2: &str = "2017-09-18T08:39:46+00:00";
 
-            let v1_12_2 =
-                chrono::DateTime::parse_from_rfc3339("2017-09-18T08:39:46+00:00").unwrap();
-            match chrono::DateTime::parse_from_rfc3339(&self.version_json.releaseTime) {
-                Ok(datetime) => {
-                    if datetime <= v1_12_2 {
-                        let native_path = self.instance_dir.join("libraries/natives");
-                        tokio::fs::create_dir_all(&native_path)
-                            .await
-                            .path(&native_path)?;
-                        let native_path = native_path.join("liblwjgl64.so");
-                        tokio::fs::write(&native_path, FREEBSD_LWJGL2)
-                            .await
-                            .path(&native_path)?;
-                    }
-                }
-                Err(err) => ql_core::err!(
-                    "Couldn't parse date/time of instance ({}):\n{err}",
-                    self.version_json.releaseTime
-                ),
+            if self.version_json.is_before_or_eq(V_1_12_2) {
+                let native_path = self.instance_dir.join("libraries/natives");
+                tokio::fs::create_dir_all(&native_path)
+                    .await
+                    .path(&native_path)?;
+                let native_path = native_path.join("liblwjgl64.so");
+                tokio::fs::write(&native_path, FREEBSD_LWJGL2)
+                    .await
+                    .path(&native_path)?;
             }
         }
 

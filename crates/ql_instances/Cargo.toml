@@ -13,12 +13,13 @@ simulate_macos_arm64 = []
 [dependencies]
 ql_core = { path = "../ql_core" }
 ql_java_handler = { path = "../ql_java_handler" }
-ql_reqwest = { path = "../ql_reqwest" }
+
 
 chrono = { workspace = true }
 semver = "1"
-zip-extract = { workspace = true }
+zip = { workspace = true }
 
+reqwest = { workspace = true }
 tokio = { workspace = true }
 
 serde = { workspace = true }
@@ -34,9 +35,11 @@ any_ascii = "0.3"
 
 urlencoding = "2"
 
-keyring = { version = "3", features = [
-    "apple-native",
-    "windows-native",
-    "sync-secret-service",
-    "vendored",
-] }
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3", features = ["windows-native"] }
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", features = ["apple-native"] }
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3", features = ["sync-secret-service", "vendored"] }
+[target.'cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))'.dependencies]
+keyring = { version = "3", features = ["sync-secret-service"] }

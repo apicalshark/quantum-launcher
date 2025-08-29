@@ -128,10 +128,10 @@ pub async fn install(
     index: &PackIndex,
     sender: Option<&Sender<GenericProgress>>,
 ) -> Result<HashSet<CurseforgeNotAllowed>, PackError> {
-    if json.id != index.minecraft.version {
+    if json.get_id() != index.minecraft.version {
         return Err(PackError::GameVersion {
             expect: index.minecraft.version.clone(),
-            got: json.id.clone(),
+            got: json.get_id().to_owned(),
         });
     }
 

@@ -1,0 +1,2 @@
+Version = str
+PID = int

@@ -1,10 +1,9 @@
-use std::{
-    collections::HashSet,
-    path::{Path, PathBuf},
-    process::Stdio,
-    sync::mpsc::Sender,
+use crate::{
+    auth::{ms::CLIENT_ID, AccountData, AccountType},
+    download::GameDownloader,
+    jarmod,
 };
-
+use ql_core::json::GlobalSettings;
 use ql_core::{
     err, file_utils, info,
     json::{
@@ -16,13 +15,13 @@ use ql_core::{
     CLASSPATH_SEPARATOR, LAUNCHER_DATA_DIR,
 };
 use ql_java_handler::{get_java_binary, JavaVersion};
-use tokio::process::Command;
-
-use crate::{
-    auth::{ms::CLIENT_ID, AccountData, AccountType},
-    download::GameDownloader,
-    jarmod,
+use std::{
+    collections::HashSet,
+    path::{Path, PathBuf},
+    process::Stdio,
+    sync::mpsc::Sender,
 };
+use tokio::process::Command;
 
 use super::{error::GameLaunchError, replace_var};
 
@@ -30,10 +29,9 @@ pub struct GameLauncher {
     username: String,
     instance_name: String,
 
-    /// If the required Java version isn't installed,
-    /// and it has to be installed before launching game,
-    /// then you can use this to send *download progress updates*
-    /// to the GUI for the **progress bar**.
+    /// If Java isn't installed, it will be auto-installed by the launcher.
+    /// This field allows you to send progress updates
+    /// to the GUI during installation.
     java_install_progress_sender: Option<Sender<GenericProgress>>,
 
     /// Client: `QuantumLauncher/instances/NAME/`
@@ -45,6 +43,10 @@ pub struct GameLauncher {
 
     pub config_json: InstanceConfigJson,
     pub version_json: VersionDetails,
+    /// Launcher-wide instance settings. These
+    /// can be overridden by `config_json.global_settings`.
+    global_settings: Option<GlobalSettings>,
+    extra_java_args: Vec<String>,
 }
 
 impl GameLauncher {
@@ -52,6 +54,8 @@ impl GameLauncher {
         instance_name: String,
         username: String,
         java_install_progress_sender: Option<Sender<GenericProgress>>,
+        global_settings: Option<GlobalSettings>,
+        extra_java_args: Vec<String>,
     ) -> Result<Self, GameLaunchError> {
         let instance_dir = get_instance_dir(&instance_name).await?;
 
@@ -74,6 +78,8 @@ impl GameLauncher {
             minecraft_dir,
             config_json,
             version_json,
+            global_settings,
+            extra_java_args,
         })
     }
 
@@ -121,6 +127,23 @@ impl GameLauncher {
             game_arguments.push("--disableSkinFix".to_owned());
         }
 
+        // Add custom resolution arguments if specified
+        // Priority: Instance-specific setting > Global default > Minecraft default
+        let (width_to_use, height_to_use) = self
+            .config_json
+            .get_window_size(self.global_settings.as_ref());
+
+        if let Some(width) = width_to_use {
+            game_arguments.push("--width".to_owned());
+            game_arguments.push(width.to_string());
+        }
+        if let Some(height) = height_to_use {
+            game_arguments.push("--height".to_owned());
+            game_arguments.push(height.to_string());
+        }
+
+        game_arguments.extend(self.config_json.game_args.iter().flatten().cloned());
+
         Ok(game_arguments)
     }
 
@@ -129,24 +152,24 @@ impl GameLauncher {
         game_arguments: &mut [String],
         account_details: Option<&AccountData>,
     ) -> Result<(), GameLaunchError> {
-        for argument in game_arguments.iter_mut() {
-            replace_var(argument, "auth_player_name", &self.username);
-            replace_var(argument, "version_name", &self.version_json.id);
+        for arg in game_arguments.iter_mut() {
+            replace_var(arg, "auth_player_name", &self.username);
+            replace_var(arg, "version_name", self.version_json.get_id());
             let Some(minecraft_dir_path) = self.minecraft_dir.to_str() else {
                 return Err(GameLaunchError::PathBufToString(self.minecraft_dir.clone()));
             };
-            replace_var(argument, "game_directory", minecraft_dir_path);
+            replace_var(arg, "game_directory", minecraft_dir_path);
 
-            self.set_assets_argument(argument).await?;
-            replace_var(argument, "auth_xuid", "0");
+            self.set_assets_argument(arg).await?;
+            replace_var(arg, "auth_xuid", "0");
 
             let uuid = if let Some(account_details) = account_details {
                 &account_details.uuid
             } else {
                 "00000000-0000-0000-0000-000000000000"
             };
-            replace_var(argument, "auth_uuid", uuid);
-            replace_var(argument, "uuid", uuid);
+            replace_var(arg, "auth_uuid", uuid);
+            replace_var(arg, "uuid", uuid);
 
             let access_token = if let Some(account_details) = account_details {
                 account_details
@@ -156,13 +179,13 @@ impl GameLauncher {
             } else {
                 "0"
             };
-            replace_var(argument, "auth_access_token", access_token);
-            replace_var(argument, "auth_session", access_token);
-            replace_var(argument, "accessToken", access_token);
+            replace_var(arg, "auth_access_token", access_token);
+            replace_var(arg, "auth_session", access_token);
+            replace_var(arg, "accessToken", access_token);
 
-            replace_var(argument, "clientid", CLIENT_ID);
+            replace_var(arg, "clientid", CLIENT_ID);
             replace_var(
-                argument,
+                arg,
                 "user_type",
                 if account_details.is_some() {
                     "msa"
@@ -170,13 +193,9 @@ impl GameLauncher {
                     "legacy"
                 },
             );
-            replace_var(argument, "version_type", "release");
-            replace_var(
-                argument,
-                "assets_index_name",
-                &self.version_json.assetIndex.id,
-            );
-            replace_var(argument, "user_properties", "{}");
+            replace_var(arg, "version_type", "release");
+            replace_var(arg, "assets_index_name", &self.version_json.assetIndex.id);
+            replace_var(arg, "user_properties", "{}");
         }
         Ok(())
     }
@@ -232,15 +251,21 @@ impl GameLauncher {
             .ok_or(GameLaunchError::PathBufToString(natives_path.clone()))?;
 
         // TODO: deal with self.version_json.arguments.jvm (currently ignored)
-        let mut args = vec![
-            "-Dminecraft.launcher.brand=minecraft-launcher".to_owned(),
-            "-Dminecraft.launcher.version=2.1.1349".to_owned(),
-            format!("-Djava.library.path={natives_path}"),
-            format!("-Djna.tmpdir={natives_path}"),
-            format!("-Dorg.lwjgl.system.SharedLibraryExtractPath={natives_path}"),
-            format!("-Dio.netty.native.workdir={natives_path}"),
-            self.config_json.get_ram_argument(),
-        ];
+        let mut args: Vec<String> = self
+            .config_json
+            .get_java_args(&self.extra_java_args)
+            .into_iter()
+            .filter(|arg| !arg.trim().is_empty())
+            .chain([
+                "-Dminecraft.launcher.brand=minecraft-launcher".to_owned(),
+                "-Dminecraft.launcher.version=2.1.1349".to_owned(),
+                format!("-Djava.library.path={natives_path}"),
+                format!("-Djna.tmpdir={natives_path}"),
+                format!("-Dorg.lwjgl.system.SharedLibraryExtractPath={natives_path}"),
+                format!("-Dio.netty.native.workdir={natives_path}"),
+                self.config_json.get_ram_argument(),
+            ])
+            .collect();
 
         // I've disabled these for now because they make the
         // FPS slightly worse (!) from my testing?
@@ -352,7 +377,7 @@ impl GameLauncher {
         if self.config_json.mod_type != "Forge" && self.config_json.mod_type != "NeoForge" {
             return Ok(None);
         }
-        if self.version_json.is_legacy_version() && self.version_json.id != "1.5.2" {
+        if self.version_json.is_legacy_version() && self.version_json.get_id() != "1.5.2" {
             return Ok(None);
         }
 
@@ -364,7 +389,8 @@ impl GameLauncher {
             }
             game_arguments.extend(arguments.game.clone());
         } else if let Some(arguments) = &json.minecraftArguments {
-            *game_arguments = arguments.split(' ').map(str::to_owned).collect();
+            let new: Vec<String> = arguments.split(' ').map(str::to_owned).collect();
+            *game_arguments = deduplicate_game_args(game_arguments, &new);
         }
         Ok(Some(json))
     }
@@ -418,7 +444,8 @@ impl GameLauncher {
         if let Some(arguments) = &optifine_json.arguments {
             game_arguments.extend(arguments.game.clone());
         } else if let Some(arguments) = &optifine_json.minecraftArguments {
-            *game_arguments = arguments.split(' ').map(str::to_owned).collect();
+            let new: Vec<String> = arguments.split(' ').map(str::to_owned).collect();
+            *game_arguments = deduplicate_game_args(game_arguments, &new);
         }
 
         Ok(Some((optifine_json, jar)))
@@ -433,7 +460,7 @@ impl GameLauncher {
             );
             // I think this argument is only used by forge? Not sure
             replace_var(argument, "library_directory", "../forge/libraries");
-            replace_var(argument, "version_name", &self.version_json.id);
+            replace_var(argument, "version_name", self.version_json.get_id());
         }
     }
 
@@ -509,6 +536,7 @@ impl GameLauncher {
 
         let instance = InstanceSelection::Instance(self.instance_name.clone());
         let jar_path = jarmod::build(&instance).await?;
+        debug_assert!(jar_path.is_file(), "Minecraft JAR file should exist");
         let jar_path = jar_path
             .to_str()
             .ok_or(GameLaunchError::PathBufToString(jar_path.clone()))?;
@@ -706,10 +734,10 @@ impl GameLauncher {
         Ok(())
     }
 
-    pub async fn get_java_command(&mut self) -> Result<Command, GameLaunchError> {
+    pub async fn get_java_command(&mut self) -> Result<(Command, PathBuf), GameLaunchError> {
         if let Some(java_override) = &self.config_json.java_override {
             if !java_override.is_empty() {
-                return Ok(Command::new(java_override));
+                return Ok((Command::new(java_override), PathBuf::from(java_override)));
             }
         }
         let version = if let Some(version) = self.version_json.javaVersion.clone() {
@@ -729,7 +757,7 @@ impl GameLauncher {
         )
         .await?;
         info!("Java: {program:?}");
-        Ok(Command::new(program))
+        Ok((Command::new(&program), program))
     }
 
     pub async fn cleanup_junk_files(&self) -> Result<(), GameLaunchError> {
@@ -743,12 +771,9 @@ impl GameLauncher {
             delete_junk_file(&forge_dir, "launcher_profiles.json").await?;
             delete_junk_file(&forge_dir, "launcher_profiles_microsoft_store.json").await?;
 
-            let versions_dir = forge_dir.join("versions").join(&self.version_json.id);
-            if versions_dir.is_dir() {
-                tokio::fs::remove_dir_all(&versions_dir)
-                    .await
-                    .path(versions_dir)?;
-            }
+            let versions_dir = forge_dir.join("versions");
+            delete_junk_dir(&versions_dir.join(self.version_json.get_id())).await?;
+            delete_junk_dir(&versions_dir.join(&self.version_json.id)).await?;
         }
 
         Ok(())
@@ -758,18 +783,45 @@ impl GameLauncher {
         &mut self,
         game_arguments: Vec<String>,
         java_arguments: Vec<String>,
-    ) -> Result<Command, GameLaunchError> {
-        let mut command = self.get_java_command().await?;
-        command.args(
-            self.config_json
-                .java_args
-                .iter()
-                .flatten()
-                .chain(java_arguments.iter())
-                .chain(game_arguments.iter())
-                .chain(self.config_json.game_args.iter().flatten())
-                .filter(|n| !n.is_empty()),
+    ) -> Result<(Command, PathBuf), GameLaunchError> {
+        let (mut command, mut path) = self.get_java_command().await?;
+
+        let prefix_commands = self.config_json.setup_launch_prefix(
+            &self
+                .global_settings
+                .as_ref()
+                .and_then(|n| n.pre_launch_prefix.clone())
+                .unwrap_or_default(),
         );
+        if !prefix_commands.is_empty() {
+            info!("Pre args: {prefix_commands:?}");
+
+            let original_java_path = path.to_string_lossy().to_string();
+            let mut new_command = Command::new(&prefix_commands[0]);
+
+            if prefix_commands.len() > 1 {
+                new_command.args(&prefix_commands[1..]);
+            }
+            new_command.arg(original_java_path);
+            new_command.args(
+                java_arguments
+                    .iter()
+                    .chain(game_arguments.iter())
+                    .filter(|n| !n.is_empty()),
+            );
+
+            command = new_command;
+            path = PathBuf::from(&prefix_commands[0]);
+        } else {
+            // No prefix, use normal Java command
+            command.args(
+                java_arguments
+                    .iter()
+                    .chain(game_arguments.iter())
+                    .filter(|n| !n.is_empty()),
+            );
+        }
+
         command.current_dir(&self.minecraft_dir);
         if self.config_json.enable_logger.unwrap_or(true) {
             command.stdout(Stdio::piped()).stderr(Stdio::piped());
@@ -795,7 +847,7 @@ impl GameLauncher {
                 // contact me if there's a better way
             }
         }
-        Ok(command)
+        Ok((command, path))
     }
 }
 
@@ -825,6 +877,13 @@ async fn delete_junk_file(forge_dir: &Path, path: &str) -> Result<(), GameLaunch
     let path = forge_dir.join(path);
     if path.exists() {
         tokio::fs::remove_file(&path).await.path(path)?;
+    }
+    Ok(())
+}
+
+async fn delete_junk_dir(dir: &Path) -> Result<(), GameLaunchError> {
+    if dir.is_dir() {
+        tokio::fs::remove_dir_all(&dir).await.path(dir)?;
     }
     Ok(())
 }
@@ -911,4 +970,34 @@ fn remove_substring(original: &str, to_remove: &str) -> Option<String> {
     } else {
         None
     }
+}
+
+fn deduplicate_game_args(arr1: &[String], arr2: &[String]) -> Vec<String> {
+    // Helper function to insert key-value pairs in order
+    fn insert_pairs(arr: &[String], result: &mut Vec<String>, seen_keys: &mut HashSet<String>) {
+        let arr: Vec<String> = arr.iter().filter(|n| !n.is_empty()).cloned().collect();
+        for i in (0..arr.len()).step_by(2) {
+            let key = arr[i].clone();
+            let value = arr[i + 1].clone();
+            if seen_keys.contains(&key) {
+                // Update value if the key already exists in result (i.e., in case of conflict, overwrite)
+                let pos = result.iter().position(|x| x == &key).unwrap();
+                result[pos + 1] = value; // Update the value for this key
+            } else {
+                result.push(key.clone());
+                result.push(value.clone());
+                seen_keys.insert(key);
+            }
+        }
+    }
+
+    let mut result = Vec::new();
+    let mut seen_keys = HashSet::new();
+
+    insert_pairs(arr1, &mut result, &mut seen_keys);
+    // Second array overwrites first
+    insert_pairs(arr2, &mut result, &mut seen_keys);
+
+    // HashMap -> Vec<String> (key, value, key, value, ...)
+    result
 }

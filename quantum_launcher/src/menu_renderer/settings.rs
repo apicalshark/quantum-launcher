@@ -1,6 +1,13 @@
 use iced::{widget, Length};
 use ql_core::LAUNCHER_DATA_DIR;
 
+use super::{
+    back_button, button_with_icon, get_theme_selector, sidebar_button, underline, Element, DISCORD,
+    GITHUB,
+};
+use crate::menu_renderer::edit_instance::{
+    global_java_args_dialog, global_pre_launch_prefix_dialog, resolution_dialog,
+};
 use crate::{
     config::LauncherConfig,
     icon_manager,
@@ -11,8 +18,6 @@ use crate::{
         widgets::StyleButton,
     },
 };
-
-use super::{back_button, button_with_icon, get_theme_selector, Element, DISCORD, GITHUB};
 
 const SETTINGS_SPACING: f32 = 7.0;
 const PADDING_NOT_BOTTOM: iced::Padding = iced::Padding {
@@ -51,23 +56,12 @@ impl MenuLauncherSettings {
                     .spacing(10),
                     widget::column(LauncherSettingsTab::ALL.iter().map(|tab| {
                         let text = widget::text(tab.to_string());
-                        if *tab == self.selected_tab {
-                            widget::container(widget::row!(widget::Space::with_width(5), text))
-                                .style(LauncherTheme::style_container_selected_flat_button)
-                                .width(Length::Fill)
-                                .padding(5)
-                                .into()
-                        } else {
-                            widget::button(text)
-                                .on_press(Message::LauncherSettings(
-                                    LauncherSettingsMessage::ChangeTab(*tab),
-                                ))
-                                .style(|n: &LauncherTheme, status| {
-                                    n.style_button(status, StyleButton::FlatExtraDark)
-                                })
-                                .width(Length::Fill)
-                                .into()
-                        }
+                        sidebar_button(
+                            tab,
+                            &self.selected_tab,
+                            text,
+                            Message::LauncherSettings(LauncherSettingsMessage::ChangeTab(*tab)),
+                        )
                     }))
                 ]
                 .spacing(10)
@@ -150,7 +144,11 @@ impl MenuLauncherSettings {
                     .on_toggle(|n| Message::LauncherSettings(
                         LauncherSettingsMessage::ToggleAntialiasing(n)
                     )),
-                widget::text("Requires restarting the launcher.").size(12)
+                widget::text("Makes text/menus crisper. Also nudges the launcher into using your dedicated GPU for the User Interface.\nRequires restarting the launcher.").size(12),
+                widget::Space::with_height(5),
+                widget::checkbox("Remember window size", config.window.as_ref().is_none_or(|n| n.save_window_size))
+                    .on_toggle(|n| Message::LauncherSettings(LauncherSettingsMessage::ToggleWindowSize(n))),
+                widget::text("If enabled, the launcher window will retain its size from the last session.").size(12),
             ]
             .padding(10)
             .spacing(5)
@@ -171,12 +169,66 @@ impl LauncherSettingsTab {
             LauncherSettingsTab::UserInterface => menu.view_ui_tab(config),
             LauncherSettingsTab::Internal => widget::column![
                 widget::column![
-                    widget::text("Advanced").size(20),
+                    widget::text("Game").size(20),
                     button_with_icon(icon_manager::folder(), "Open Launcher Folder", 16)
                         .on_press(Message::CoreOpenPath(LAUNCHER_DATA_DIR.clone()))
                 ]
                 .spacing(10)
                 .padding(10),
+                widget::horizontal_rule(1),
+                widget::column![resolution_dialog(
+                    config.global_settings.as_ref(),
+                    |n| Message::LauncherSettings(
+                        LauncherSettingsMessage::DefaultMinecraftWidthChanged(n)
+                    ),
+                    |n| Message::LauncherSettings(
+                        LauncherSettingsMessage::DefaultMinecraftHeightChanged(n)
+                    ),
+                    true
+                )]
+                .padding(10)
+                .spacing(10),
+                widget::horizontal_rule(1),
+                widget::column![global_java_args_dialog(
+                    config.extra_java_args.as_deref(),
+                    Message::LauncherSettings(LauncherSettingsMessage::GlobalJavaArgsAdd),
+                    |idx| Message::LauncherSettings(LauncherSettingsMessage::GlobalJavaArgDelete(
+                        idx
+                    )),
+                    &|arg, idx| Message::LauncherSettings(
+                        LauncherSettingsMessage::GlobalJavaArgEdit(arg, idx)
+                    ),
+                    |idx| Message::LauncherSettings(LauncherSettingsMessage::GlobalJavaArgShiftUp(
+                        idx
+                    )),
+                    |idx| Message::LauncherSettings(
+                        LauncherSettingsMessage::GlobalJavaArgShiftDown(idx)
+                    ),
+                )]
+                .padding(10)
+                .spacing(10),
+                widget::horizontal_rule(1),
+                widget::column![global_pre_launch_prefix_dialog(
+                    config
+                        .global_settings
+                        .as_ref()
+                        .and_then(|n| n.pre_launch_prefix.as_deref()),
+                    Message::LauncherSettings(LauncherSettingsMessage::GlobalPreLaunchPrefixAdd),
+                    |idx| Message::LauncherSettings(
+                        LauncherSettingsMessage::GlobalPreLaunchPrefixDelete(idx)
+                    ),
+                    &|arg, idx| Message::LauncherSettings(
+                        LauncherSettingsMessage::GlobalPreLaunchPrefixEdit(arg, idx)
+                    ),
+                    |idx| Message::LauncherSettings(
+                        LauncherSettingsMessage::GlobalPreLaunchPrefixShiftUp(idx)
+                    ),
+                    |idx| Message::LauncherSettings(
+                        LauncherSettingsMessage::GlobalPreLaunchPrefixShiftDown(idx)
+                    ),
+                )]
+                .padding(10)
+                .spacing(10),
                 widget::horizontal_rule(1),
                 widget::column![
                     button_with_icon(icon_manager::delete(), "Clear Java installs", 16).on_press(
@@ -195,14 +247,13 @@ impl LauncherSettingsTab {
             LauncherSettingsTab::About => {
                 let gpl3_button =
                     // widget::button(widget::rich_text![widget::span("GNU GPLv3 License").underline(true)].size(12))
-                    // iced bug (or maybe some dumb mistake I made),
-                    // putting underlines in buttons makes them unclickable.
-                    widget::button(widget::text("GNU GPLv3 License").size(12))
+
+                    // An Iced bug (or maybe some dumb mistake I made),
+                    // putting underlines in buttons the "official" way makes them unclickable.
+
+                    widget::button(underline(widget::text("GNU GPLv3 License").size(12)))
                         .padding(0)
-                        // .style(|n: &LauncherTheme, status| n.style_button(status, StyleButton::FlatExtraDark))
-                        // Since I can't underline the buttons,
-                        // I have to resort to making them pop out.
-                        .style(|n: &LauncherTheme, status| n.style_button(status, StyleButton::Flat))
+                        .style(|n: &LauncherTheme, status| n.style_button(status, StyleButton::FlatDark))
                         .on_press(Message::LicenseChangeTab(crate::state::LicenseTab::Gpl3));
 
                 let links = widget::row![

@@ -1,3 +1,22 @@
+use crate::state::MenuInstallOptifine;
+use crate::{
+    get_entries,
+    state::{
+        ClientProcess, EditPresetsMessage, ManageModsMessage, MenuEditInstance, MenuEditMods,
+        MenuInstallForge, MenuLaunch, MenuLauncherUpdate, ProgressBar, SelectedState, State,
+        OFFLINE_ACCOUNT_NAME,
+    },
+    Launcher, Message, ServerProcess,
+};
+use iced::futures::executor::block_on;
+use iced::Task;
+use ql_core::json::VersionDetails;
+use ql_core::{
+    err, json::instance_config::InstanceConfigJson, GenericProgress, InstanceSelection,
+    IntoIoError, IntoJsonError, IntoStringError, JsonFileError,
+};
+use ql_instances::{auth::AccountData, ReadError};
+use ql_mod_manager::{loaders, store::ModIndex};
 use std::{
     collections::HashSet,
     ffi::OsStr,
@@ -8,28 +27,10 @@ use std::{
         Arc, Mutex,
     },
 };
-
-use iced::Task;
-use ql_core::{
-    err, json::instance_config::InstanceConfigJson, GenericProgress, InstanceSelection,
-    IntoIoError, IntoJsonError, IntoStringError, JsonFileError,
-};
-use ql_instances::{auth::AccountData, ReadError};
-use ql_mod_manager::{loaders, store::ModIndex};
 use tokio::process::Child;
 
-use crate::{
-    get_entries,
-    state::{
-        ClientProcess, EditPresetsMessage, ManageModsMessage, MenuEditInstance, MenuEditMods,
-        MenuInstallForge, MenuLaunch, MenuLauncherUpdate, ProgressBar, SelectedState, State,
-        NEW_ACCOUNT_NAME, OFFLINE_ACCOUNT_NAME,
-    },
-    Launcher, Message, ServerProcess,
-};
-
 pub const SIDEBAR_DRAG_LEEWAY: f32 = 10.0;
-pub const SIDEBAR_LIMIT_RIGHT: u16 = 300;
+pub const SIDEBAR_LIMIT_RIGHT: u16 = 120;
 pub const SIDEBAR_LIMIT_LEFT: f32 = 135.0;
 
 mod iced_event;
@@ -52,12 +53,22 @@ impl Launcher {
             log.log.clear();
         }
 
+        let global_settings = self.config.global_settings.clone();
+        let extra_java_args = self.config.extra_java_args.clone().unwrap_or_default();
+
         let instance_name = selected_instance.to_owned();
         Task::perform(
             async move {
-                ql_instances::launch(instance_name, username, Some(sender), account_data)
-                    .await
-                    .strerr()
+                ql_instances::launch(
+                    instance_name,
+                    username,
+                    Some(sender),
+                    account_data,
+                    global_settings,
+                    extra_java_args,
+                )
+                .await
+                .strerr()
             },
             Message::LaunchEnd,
         )
@@ -88,6 +99,13 @@ impl Launcher {
                         },
                     );
 
+                    let mut censors = Vec::new();
+                    for account in self.accounts.values() {
+                        if let Some(token) = &account.access_token {
+                            censors.push(token.clone());
+                        }
+                    }
+
                     return Task::perform(
                         async move {
                             let result = ql_instances::read_logs(
@@ -96,6 +114,7 @@ impl Launcher {
                                 child,
                                 Some(sender),
                                 selected_instance.clone(),
+                                censors,
                             )
                             .await;
 
@@ -140,15 +159,10 @@ impl Launcher {
         Task::none()
     }
 
-    pub fn edit_instance(&mut self) -> Result<(), JsonFileError> {
-        let State::Launch(MenuLaunch { edit_instance, .. }) = &mut self.state else {
-            return Ok(());
-        };
-
-        let Some(selected_instance) = self.selected_instance.as_ref() else {
-            return Ok(());
-        };
-
+    pub fn load_edit_instance_inner(
+        edit_instance: &mut Option<MenuEditInstance>,
+        selected_instance: &InstanceSelection,
+    ) -> Result<(), JsonFileError> {
         let config_path = selected_instance.get_instance_path().join("config.json");
 
         let config_json = std::fs::read_to_string(&config_path).path(config_path)?;
@@ -157,6 +171,9 @@ impl Launcher {
 
         let slider_value = f32::log2(config_json.ram_in_mb as f32);
         let memory_mb = config_json.ram_in_mb;
+
+        // Use this to check for performance impact
+        // std::thread::sleep(std::time::Duration::from_millis(500));
 
         let instance_name = selected_instance.get_name();
 
@@ -170,89 +187,80 @@ impl Launcher {
         Ok(())
     }
 
-    pub fn go_to_edit_mods_menu_without_update_check(
-        &mut self,
-    ) -> Result<Task<Message>, JsonFileError> {
-        let selected_instance = self.selected_instance.as_ref().unwrap();
-        let config_path = selected_instance.get_instance_path().join("config.json");
+    pub fn go_to_edit_mods_menu_without_update_check(&mut self) -> Task<Message> {
+        async fn inner(this: &mut Launcher) -> Result<Task<Message>, JsonFileError> {
+            let instance = this.selected_instance.as_ref().unwrap();
 
-        let config_json = std::fs::read_to_string(&config_path).path(config_path)?;
-        let config_json: InstanceConfigJson =
-            serde_json::from_str(&config_json).json(config_json)?;
+            let config_json = InstanceConfigJson::read(instance).await?;
+            let version_json = Box::new(VersionDetails::load(instance).await?);
 
-        match ModIndex::get_s(selected_instance).strerr() {
-            Ok(idx) => {
-                let locally_installed_mods =
-                    MenuEditMods::update_locally_installed_mods(&idx, selected_instance);
+            let idx = ModIndex::load(instance).await?;
+            let locally_installed_mods =
+                MenuEditMods::update_locally_installed_mods(&idx, instance);
 
-                self.state = State::EditMods(MenuEditMods {
-                    config: config_json,
-                    mods: idx,
-                    selected_mods: HashSet::new(),
-                    sorted_mods_list: Vec::new(),
-                    selected_state: SelectedState::None,
-                    available_updates: Vec::new(),
-                    mod_update_progress: None,
-                    locally_installed_mods: HashSet::new(),
-                    drag_and_drop_hovered: false,
-                    update_check_handle: None,
-                });
+            this.state = State::EditMods(MenuEditMods {
+                config: config_json,
+                mods: idx,
+                selected_mods: HashSet::new(),
+                sorted_mods_list: Vec::new(),
+                selected_state: SelectedState::None,
+                available_updates: Vec::new(),
+                mod_update_progress: None,
+                locally_installed_mods: HashSet::new(),
+                drag_and_drop_hovered: false,
+                update_check_handle: None,
+                version_json,
+            });
 
-                Ok(locally_installed_mods)
-            }
+            Ok(locally_installed_mods)
+        }
+        match block_on(inner(self)) {
+            Ok(n) => n,
             Err(err) => {
-                self.set_error(err);
-                Ok(Task::none())
+                self.set_error(format!("While opening Mods screen:\n{err}"));
+                Task::none()
             }
         }
     }
 
     pub fn go_to_edit_mods_menu(&mut self) -> Result<Task<Message>, JsonFileError> {
         let selected_instance = self.selected_instance.as_ref().unwrap();
-        let config_path = selected_instance.get_instance_path().join("config.json");
 
-        let config_json = std::fs::read_to_string(&config_path).path(config_path)?;
-        let config_json: InstanceConfigJson =
-            serde_json::from_str(&config_json).json(config_json)?;
+        let config_json = block_on(InstanceConfigJson::read(selected_instance))?;
+        let version_json = Box::new(block_on(VersionDetails::load(selected_instance))?);
 
         let is_vanilla = config_json.mod_type == "Vanilla";
 
-        match ModIndex::get_s(selected_instance).strerr() {
-            Ok(idx) => {
-                let locally_installed_mods =
-                    MenuEditMods::update_locally_installed_mods(&idx, selected_instance);
+        let idx = block_on(ModIndex::load(selected_instance))?;
+        let locally_installed_mods =
+            MenuEditMods::update_locally_installed_mods(&idx, selected_instance);
 
-                let (update_cmd, update_check_handle) = if is_vanilla {
-                    (Task::none(), None)
-                } else {
-                    let (a, b) = Task::perform(
-                        ql_mod_manager::store::check_for_updates(selected_instance.clone()),
-                        |n| Message::ManageMods(ManageModsMessage::UpdateCheckResult(n.strerr())),
-                    )
-                    .abortable();
-                    (a, Some(b.abort_on_drop()))
-                };
+        let (update_cmd, update_check_handle) = if is_vanilla {
+            (Task::none(), None)
+        } else {
+            let (a, b) = Task::perform(
+                ql_mod_manager::store::check_for_updates(selected_instance.clone()),
+                |n| Message::ManageMods(ManageModsMessage::UpdateCheckResult(n.strerr())),
+            )
+            .abortable();
+            (a, Some(b.abort_on_drop()))
+        };
 
-                self.state = State::EditMods(MenuEditMods {
-                    config: config_json,
-                    mods: idx,
-                    selected_mods: HashSet::new(),
-                    sorted_mods_list: Vec::new(),
-                    selected_state: SelectedState::None,
-                    available_updates: Vec::new(),
-                    mod_update_progress: None,
-                    locally_installed_mods: HashSet::new(),
-                    drag_and_drop_hovered: false,
-                    update_check_handle,
-                });
+        self.state = State::EditMods(MenuEditMods {
+            config: config_json,
+            mods: idx,
+            selected_mods: HashSet::new(),
+            sorted_mods_list: Vec::new(),
+            selected_state: SelectedState::None,
+            available_updates: Vec::new(),
+            mod_update_progress: None,
+            locally_installed_mods: HashSet::new(),
+            drag_and_drop_hovered: false,
+            version_json,
+            update_check_handle,
+        });
 
-                return Ok(Task::batch([locally_installed_mods, update_cmd]));
-            }
-            Err(err) => {
-                self.set_error(err);
-            }
-        }
-        Ok(Task::none())
+        Ok(Task::batch([locally_installed_mods, update_cmd]))
     }
 
     pub fn set_game_crashed(&mut self, status: ExitStatus, name: &str) {
@@ -414,10 +422,6 @@ impl Launcher {
         }
     }
 
-    pub fn get_selected_instance_dir(&self) -> Option<PathBuf> {
-        Some(self.selected_instance.as_ref()?.get_instance_path())
-    }
-
     pub fn get_selected_dot_minecraft_dir(&self) -> Option<PathBuf> {
         Some(self.selected_instance.as_ref()?.get_dot_minecraft_path())
     }
@@ -437,7 +441,7 @@ impl Launcher {
         )
     }
 
-    fn load_jar_from_path(&mut self, path: &PathBuf, filename: &str) {
+    fn load_jar_from_path(&mut self, path: &Path, filename: &str) {
         let selected_instance = self.selected_instance.as_ref().unwrap();
         let new_path = selected_instance
             .get_dot_minecraft_path()
@@ -487,6 +491,12 @@ impl Launcher {
             menu.drag_and_drop_hovered = is_hovered;
         } else if let State::EditJarMods(menu) = &mut self.state {
             menu.drag_and_drop_hovered = is_hovered;
+        } else if let State::InstallOptifine(MenuInstallOptifine::Choosing {
+            drag_and_drop_hovered,
+            ..
+        }) = &mut self.state
+        {
+            *drag_and_drop_hovered = is_hovered;
         }
     }
 
@@ -569,15 +579,7 @@ impl Launcher {
         }
 
         self.is_launching_game = true;
-        let account_data = if let Some(account) = &self.accounts_selected {
-            if account == NEW_ACCOUNT_NAME || account == OFFLINE_ACCOUNT_NAME {
-                None
-            } else {
-                self.accounts.get(account).cloned()
-            }
-        } else {
-            None
-        };
+        let account_data = self.get_selected_account_data();
         if let Some(account) = &account_data {
             if account.access_token.is_none() || account.needs_refresh {
                 return self.account_refresh(account);

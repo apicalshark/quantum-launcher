@@ -1,8 +1,8 @@
-use keyring;
-use ql_core::{IntoJsonError, RequestError, CLIENT};
-use serde::{Deserialize, Serialize};
-
 use crate::auth::alt::OauthError;
+use keyring;
+use ql_core::file_utils::check_for_success;
+use ql_core::{IntoJsonError, CLIENT};
+use serde::{Deserialize, Serialize};
 
 use super::{Error, CLIENT_ID};
 
@@ -89,13 +89,7 @@ async fn get_user_info(access_token: &str) -> Result<UserInfo, Error> {
         .bearer_auth(access_token)
         .send()
         .await?;
-    if !resp.status().is_success() {
-        return Err(RequestError::DownloadError {
-            code: resp.status(),
-            url: resp.url().clone(),
-        }
-        .into());
-    }
+    check_for_success(&resp)?;
     let user = resp.text().await?;
     let user: UserInfo = serde_json::from_str(&user).json(user)?;
     Ok(user)
@@ -134,14 +128,7 @@ pub async fn request_device_code() -> Result<DeviceCodeResponse, Error> {
         .body(body)
         .send()
         .await?;
-
-    if !resp.status().is_success() {
-        return Err(RequestError::DownloadError {
-            code: resp.status(),
-            url: resp.url().clone(),
-        }
-        .into());
-    }
+    check_for_success(&resp)?;
 
     let code_resp = resp.text().await?;
     let code_resp: DeviceCodeResponse = serde_json::from_str(&code_resp).json(code_resp)?;
@@ -222,14 +209,7 @@ async fn get_minecraft_profile(oauth_access_token: &str) -> Result<MinecraftProf
         .bearer_auth(oauth_access_token)
         .send()
         .await?;
-
-    if !resp.status().is_success() {
-        return Err(RequestError::DownloadError {
-            code: resp.status(),
-            url: resp.url().clone(),
-        }
-        .into());
-    }
+    check_for_success(&resp)?;
 
     // API returns an array of profiles;
     let list = resp.text().await?;
@@ -249,13 +229,7 @@ async fn create_minecraft_token(
         .send()
         .await?;
 
-    if !resp.status().is_success() {
-        return Err(RequestError::DownloadError {
-            code: resp.status(),
-            url: resp.url().clone(),
-        }
-        .into());
-    }
+    check_for_success(&resp)?;
     let token = resp.text().await?;
     let token: MinecraftTokenResponse = serde_json::from_str(&token).json(token)?;
     Ok(token)

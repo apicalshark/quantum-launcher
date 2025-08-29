@@ -7,13 +7,14 @@ use std::{
 use chrono::DateTime;
 use download::ModDownloader;
 use ql_core::{pt, GenericProgress, IntoJsonError, JsonDownloadError, ModId, RequestError, CLIENT};
-use ql_reqwest::header::HeaderValue;
+use reqwest::header::HeaderValue;
 use serde::Deserialize;
 
 use crate::{rate_limiter::RATE_LIMITER, store::SearchMod};
 
 use super::{Backend, CurseforgeNotAllowed, ModError, QueryType, SearchResult};
 use categories::get_categories;
+use ql_core::file_utils::check_for_success;
 
 mod categories;
 mod download;
@@ -134,9 +135,9 @@ impl CFSearchResult {
             .map(|s| s.parse::<u64>().map(serde_json::Value::from))
             .collect::<Result<_, _>>()?;
 
-        let mut headers = ql_reqwest::header::HeaderMap::new();
+        let mut headers = reqwest::header::HeaderMap::new();
         headers.insert(
-            ql_reqwest::header::ACCEPT,
+            reqwest::header::ACCEPT,
             HeaderValue::from_static("application/json"),
         );
         headers.insert(
@@ -150,16 +151,9 @@ impl CFSearchResult {
             .send()
             .await
             .map_err(RequestError::from)?;
-        if response.status().is_success() {
-            let text = response.text().await.map_err(RequestError::from)?;
-            Ok(serde_json::from_str(&text).json(text)?)
-        } else {
-            Err(RequestError::DownloadError {
-                code: response.status(),
-                url: response.url().clone(),
-            }
-            .into())
-        }
+        check_for_success(&response)?;
+        let text = response.text().await.map_err(RequestError::from)?;
+        Ok(serde_json::from_str(&text).json(text)?)
     }
 }
 
@@ -220,6 +214,8 @@ impl Backend for CurseforgeBackend {
             start_time: instant,
             backend: ql_core::StoreBackendType::Curseforge,
             offset,
+            // TODO: Check whether curseforge results have hit bottom
+            reached_end: false,
         })
     }
 
@@ -329,9 +325,9 @@ pub async fn send_request(
     api: &str,
     params: &HashMap<&str, String>,
 ) -> Result<String, RequestError> {
-    let mut headers = ql_reqwest::header::HeaderMap::new();
+    let mut headers = reqwest::header::HeaderMap::new();
     headers.insert(
-        ql_reqwest::header::ACCEPT,
+        reqwest::header::ACCEPT,
         HeaderValue::from_static("application/json"),
     );
     headers.insert("x-api-key", HeaderValue::from_str(API_KEY)?);
@@ -344,14 +340,8 @@ pub async fn send_request(
         .send()
         .await?;
 
-    if response.status().is_success() {
-        Ok(response.text().await?)
-    } else {
-        Err(RequestError::DownloadError {
-            code: response.status(),
-            url: response.url().clone(),
-        })
-    }
+    check_for_success(&response)?;
+    Ok(response.text().await?)
 }
 
 // Please don't steal :)

@@ -3,7 +3,6 @@ use std::{num::ParseIntError, path::PathBuf, string::FromUtf8Error};
 use ql_core::{impl_3_errs_jri, DownloadFileError, IoError, JsonError, RequestError};
 use ql_java_handler::JavaInstallError;
 use thiserror::Error;
-use zip_extract::ZipExtractError;
 
 const FORGE_INSTALL_ERR_PREFIX: &str = "while installing Forge:\n";
 
@@ -40,8 +39,6 @@ pub enum ForgeInstallError {
     #[error("NeoForge only supports Minecraft 1.20.2 and above, your version is outdated")]
     NeoforgeOutdatedMinecraft,
 
-    #[error("{FORGE_INSTALL_ERR_PREFIX}zip extract: {0}")]
-    ZipExtract(#[from] ZipExtractError),
     #[error("{FORGE_INSTALL_ERR_PREFIX}zip: {0}")]
     Zip(#[from] zip::result::ZipError),
     #[error("{FORGE_INSTALL_ERR_PREFIX}couldn't read file {1} from zip:\n{0}")]

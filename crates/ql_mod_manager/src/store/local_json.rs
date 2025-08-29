@@ -31,7 +31,7 @@ pub struct ModIndex {
 }
 
 impl ModIndex {
-    pub async fn get(selected_instance: &InstanceSelection) -> Result<Self, JsonFileError> {
+    pub async fn load(selected_instance: &InstanceSelection) -> Result<Self, JsonFileError> {
         let dot_mc_dir = selected_instance.get_dot_minecraft_path();
 
         let mods_dir = dot_mc_dir.join("mods");
@@ -68,37 +68,6 @@ impl ModIndex {
             tokio::fs::write(&index_path, &index_str)
                 .await
                 .path(index_path)?;
-            Ok(index)
-        }
-    }
-
-    pub fn get_s(selected_instance: &InstanceSelection) -> Result<Self, ModError> {
-        let dot_mc_dir = selected_instance.get_dot_minecraft_path();
-
-        let mods_dir = dot_mc_dir.join("mods");
-        if !mods_dir.exists() {
-            std::fs::create_dir(&mods_dir).path(&mods_dir)?;
-        }
-
-        let index_path = dot_mc_dir.join("mod_index.json");
-        let old_index_path = mods_dir.join("index.json");
-
-        if index_path.exists() {
-            let index = std::fs::read_to_string(&index_path).path(index_path)?;
-            Ok(serde_json::from_str(&index).json(index)?)
-        } else if old_index_path.exists() {
-            // Migrate old index to new location
-            let index = std::fs::read_to_string(&old_index_path).path(&old_index_path)?;
-            let mod_index = serde_json::from_str(&index).json(index.clone())?;
-
-            std::fs::remove_file(&old_index_path).path(old_index_path)?;
-            std::fs::write(&index_path, &index).path(index_path)?;
-
-            Ok(mod_index)
-        } else {
-            let index = ModIndex::new(selected_instance);
-            let index_str = serde_json::to_string(&index).json_to()?;
-            std::fs::write(&index_path, &index_str).path(index_path)?;
             Ok(index)
         }
     }

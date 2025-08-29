@@ -2,7 +2,6 @@ use std::num::ParseIntError;
 
 use ql_core::{impl_3_errs_jri, IoError, JsonError, RequestError};
 use thiserror::Error;
-use zip_extract::ZipError;
 
 use super::modpack::PackError;
 
@@ -23,7 +22,7 @@ pub enum ModError {
     #[error("{MOD_ERR_PREFIX}couldn't add entry {1} to zip: {0}")]
     ZipIoError(std::io::Error, String),
     #[error("{MOD_ERR_PREFIX}zip error:\n{0}")]
-    Zip(#[from] ZipError),
+    Zip(#[from] zip::result::ZipError),
     #[error("{MOD_ERR_PREFIX}no \"minecraft\" game entry found in curseforge API\n\nThis is a bug, please report in discord!")]
     NoMinecraftInCurseForge,
     #[error("curseforge is blocking you from downloading the mod {0}\nGo to the official website at:\nhttps://www.curseforge.com/minecraft/mc-mods/{1}\nand download from there")]

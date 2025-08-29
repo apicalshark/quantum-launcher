@@ -9,38 +9,36 @@
 //! icon, a `widget::text` object is made with the icon font
 //! and the special character that corresponds to the icon.
 
-use crate::menu_renderer::Element;
+use crate::stylesheet::styles::LauncherTheme;
 use paste::paste;
 
-const ICON_FONT2: iced::Font = iced::Font::with_name("QuantumLauncher");
+const ICON_FONT: iced::Font = iced::Font::with_name("QL_Icons_V1-2");
 
-pub fn icon<'a>(codepoint: char) -> Element<'a> {
-    iced::widget::text(codepoint).font(ICON_FONT2).into()
+pub fn icon<'a>(codepoint: char) -> iced::widget::Text<'a, LauncherTheme> {
+    iced::widget::text(codepoint).font(ICON_FONT)
 }
 
-pub fn icon_with_size<'a>(codepoint: char, size: u16) -> Element<'a> {
-    iced::widget::text(codepoint)
-        .font(ICON_FONT2)
-        .size(size)
-        .into()
+pub fn icon_with_size<'a>(codepoint: char, size: u16) -> iced::widget::Text<'a, LauncherTheme> {
+    iced::widget::text(codepoint).font(ICON_FONT).size(size)
 }
 
 macro_rules! icon_define {
     ($name:ident, $unicode:expr) => {
         paste! {
             #[allow(dead_code)]
-            pub fn $name<'a>() -> Element<'a> {
+            pub fn $name<'a>() -> iced::widget::Text<'a, LauncherTheme> {
                 icon($unicode)
             }
 
             #[allow(dead_code)]
-            pub fn [<$name _with_size>]<'a>(size: u16) -> Element<'a> {
+            pub fn [<$name _with_size>]<'a>(size: u16) -> iced::widget::Text<'a, LauncherTheme> {
                 icon_with_size($unicode, size)
             }
         }
     };
 }
 
+icon_define!(sort, '\u{e900}'); // A-Z, Version, Playtime, Date Created, etc...
 icon_define!(update, '\u{e901}');
 icon_define!(play, '\u{e902}');
 icon_define!(delete, '\u{e903}');
@@ -56,8 +54,6 @@ icon_define!(tick2, '\u{e90C}');
 icon_define!(discord, '\u{e90D}');
 icon_define!(arrow_down, '\u{e90E}');
 icon_define!(download, '\u{e90F}');
-icon_define!(edit, '\u{e923}');
-icon_define!(sort, '\u{e900}'); // A-Z, Version, Playtime, Date Created, etc...
 
 icon_define!(download_file, '\u{e910}');
 icon_define!(settings_file, '\u{e911}');
@@ -81,4 +77,9 @@ icon_define!(refresh_clock, '\u{e91F}'); // This should be an update icon
 
 icon_define!(chatbox_alt, '\u{e920}'); // This is experimental, I guess
 icon_define!(mode_dark, '\u{e921}');
-icon_define!(mode_light, '\u{e923}');
+icon_define!(mode_light, '\u{e922}');
+icon_define!(edit, '\u{e923}');
+icon_define!(sort2, '\u{e924}');
+icon_define!(sort_ascending, '\u{e925}');
+icon_define!(sort_descending, '\u{e926}');
+icon_define!(cross, '\u{e927}');

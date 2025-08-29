@@ -4,23 +4,19 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-ql_reqwest = { path = "../ql_reqwest" }
-
 
 chrono = { workspace = true }
 dirs = "6"
-futures = { version = "0.3", default-features = false }
+futures = { workspace = true }
 colored = { workspace = true }
 
-zip-extract = { workspace = true }
 zip = { workspace = true }
-walkdir = "2"
+walkdir = { workspace = true }
 regex = "1"
 
+reqwest = { workspace = true }
 tokio = { workspace = true }
 tokio-util = "0.7"
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-
-

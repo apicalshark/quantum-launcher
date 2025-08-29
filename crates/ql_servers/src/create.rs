@@ -72,7 +72,7 @@ pub async fn create_server(
         is_classic_server = true;
 
         let archive = file_utils::download_file_to_bytes(&server.url, true).await?;
-        zip_extract::extract(std::io::Cursor::new(archive), &server_dir, true)?;
+        file_utils::extract_zip_archive(std::io::Cursor::new(archive), &server_dir, true)?;
 
         let old_path = server_dir.join("minecraft-server.jar");
         tokio::fs::rename(&old_path, &server_jar_path)
@@ -120,6 +120,9 @@ async fn write_config(
         // This won't do anything on servers. Who wants to lose their *only way*
         // to control the server instantly after starting it?
         close_on_start: None,
+        global_settings: None,
+        java_args_mode: None,
+        pre_launch_prefix_mode: None,
     };
     let server_config_path = server_dir.join("config.json");
     tokio::fs::write(

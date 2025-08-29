@@ -26,7 +26,7 @@ use super::{LaunchTabId, LauncherSettingsTab, LicenseTab, Res};
 
 #[derive(Debug, Clone)]
 pub enum InstallFabricMessage {
-    End(Res<bool>),
+    End(Res),
     VersionSelected(String),
     VersionsLoaded(Res<Vec<FabricVersionListItem>>),
     ButtonClicked,
@@ -63,13 +63,22 @@ pub enum EditInstanceMessage {
     JavaArgDelete(usize),
     JavaArgShiftUp(usize),
     JavaArgShiftDown(usize),
+    JavaArgsModeChanged(ql_core::json::instance_config::JavaArgsMode),
     GameArgsAdd,
     GameArgEdit(String, usize),
     GameArgDelete(usize),
     GameArgShiftUp(usize),
     GameArgShiftDown(usize),
+    PreLaunchPrefixAdd,
+    PreLaunchPrefixEdit(String, usize),
+    PreLaunchPrefixDelete(usize),
+    PreLaunchPrefixShiftUp(usize),
+    PreLaunchPrefixShiftDown(usize),
+    PreLaunchPrefixModeChanged(ql_core::json::instance_config::PreLaunchPrefixMode),
     RenameEdit(String),
     RenameApply,
+    WindowWidthChanged(String),
+    WindowHeightChanged(String),
 }
 
 #[derive(Debug, Clone)]
@@ -96,6 +105,15 @@ pub enum ManageModsMessage {
     SelectAll,
     AddFile,
     AddFileDone(Res<HashSet<CurseforgeNotAllowed>>),
+    ExportMenuOpen,
+}
+
+#[derive(Debug, Clone)]
+pub enum ExportModsMessage {
+    ExportAsPlainText,
+    ExportAsMarkdown,
+    CopyMarkdownToClipboard,
+    CopyPlainTextToClipboard,
 }
 
 #[derive(Debug, Clone)]
@@ -135,6 +153,7 @@ pub enum InstallModsMessage {
 pub enum InstallOptifineMessage {
     ScreenOpen,
     SelectInstallerStart,
+    DeleteInstallerToggle(bool),
     End(Res),
 }
 
@@ -189,8 +208,6 @@ pub enum AccountMessage {
     AltLoginResponse(Res<ql_instances::auth::yggdrasil::Account>),
 
     LittleSkinOauthButtonClicked,
-    // LittleSkin Device Code Flow
-    LittleSkinDeviceCodeRequested,
     LittleSkinDeviceCodeReady {
         user_code: String,
         verification_uri: String,
@@ -199,7 +216,6 @@ pub enum AccountMessage {
         device_code: String,
     },
     LittleSkinDeviceCodeError(String),
-    LittleSkinDeviceCodePollResult(Res<ql_instances::auth::yggdrasil::Account>),
 }
 
 #[derive(Debug, Clone)]
@@ -212,13 +228,32 @@ pub enum LauncherSettingsMessage {
     ClearJavaInstalls,
     ClearJavaInstallsConfirm,
     ChangeTab(LauncherSettingsTab),
+    DefaultMinecraftWidthChanged(String),
+    DefaultMinecraftHeightChanged(String),
+
     ToggleAntialiasing(bool),
+    ToggleWindowSize(bool),
+
+    // Global Java arguments
+    GlobalJavaArgsAdd,
+    GlobalJavaArgEdit(String, usize),
+    GlobalJavaArgDelete(usize),
+    GlobalJavaArgShiftUp(usize),
+    GlobalJavaArgShiftDown(usize),
+
+    // Global pre-launch prefix
+    GlobalPreLaunchPrefixAdd,
+    GlobalPreLaunchPrefixEdit(String, usize),
+    GlobalPreLaunchPrefixDelete(usize),
+    GlobalPreLaunchPrefixShiftUp(usize),
+    GlobalPreLaunchPrefixShiftDown(usize),
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
     #[allow(unused)]
     Nothing,
+    Multiple(Vec<Message>),
 
     WelcomeContinueToTheme,
     WelcomeContinueToAuth,
@@ -227,6 +262,7 @@ pub enum Message {
     CreateInstance(CreateInstanceMessage),
     EditInstance(EditInstanceMessage),
     ManageMods(ManageModsMessage),
+    ExportMods(ExportModsMessage),
     ManageJarMods(ManageJarModsMessage),
     InstallMods(InstallModsMessage),
     InstallOptifine(InstallOptifineMessage),
@@ -296,6 +332,8 @@ pub enum Message {
     LaunchLogScrollAbsolute(isize),
     LaunchEndedLog(Res<(ExitStatus, String)>),
     LaunchCopyLog,
+    LaunchUploadLog,
+    LaunchUploadLogResult(Res<String>),
 
     UpdateCheckResult(Res<UpdateCheckInfo>),
     UpdateDownloadStart,
@@ -310,7 +348,6 @@ pub enum Message {
     ServerManageEndedLog(Res<(ExitStatus, String)>),
     ServerManageKillServer(String),
     ServerManageEditCommand(String, String),
-    ServerManageCopyLog,
     ServerManageSubmitCommand(String),
 
     ServerCreateScreenOpen,

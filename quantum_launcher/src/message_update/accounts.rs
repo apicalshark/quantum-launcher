@@ -50,9 +50,6 @@ impl Launcher {
                     },
                 }
             }
-            AccountMessage::LittleSkinDeviceCodeRequested => {
-                todo!("Handle LittleSkinDeviceCodeRequested");
-            }
             AccountMessage::LittleSkinDeviceCodeReady {
                 user_code,
                 verification_uri,
@@ -94,9 +91,6 @@ impl Launcher {
                     menu.device_code_error = Some(err_msg);
                 }
             }
-            AccountMessage::LittleSkinDeviceCodePollResult(_) => {
-                todo!("Handle LittleSkinDeviceCodePollResult");
-            }
             AccountMessage::LogoutConfirm => {
                 let username = self.accounts_selected.clone().unwrap();
                 let account_type = self
@@ -131,15 +125,7 @@ impl Launcher {
             AccountMessage::RefreshComplete(Ok(data)) => {
                 self.accounts.insert(data.get_username_modified(), data);
 
-                let account_data = if let Some(account) = &self.accounts_selected {
-                    if account == NEW_ACCOUNT_NAME || account == OFFLINE_ACCOUNT_NAME {
-                        None
-                    } else {
-                        self.accounts.get(account).cloned()
-                    }
-                } else {
-                    None
-                };
+                let account_data = self.get_selected_account_data();
 
                 return Task::batch([
                     self.go_to_launch_screen::<String>(None),
@@ -274,6 +260,9 @@ impl Launcher {
         if account == NEW_ACCOUNT_NAME {
             self.state = State::AccountLogin;
         } else {
+            if account != OFFLINE_ACCOUNT_NAME {
+                self.config.account_selected = Some(account.clone());
+            }
             self.accounts_selected = Some(account);
         }
         Task::none()
@@ -317,13 +306,14 @@ impl Launcher {
         }
         self.accounts_dropdown.insert(0, username.clone());
 
-        let accounts = self.config.accounts.get_or_insert_default();
+        let accounts = self.config.accounts.get_or_insert_with(Default::default);
         accounts.insert(
             username.clone(),
             ConfigAccount {
                 uuid: data.uuid.clone(),
                 skin: None,
                 account_type: Some(data.account_type.to_string()),
+                keyring_identifier: Some(data.username.clone()),
                 username_nice: Some(data.nice_username.clone()),
             },
         );
@@ -360,5 +350,17 @@ impl Launcher {
         });
 
         task
+    }
+
+    pub fn get_selected_account_data(&self) -> Option<AccountData> {
+        if let Some(account) = &self.accounts_selected {
+            if account == NEW_ACCOUNT_NAME || account == OFFLINE_ACCOUNT_NAME {
+                None
+            } else {
+                self.accounts.get(account).cloned()
+            }
+        } else {
+            None
+        }
     }
 }

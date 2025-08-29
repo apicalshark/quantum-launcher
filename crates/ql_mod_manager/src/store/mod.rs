@@ -36,6 +36,12 @@ pub const SOURCE_ID_CURSEFORGE: &str = "curseforge";
 
 #[allow(async_fn_in_trait)]
 pub trait Backend {
+    /// # Takes in
+    /// - Query information,
+    /// - Offset from the start (how far you scrolled down)
+    /// - Query type (Mod/Resource Pack/Shader/...)
+    ///
+    /// Returns a search result containing a list of matching items
     async fn search(
         query: Query,
         offset: usize,
@@ -236,6 +242,7 @@ pub struct SearchResult {
     pub backend: StoreBackendType,
     pub start_time: Instant,
     pub offset: usize,
+    pub reached_end: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -280,7 +287,7 @@ async fn get_mods_resourcepacks_shaderpacks_dir(
 
     // Minecraft 13w24a release date (1.6.1 snapshot)
     // Switched from Texture Packs to Resource Packs
-    let v1_6_1 = DateTime::parse_from_rfc3339("2013-06-13T15:32:23+00:00").unwrap();
+    let v1_6_1 = DateTime::parse_from_rfc3339("2013-06-13T15:32:23+00:00")?;
     let resource_packs = match DateTime::parse_from_rfc3339(&version_json.releaseTime) {
         Ok(dt) => {
             if dt >= v1_6_1 {

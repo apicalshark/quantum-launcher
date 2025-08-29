@@ -8,8 +8,7 @@ use std::{
 use iced::{widget::image::Handle, Task};
 use ql_core::{
     err, file_utils, GenericProgress, InstanceSelection, IntoIoError, IntoStringError,
-    JsonFileError, ListEntry, Progress, LAUNCHER_CONFIG_DIR, LAUNCHER_DATA_DIR,
-    LAUNCHER_VERSION_NAME,
+    JsonFileError, ListEntry, Progress, LAUNCHER_CONFIG_DIR, LAUNCHER_VERSION_NAME,
 };
 use ql_instances::{
     auth::{ms::CLIENT_ID, AccountData, AccountType},
@@ -20,7 +19,6 @@ use tokio::process::{Child, ChildStdin};
 use crate::{
     config::LauncherConfig,
     stylesheet::styles::{LauncherTheme, LauncherThemeColor, LauncherThemeLightness},
-    WINDOW_HEIGHT, WINDOW_WIDTH,
 };
 
 mod menu;
@@ -155,10 +153,14 @@ impl Launcher {
             }
         }
 
-        let selected_account = accounts_dropdown
-            .first()
-            .cloned()
-            .unwrap_or_else(|| OFFLINE_ACCOUNT_NAME.to_owned());
+        let selected_account = config.account_selected.clone().unwrap_or(
+            accounts_dropdown
+                .first()
+                .cloned()
+                .unwrap_or_else(|| OFFLINE_ACCOUNT_NAME.to_owned()),
+        );
+
+        let (window_width, window_height) = config.read_window_size();
 
         Ok(Self {
             client_list: None,
@@ -179,7 +181,7 @@ impl Launcher {
             server_processes: HashMap::new(),
             server_logs: HashMap::new(),
             mouse_pos: (0.0, 0.0),
-            window_size: (WINDOW_WIDTH, WINDOW_HEIGHT),
+            window_size: (window_width, window_height),
             accounts,
             accounts_dropdown,
             accounts_selected: Some(selected_account),
@@ -196,7 +198,7 @@ impl Launcher {
             Some(LAUNCHER_CONFIG_DIR.clone())
         };
 
-        let (config, theme) = launcher_dir
+        let (mut config, theme) = launcher_dir
             .as_ref()
             .and_then(|_| {
                 match LauncherConfig::load_s().map(|n| {
@@ -211,6 +213,8 @@ impl Launcher {
                 }
             })
             .unwrap_or((LauncherConfig::default(), LauncherTheme::default()));
+
+        let (window_width, window_height) = config.read_window_size();
 
         Self {
             state: State::Error { error },
@@ -231,7 +235,7 @@ impl Launcher {
             server_logs: HashMap::new(),
             server_version_list_cache: None,
             mouse_pos: (0.0, 0.0),
-            window_size: (WINDOW_WIDTH, WINDOW_HEIGHT),
+            window_size: (window_width, window_height),
             accounts: HashMap::new(),
             accounts_dropdown: vec![OFFLINE_ACCOUNT_NAME.to_owned(), NEW_ACCOUNT_NAME.to_owned()],
             accounts_selected: Some(OFFLINE_ACCOUNT_NAME.to_owned()),
@@ -273,39 +277,70 @@ fn load_account(
     fn get_refresh_token_for_account_type(
         account_type: AccountType,
         username: &str,
+        keyring_identifier: Option<&str>,
     ) -> Result<String, String> {
-        let username_stripped = match account_type {
-            AccountType::ElyBy => username.strip_suffix(" (elyby)").unwrap_or(username),
-            AccountType::LittleSkin => username.strip_suffix(" (littleskin)").unwrap_or(username),
-            AccountType::Microsoft => username,
+        let keyring_username = if let Some(keyring_id) = keyring_identifier {
+            keyring_id
+        } else {
+            // Fallback to old behavior for backwards compatibility
+            match account_type {
+                AccountType::ElyBy => username.strip_suffix(" (elyby)").unwrap_or(username),
+                AccountType::LittleSkin => {
+                    username.strip_suffix(" (littleskin)").unwrap_or(username)
+                }
+                AccountType::Microsoft => username,
+            }
         };
-        ql_instances::auth::read_refresh_token(username_stripped, account_type).strerr()
+        ql_instances::auth::read_refresh_token(keyring_username, account_type).strerr()
     }
 
     let (account_type, refresh_token) =
         if account.account_type.as_deref() == Some("ElyBy") || username.ends_with(" (elyby)") {
             (
                 AccountType::ElyBy,
-                get_refresh_token_for_account_type(AccountType::ElyBy, username),
+                get_refresh_token_for_account_type(
+                    AccountType::ElyBy,
+                    username,
+                    account.keyring_identifier.as_deref(),
+                ),
             )
         } else if account.account_type.as_deref() == Some("LittleSkin")
             || username.ends_with(" (littleskin)")
         {
             (
                 AccountType::LittleSkin,
-                get_refresh_token_for_account_type(AccountType::LittleSkin, username),
+                get_refresh_token_for_account_type(
+                    AccountType::LittleSkin,
+                    username,
+                    account.keyring_identifier.as_deref(),
+                ),
             )
         } else {
             (
                 AccountType::Microsoft,
-                get_refresh_token_for_account_type(AccountType::Microsoft, username),
+                get_refresh_token_for_account_type(
+                    AccountType::Microsoft,
+                    username,
+                    account.keyring_identifier.as_deref(),
+                ),
             )
         };
 
-    let username_stripped = match account_type {
-        AccountType::ElyBy => username.strip_suffix(" (elyby)").unwrap_or(username),
-        AccountType::LittleSkin => username.strip_suffix(" (littleskin)").unwrap_or(username),
-        AccountType::Microsoft => username,
+    let keyring_username = if let Some(keyring_id) = &account.keyring_identifier {
+        keyring_id.clone()
+    } else {
+        // Fallback to old behavior for backwards compatibility
+        match account_type {
+            AccountType::ElyBy => username
+                .strip_suffix(" (elyby)")
+                .unwrap_or(username)
+                .to_owned(),
+            AccountType::LittleSkin => username
+                .strip_suffix(" (littleskin)")
+                .unwrap_or(username)
+                .to_owned(),
+            AccountType::Microsoft => username.to_owned(),
+        }
     };
 
     match refresh_token {
@@ -320,17 +355,17 @@ fn load_account(
                     needs_refresh: true,
                     account_type,
 
-                    username: username_stripped.to_owned(),
+                    username: keyring_username.clone(),
                     nice_username: account
                         .username_nice
                         .clone()
-                        .unwrap_or(username_stripped.to_owned()),
+                        .unwrap_or(keyring_username.clone()),
                 },
             );
         }
         Err(err) => {
             err!(
-                "Could not load account: {err}\nUsername: {username_stripped}, Account Type: {}",
+                "Could not load account: {err}\nUsername: {keyring_username}, Account Type: {}",
                 account_type.to_string()
             );
             accounts_to_remove.push(username.to_owned());

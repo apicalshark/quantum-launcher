@@ -19,13 +19,12 @@
 use std::path::{Path, PathBuf, StripPrefixError};
 
 use crate::{
-    file_utils::zip_directory_to_bytes,
+    file_utils::{extract_zip_archive, zip_directory_to_bytes},
     get_jar_path,
     json::{JsonOptifine, VersionDetails},
     pt, InstanceSelection, IntoIoError, IoError, JsonError, JsonFileError,
 };
 use thiserror::Error;
-use zip_extract::ZipExtractError;
 
 mod json;
 
@@ -57,7 +56,12 @@ pub async fn insert(
     bytes: Vec<u8>,
     name: &str,
 ) -> Result<(), JsonFileError> {
+    let filename = format!("{name}.zip");
     let mut jarmods = JarMods::get(&instance).await?;
+    if let Some(entry) = jarmods.mods.iter_mut().find(|n| n.filename == filename) {
+        entry.enabled = true;
+        return Ok(());
+    }
 
     let jarmods_dir = instance.get_instance_path().join("jarmods");
     if !jarmods_dir.is_dir() {
@@ -66,7 +70,6 @@ pub async fn insert(
             .path(&jarmods_dir)?;
     }
 
-    let filename = format!("{name}.zip");
     let file_path = jarmods_dir.join(&filename);
     tokio::fs::write(&file_path, &bytes)
         .await
@@ -101,7 +104,7 @@ pub async fn build(instance: &InstanceSelection) -> Result<PathBuf, JarModError>
     tokio::fs::create_dir_all(&tmp_dir).await.path(&tmp_dir)?;
 
     let original_jar_bytes = tokio::fs::read(&original_jar).await.path(&original_jar)?;
-    zip_extract::extract(std::io::Cursor::new(&original_jar_bytes), &tmp_dir, true)?;
+    extract_zip_archive(std::io::Cursor::new(&original_jar_bytes), &tmp_dir, true)?;
 
     for jar in &index.mods {
         if !jar.enabled {
@@ -111,7 +114,7 @@ pub async fn build(instance: &InstanceSelection) -> Result<PathBuf, JarModError>
         pt!("{}", jar.filename);
         let path = jarmods_dir.join(&jar.filename);
         let bytes = tokio::fs::read(&path).await.path(&path)?;
-        zip_extract::extract(std::io::Cursor::new(&bytes), &tmp_dir, true)?;
+        extract_zip_archive(std::io::Cursor::new(&bytes), &tmp_dir, true)?;
     }
 
     let meta_inf = tmp_dir.join("META-INF");
@@ -163,8 +166,6 @@ pub enum JarModError {
     #[error("{JARMOD_ERR_PREFIX}while stripping prefix of jarmods/tmp:\n{0}")]
     StripPrefix(#[from] StripPrefixError),
 
-    #[error("{JARMOD_ERR_PREFIX}while extracting zip:\n{0}")]
-    ZipExtract(#[from] ZipExtractError),
     #[error("{JARMOD_ERR_PREFIX}while processing zip:\n{0}")]
     ZipError(#[from] zip::result::ZipError),
     #[error("{JARMOD_ERR_PREFIX}while reading from zip:\n{0}")]

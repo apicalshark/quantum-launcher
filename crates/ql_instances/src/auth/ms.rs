@@ -66,7 +66,7 @@
 //! ```
 
 use ql_core::{info, pt, retry, GenericProgress, IntoJsonError, JsonError, RequestError, CLIENT};
-use ql_reqwest::{Client, StatusCode};
+use reqwest::{Client, StatusCode};
 use serde::Deserialize;
 use serde_json::json;
 use std::collections::HashMap;
@@ -187,8 +187,8 @@ pub enum Error {
     DoesntOwnGame,
 }
 
-impl From<ql_reqwest::Error> for Error {
-    fn from(value: ql_reqwest::Error) -> Self {
+impl From<reqwest::Error> for Error {
+    fn from(value: reqwest::Error) -> Self {
         Self::Request(RequestError::ReqwestError(value))
     }
 }
@@ -203,7 +203,7 @@ impl From<keyring::Error> for Error {
 /// refresh token.
 ///
 /// You can read an existing refresh token
-/// from disk using [`read_refresh_token`].
+/// from disk using [`super::read_refresh_token`].
 ///
 /// Note: This is for reusing an existing logged-in
 /// account. If you want to freshly log in, use
@@ -216,7 +216,7 @@ pub async fn login_refresh(
 ) -> Result<AccountData, Error> {
     send_progress(sender.as_ref(), 0, 4, "Refreshing account token...");
 
-    let response: String = retry(async || {
+    let response: String = retry(|| async {
         CLIENT
             .post("https://login.live.com/oauth20_token.srf")
             .form(&[

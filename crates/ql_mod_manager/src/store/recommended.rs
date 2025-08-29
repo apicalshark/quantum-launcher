@@ -1,8 +1,12 @@
-use std::sync::mpsc::Sender;
+use std::sync::{mpsc::Sender, Arc, Mutex};
 
-use ql_core::{info, pt, GenericProgress, Loader, ModId, StoreBackendType};
+use futures::StreamExt;
+use ql_core::{
+    info, info_no_log, json::VersionDetails, pt, GenericProgress, InstanceSelection, Loader, ModId,
+    StoreBackendType,
+};
 
-use crate::store::get_latest_version_date;
+use crate::store::{get_latest_version_date, ModIndex};
 
 use super::ModError;
 
@@ -17,38 +21,82 @@ pub struct RecommendedMod {
 
 impl RecommendedMod {
     pub async fn get_compatible_mods(
-        ids: Vec<RecommendedMod>,
-        version: String,
+        ids: Vec<Self>,
+        instance: InstanceSelection,
         loader: Loader,
         sender: Sender<GenericProgress>,
-    ) -> Result<Vec<RecommendedMod>, ModError> {
+    ) -> Result<Vec<Self>, ModError> {
+        const LIMIT: usize = 128;
+
+        let json = VersionDetails::load(&instance).await?;
+        let index = ModIndex::load(&instance).await?;
+        let version = json.get_id();
+
         info!("Checking compatibility");
-        let mut mods = vec![];
+        let mut mods = Vec::new();
         let len = ids.len();
-        for (i, id) in ids.into_iter().enumerate() {
+
+        let i = Arc::new(Mutex::new(0));
+
+        let mut tasks = futures::stream::FuturesOrdered::new();
+        for id in ids {
+            let i = i.clone();
+            tasks.push_back(id.check_compatibility(&sender, i, len, loader, version, &index));
+            if tasks.len() > LIMIT {
+                if let Some(task) = tasks.next().await.flatten() {
+                    mods.push(task);
+                }
+            }
+        }
+
+        while let Some(task) = tasks.next().await {
+            if let Some(task) = task {
+                mods.push(task);
+            }
+        }
+
+        Ok(mods)
+    }
+
+    async fn check_compatibility(
+        self,
+        sender: &Sender<GenericProgress>,
+        i: Arc<Mutex<usize>>,
+        len: usize,
+        loader: Loader,
+        version: &str,
+        index: &ModIndex,
+    ) -> Option<Self> {
+        let mod_id = ModId::from_pair(self.id, self.backend);
+        if index.mods.contains_key(&mod_id.get_index_str())
+            || index.mods.iter().any(|n| n.1.name == self.name)
+        {
+            return None;
+        }
+
+        let is_compatible = get_latest_version_date(Some(loader), &mod_id, version)
+            .await
+            .is_ok();
+        pt!("{} : {is_compatible}", self.name);
+
+        {
+            let mut i = i.lock().unwrap();
+            *i += 1;
             if sender
                 .send(GenericProgress {
-                    done: i,
+                    done: *i,
                     total: len,
-                    message: Some(format!("Checking compatibility: {}", id.name)),
+                    message: Some(format!("Checked compatibility: {}", self.name)),
                     has_finished: false,
                 })
                 .is_err()
             {
-                info!("Cancelled recommended mod check");
-                return Ok(Vec::new());
-            }
-
-            let mod_id = ModId::from_pair(id.id, id.backend);
-            let is_compatible = get_latest_version_date(Some(loader), &mod_id, &version)
-                .await
-                .is_ok();
-            pt!("{} : {is_compatible}", id.name);
-            if is_compatible {
-                mods.push(id);
+                info_no_log!("Cancelled recommended mod check");
+                return None;
             }
         }
-        Ok(mods)
+
+        is_compatible.then_some(self)
     }
 }
 

@@ -41,12 +41,16 @@ iced = { version = "0.13", default-features = false, features = [
     "image",
     "svg",
     "lazy",
+    "advanced",
 ] }
-tabular = { git = "https://github.com/Mrmayman/tabular.git" }
+#tabular = { git = "https://github.com/Mrmayman/tabular.git" }
 
 # For parsing JSON
 serde = { workspace = true }
 serde_json = { workspace = true }
+
+# For URL encoding in log uploads
+urlencoding = "2"
 
 # For managing async tasks
 tokio = { workspace = true }
@@ -64,7 +68,7 @@ clap = { version = "4", features = ["help"] }
 
 # Mod page rendering:
 # - Markdown rendering
-comrak = { version = "0.39", default-features = false }
+comrak = { version = "0.41", default-features = false }
 # - Image loading
 image = { workspace = true }
 # - HTML Rendering:
@@ -72,7 +76,7 @@ html5ever = "0.27"
 markup5ever_rcdom = "0.3"
 
 # iced::widget::markdown doesn't have inline
-# HTML support so I made my own renderer.
+# HTML support, so I made my own renderer.
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.61", features = ["Win32_System_Console"] }

@@ -6,6 +6,9 @@ use serde_json::Value;
 
 use crate::{err, pt, InstanceSelection, IntoIoError, IntoJsonError, JsonFileError};
 
+pub const V_1_5_2: &str = "2013-04-25T15:45:00+00:00";
+pub const V_FABRIC_UNSUPPORTED: &str = "2018-10-24T10:52:16+00:00";
+
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct VersionDetails {
@@ -64,9 +67,6 @@ impl VersionDetails {
     /// Loads a Minecraft instance JSON from disk,
     /// based on a path to the root of the instance directory.
     ///
-    /// This is the `async` function, for the sync function
-    /// see [`VersionDetails::load_s`]
-    ///
     /// # Errors
     /// - `dir`/`details.json` doesn't exist or isn't a file
     /// - `details.json` file couldn't be loaded
@@ -77,39 +77,6 @@ impl VersionDetails {
         let version_json: VersionDetails = serde_json::from_str(&file).json(file)?;
 
         Ok(version_json)
-    }
-
-    /// Loads a Minecraft instance JSON from disk,
-    /// based on a path to the root of the instance directory.
-    ///
-    /// This is the sync function, for the `async` function
-    /// see [`VersionDetails::load_from_path`]
-    ///
-    /// # Errors
-    /// - `dir`/`details.json` doesn't exist or isn't a file
-    /// - `details.json` file couldn't be loaded
-    /// - `details.json` couldn't be parsed into valid JSON
-    #[must_use]
-    pub fn load_s(instance_dir: &Path) -> Option<Self> {
-        let path = instance_dir.join("details.json");
-
-        let file = match std::fs::read_to_string(&path) {
-            Ok(n) => n,
-            Err(err) => {
-                err!("Couldn't read details.json: {err}");
-                return None;
-            }
-        };
-
-        let details: VersionDetails = match serde_json::from_str(&file) {
-            Ok(n) => n,
-            Err(err) => {
-                err!("Couldn't parse details.json: {err}");
-                return None;
-            }
-        };
-
-        Some(details)
     }
 
     pub async fn apply_tweaks(
@@ -158,16 +125,27 @@ impl VersionDetails {
         // TODO: More fields in the future
     }
 
-    #[allow(clippy::missing_panics_doc)]
-    pub fn is_legacy_version(&self) -> bool {
-        let v1_5_2 = DateTime::parse_from_rfc3339("2013-04-25T15:45:00+00:00").unwrap();
-        match DateTime::parse_from_rfc3339(&self.releaseTime) {
-            Ok(dt) => dt <= v1_5_2,
-            Err(e) => {
-                err!("Could not parse instance date/time: {e}");
+    #[must_use]
+    pub fn is_before_or_eq(&self, release_time: &str) -> bool {
+        match (
+            DateTime::parse_from_rfc3339(&self.releaseTime),
+            DateTime::parse_from_rfc3339(release_time),
+        ) {
+            (Ok(dt), Ok(rt)) => dt <= rt,
+            (Err(err), Ok(_)) | (Ok(_), Err(err)) => {
+                err!("Could not parse date/time: {err}");
+                false
+            }
+            (Err(err1), Err(err2)) => {
+                err!("Could not parse date/time\n(1): {err1}\n(2): {err2}");
                 false
             }
         }
+    }
+
+    #[must_use]
+    pub fn is_legacy_version(&self) -> bool {
+        self.is_before_or_eq(V_1_5_2)
     }
 
     #[must_use]
@@ -181,6 +159,11 @@ impl VersionDetails {
                     .as_ref()
                     .is_some_and(|n| n.contains("mcphackers/launchwrapper/1.1.2"))
             })
+    }
+
+    #[must_use]
+    pub fn get_id(&self) -> &str {
+        self.id.strip_suffix("-lwjgl3").unwrap_or(&self.id)
     }
 }
 

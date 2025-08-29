@@ -42,11 +42,11 @@ impl<'a> ModDownloader<'a> {
             get_mods_resourcepacks_shaderpacks_dir(&instance, &version_json).await?;
 
         Ok(Self {
-            version: version_json.id,
+            version: version_json.get_id().to_owned(),
             loader: get_loader(&instance)
                 .await?
                 .map(|n| n.to_curseforge().to_owned()),
-            index: ModIndex::get(&instance).await?,
+            index: ModIndex::load(&instance).await?,
             mods_dir,
             resourcepacks_dir,
             shaderpacks_dir,

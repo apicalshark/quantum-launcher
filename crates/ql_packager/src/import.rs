@@ -12,7 +12,6 @@ use std::{
     },
 };
 use tokio::fs;
-use zip_extract::extract;
 
 use crate::InstanceInfo;
 
@@ -62,7 +61,7 @@ pub async fn import_instance(
             has_finished: false,
         });
     }
-    extract(zip_file, temp_dir, true)?;
+    file_utils::extract_zip_archive(std::io::BufReader::new(zip_file), temp_dir, true)?;
 
     let try_ql = temp_dir.join("quantum-config.json");
     let try_mmc = temp_dir.join("mmc-pack.json");
@@ -110,7 +109,7 @@ async fn import_quantumlauncher(
     let instance = InstanceSelection::new(&instance_info.instance_name, instance_info.is_server);
 
     pt!("Name: {} ", instance_info.instance_name);
-    pt!("Version : {}", version_json.id);
+    pt!("Version : {}", version_json.get_id());
     pt!("Exceptions : {:?} ", instance_info.exceptions);
     let version = ListEntry {
         name: version_json.id.clone(),

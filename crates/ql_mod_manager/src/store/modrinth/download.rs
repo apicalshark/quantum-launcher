@@ -44,11 +44,11 @@ impl ModDownloader {
         let (mods_dir, resourcepacks_dir, shaderpacks_dir) =
             get_mods_resourcepacks_shaderpacks_dir(instance, &version_json).await?;
 
-        let index = ModIndex::get(instance).await?;
+        let index = ModIndex::load(instance).await?;
         let loader = get_loader_type(instance).await?;
         let currently_installing_mods = HashSet::new();
         Ok(ModDownloader {
-            version: version_json.id,
+            version: version_json.get_id().to_owned(),
             index,
             loader,
             currently_installing_mods,

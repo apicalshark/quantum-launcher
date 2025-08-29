@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use iced::advanced::text::Wrapping;
+use iced::widget::tooltip::Position;
 use iced::{widget, Length};
 use ql_core::{InstanceSelection, LAUNCHER_VERSION_NAME};
 
@@ -91,22 +93,14 @@ impl Launcher {
 
                     widget::column!(
                         main_buttons,
-                        // widget::horizontal_rule(10)
-                        //     .style(|n: &LauncherTheme| n.style_rule(Color::SecondDark, 2)),
+                        widget::horizontal_rule(10)
+                            .style(|n: &LauncherTheme| n.style_rule(Color::SecondDark, 2)),
                         // widget::button("Export Instance").on_press(Message::ExportInstanceOpen),
                     )
                     .push_maybe({
                         if let Some(selected_instance) = selected_instance_s {
                             if self.is_process_running(menu, selected_instance) {
-                                Some(
-                                    widget::column![
-                                        widget::horizontal_rule(10)
-                                            .style(|n: &LauncherTheme| n
-                                                .style_rule(Color::SecondDark, 2)),
-                                        widget::text("Running...").size(20)
-                                    ]
-                                    .spacing(5),
-                                )
+                                Some(widget::text("Running...").size(20))
                             } else {
                                 None
                             }
@@ -127,7 +121,7 @@ impl Launcher {
                             &self.client_logs
                         },
                         selected_instance_s,
-                        menu.is_viewing_server,
+                        menu,
                     )
                     .into(),
                 LaunchTabId::Edit => {
@@ -159,7 +153,7 @@ impl Launcher {
         &'element self,
         logs: &'element HashMap<String, InstanceLog>,
         selected_instance: Option<&'element str>,
-        is_server: bool,
+        menu: &'element MenuLaunch,
     ) -> widget::Column<'element, Message, LauncherTheme> {
         let scroll = if let State::Launch(MenuLaunch { log_scroll, .. }) = &self.state {
             *log_scroll
@@ -168,7 +162,7 @@ impl Launcher {
         };
 
         if let Some(Some(InstanceLog {
-            log,
+            log: log_data,
             has_crashed,
             command,
         })) = selected_instance
@@ -178,7 +172,7 @@ impl Launcher {
             const TEXT_SIZE: f32 = 12.0;
 
             let log = Self::view_launcher_log(
-                log.clone(),
+                log_data.clone(),
                 TEXT_SIZE,
                 scroll,
                 Message::LaunchLogScroll,
@@ -186,11 +180,11 @@ impl Launcher {
             );
 
             widget::column![widget::row!(
-                widget::button(widget::text("Copy Log").size(14)).on_press(if is_server {
-                    Message::ServerManageCopyLog
-                } else {
-                    Message::LaunchCopyLog
-                }),
+                widget::button(widget::text("Copy Log").size(14)).on_press(Message::LaunchCopyLog),
+                widget::button(widget::text("Upload Log").size(14)).on_press_maybe(
+                    (!log_data.is_empty() && !menu.is_uploading_mclogs)
+                        .then_some(Message::LaunchUploadLog)
+                ),
                 widget::button(widget::text("Join Discord").size(14))
                     .on_press(Message::CoreOpenLink(DISCORD.to_owned())),
                 widget::text("Having issues? Copy and send the game log for support").size(12),
@@ -200,13 +194,17 @@ impl Launcher {
                 has_crashed.then_some(
                     widget::text!(
                         "The {} has crashed!",
-                        if is_server { "server" } else { "game" }
+                        if menu.is_viewing_server {
+                            "server"
+                        } else {
+                            "game"
+                        }
                     )
                     .size(18),
                 ),
             )
             .push_maybe(
-                is_server.then_some(
+                menu.is_viewing_server.then_some(
                     widget::text_input("Enter command...", command)
                         .on_input(move |n| {
                             Message::ServerManageEditCommand(
@@ -309,7 +307,7 @@ impl Launcher {
             || (menu.is_viewing_server && self.server_processes.contains_key(name))
     }
 
-    fn get_accounts_bar(&self, menu: &MenuLaunch) -> Element {
+    fn get_accounts_bar<'a>(&'a self, menu: &MenuLaunch) -> Element<'a> {
         let something_is_happening = self.java_recv.is_some() || menu.login_progress.is_some();
 
         let dropdown: Element = if something_is_happening {
@@ -366,15 +364,15 @@ impl Launcher {
             || self.accounts_selected.as_deref() == Some(OFFLINE_ACCOUNT_NAME))
     }
 
-    fn get_client_play_button(&self, selected_instance: Option<&str>) -> Element {
+    fn get_client_play_button(&'_ self, selected_instance: Option<&str>) -> Element<'_> {
         let play_button = button_with_icon(icon_manager::play(), "Play", 16).width(98);
 
         let is_account_selected = self.is_account_selected();
 
         if self.config.username.is_empty() && !is_account_selected {
-            tooltip(play_button, "Username is empty!")
+            tooltip(play_button, "Username is empty!", Position::Bottom).into()
         } else if self.config.username.contains(' ') && !is_account_selected {
-            tooltip(play_button, "Username contains spaces!")
+            tooltip(play_button, "Username contains spaces!", Position::Bottom).into()
         } else if let Some(selected_instance) = selected_instance {
             if self.client_processes.contains_key(selected_instance) {
                 tooltip(
@@ -382,20 +380,23 @@ impl Launcher {
                         .on_press(Message::LaunchKill)
                         .width(98),
                     shortcut_ctrl("Backspace"),
+                    Position::Bottom,
                 )
+                .into()
             } else if self.is_launching_game {
-                tooltip(
-                    button_with_icon(icon_manager::play(), "...", 16).width(98),
-                    shortcut_ctrl("Please wait..."),
-                )
+                button_with_icon(icon_manager::play(), "...", 16)
+                    .width(98)
+                    .into()
             } else {
                 tooltip(
                     play_button.on_press(Message::LaunchStart),
                     shortcut_ctrl("Enter"),
+                    Position::Bottom,
                 )
+                .into()
             }
         } else {
-            tooltip(play_button, "Select an instance first!")
+            tooltip(play_button, "Select an instance first!", Position::Bottom).into()
         }
     }
 
@@ -418,7 +419,9 @@ impl Launcher {
                         Message::ServerManageKillServer(selected_server.unwrap().to_owned())
                     })),
                 shortcut_ctrl("Escape"),
+                Position::Bottom,
             )
+            .into()
         } else {
             tooltip(
                 button_with_icon(icon_manager::play(), "Start", 16)
@@ -427,7 +430,9 @@ impl Launcher {
                         Message::ServerManageStartServer(selected_server.unwrap().to_owned())
                     })),
                 "By starting the server, you agree to the EULA",
+                Position::Bottom,
             )
+            .into()
         }
     }
 }
@@ -466,6 +471,7 @@ fn get_tab_selector<'a>(selected_instance_s: Option<&'a str>, menu: &'a MenuLaun
         .align_y(iced::Alignment::Center),
     )
     .width(TAB_HEIGHT)
+    .height(TAB_HEIGHT)
     .style(|n, status| n.style_button(status, StyleButton::FlatExtraDark))
     .on_press(Message::LauncherSettings(LauncherSettingsMessage::Open));
 
@@ -474,14 +480,15 @@ fn get_tab_selector<'a>(selected_instance_s: Option<&'a str>, menu: &'a MenuLaun
             selected_instance_s.map(|instance| {
                 // The top-right corner tiny text showing which instance you selected.
                 widget::column!(
-                    widget::vertical_space(),
-                    widget::text!("{instance}  ").size(14),
-                    widget::vertical_space()
+                    widget::Space::with_height(7),
+                    widget::text!("{instance}  ")
+                        .size(14)
+                        .wrapping(Wrapping::None),
                 )
+                .height(TAB_HEIGHT)
             }),
         ),
     )
-    .height(TAB_HEIGHT)
     .style(|n| n.style_container_sharp_box(0.0, Color::ExtraDark))
     .into()
 }
@@ -498,7 +505,7 @@ fn get_mods_button(
         .width(98)
 }
 
-fn render_tab_button(n: LaunchTabId, menu: &MenuLaunch) -> Element {
+fn render_tab_button(n: LaunchTabId, menu: &'_ MenuLaunch) -> Element<'_> {
     let txt = widget::row!(
         widget::horizontal_space(),
         widget::text(n.to_string()),
@@ -538,7 +545,7 @@ fn get_no_logs_message<'a>() -> widget::Column<'a, Message, LauncherTheme> {
     }
 }
 
-fn get_footer_text(menu: &MenuLaunch) -> Element {
+fn get_footer_text(menu: &'_ MenuLaunch) -> Element<'_> {
     let version_message = widget::column!(
         widget::vertical_space(),
         widget::row!(

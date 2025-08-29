@@ -1,6 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
-    sync::Mutex,
+    collections::{BTreeMap, HashMap, HashSet},
     time::Instant,
 };
 
@@ -55,6 +54,7 @@ pub struct MenuLaunch {
     pub sidebar_dragging: bool,
 
     pub is_viewing_server: bool,
+    pub is_uploading_mclogs: bool,
     pub log_scroll: isize,
 }
 
@@ -76,6 +76,7 @@ impl MenuLaunch {
             sidebar_dragging: false,
             is_viewing_server: false,
             log_scroll: 0,
+            is_uploading_mclogs: false,
         }
     }
 }
@@ -134,6 +135,8 @@ pub struct MenuEditMods {
 
     pub config: InstanceConfigJson,
     pub mods: ModIndex,
+    // TODO: Use this for dynamically adjusting installable loader buttons
+    pub version_json: Box<VersionDetails>,
 
     pub locally_installed_mods: HashSet<String>,
     pub sorted_mods_list: Vec<ModListEntry>,
@@ -197,6 +200,10 @@ impl MenuEditMods {
     }
 }
 
+pub struct MenuExportMods {
+    pub selected_mods: HashSet<SelectedMod>,
+}
+
 pub struct MenuEditJarMods {
     pub jarmods: Option<JarMods>,
     pub selected_state: SelectedState,
@@ -258,10 +265,10 @@ pub struct MenuModsDownload {
     pub query: String,
     pub results: Option<SearchResult>,
     pub mod_descriptions: HashMap<ModId, String>,
-    pub json: Mutex<VersionDetails>,
+    pub version_json: Box<VersionDetails>,
     pub opened_mod: Option<usize>,
     pub latest_load: Instant,
-    pub mods_download_in_progress: HashSet<ModId>,
+    pub mods_download_in_progress: BTreeMap<ModId, String>,
     pub scroll_offset: AbsoluteOffset,
 
     pub config: InstanceConfigJson,
@@ -273,6 +280,7 @@ pub struct MenuModsDownload {
     /// This is for the loading of continuation of the search,
     /// i.e. when you scroll down and more stuff appears
     pub is_loading_continuation: bool,
+    pub has_continuation_ended: bool,
 }
 
 pub struct MenuLauncherSettings {
@@ -294,7 +302,7 @@ impl std::fmt::Display for LauncherSettingsTab {
             "{}",
             match self {
                 LauncherSettingsTab::UserInterface => "Appearance",
-                LauncherSettingsTab::Internal => "Advanced",
+                LauncherSettingsTab::Internal => "Game",
                 LauncherSettingsTab::About => "About",
             }
         )
@@ -395,6 +403,7 @@ pub enum State {
     UpdateFound(MenuLauncherUpdate),
 
     EditMods(MenuEditMods),
+    ExportMods(MenuExportMods),
     EditJarMods(MenuEditJarMods),
     ImportModpack(ProgressBar<GenericProgress>),
     CurseforgeManualDownload(MenuCurseforgeManualDownload),
@@ -429,10 +438,14 @@ pub enum State {
 
     InstallJava,
 
-    ModsDownload(Box<MenuModsDownload>),
+    ModsDownload(MenuModsDownload),
     LauncherSettings(MenuLauncherSettings),
     ServerCreate(MenuServerCreate),
     ManagePresets(MenuEditPresets),
+
+    LogUploadResult {
+        url: String,
+    },
 
     License(MenuLicense),
 }
@@ -512,20 +525,32 @@ pub enum MenuServerCreate {
     },
 }
 
-pub struct MenuInstallOptifine {
-    pub optifine_install_progress: Option<ProgressBar<OptifineInstallProgress>>,
-    pub java_install_progress: Option<ProgressBar<GenericProgress>>,
-    pub is_java_being_installed: bool,
-    pub is_b173_being_installed: bool,
-    pub optifine_unique_version: Option<OptifineUniqueVersion>,
+pub enum MenuInstallOptifine {
+    Choosing {
+        optifine_unique_version: Option<OptifineUniqueVersion>,
+        delete_installer: bool,
+        drag_and_drop_hovered: bool,
+    },
+    Installing {
+        optifine_install_progress: ProgressBar<OptifineInstallProgress>,
+        java_install_progress: Option<ProgressBar<GenericProgress>>,
+        is_java_being_installed: bool,
+    },
+    InstallingB173,
 }
 
 impl MenuInstallOptifine {
     pub fn get_url(&self) -> &'static str {
         const OPTIFINE_DOWNLOADS: &str = "https://optifine.net/downloads";
 
-        self.optifine_unique_version
-            .as_ref()
-            .map_or(OPTIFINE_DOWNLOADS, |n| n.get_url().0)
+        if let Self::Choosing {
+            optifine_unique_version: Some(o),
+            ..
+        } = self
+        {
+            o.get_url().0
+        } else {
+            OPTIFINE_DOWNLOADS
+        }
     }
 }

@@ -5,7 +5,6 @@ use ql_mod_manager::loaders::{fabric::FabricInstallError, forge::ForgeInstallErr
 use ql_servers::ServerError;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use zip_extract::ZipExtractError;
 
 use ql_instances::DownloadError;
 
@@ -41,8 +40,6 @@ pub enum InstancePackageError {
     #[error("{PKG_ERR_PREFIX}{0}")]
     Fabric(#[from] FabricInstallError),
 
-    #[error("{PKG_ERR_PREFIX}while extracting zip:\n{0}")]
-    ZipExtract(#[from] ZipExtractError),
     #[error("{PKG_ERR_PREFIX}while dealing with zip:\n{0}")]
     Zip(#[from] zip::result::ZipError),
 

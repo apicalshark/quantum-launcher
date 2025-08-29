@@ -46,7 +46,7 @@ pub use print::{logger_finish, LogType, LoggingState, LOGGER};
 pub use progress::{DownloadProgress, GenericProgress, Progress};
 use regex::Regex;
 
-pub const REGEX_SNAPSHOT: LazyLock<Regex> =
+pub static REGEX_SNAPSHOT: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\d{2}w\d*[a-zA-Z]+").unwrap());
 
 pub const CLASSPATH_SEPARATOR: char = if cfg!(unix) { ':' } else { ';' };
@@ -67,7 +67,7 @@ macro_rules! no_window {
     };
 }
 
-pub static CLIENT: LazyLock<ql_reqwest::Client> = LazyLock::new(ql_reqwest::Client::new);
+pub static CLIENT: LazyLock<reqwest::Client> = LazyLock::new(reqwest::Client::new);
 
 /// Perform multiple async tasks concurrently. Useful for things like
 /// downloading lots of files at the same time.
@@ -272,6 +272,11 @@ impl InstanceSelection {
             Self::Instance(ref mut n) | Self::Server(ref mut n) => name.clone_into(n),
         }
     }
+
+    #[must_use]
+    pub fn get_pair(&self) -> (&str, bool) {
+        (self.get_name(), self.is_server())
+    }
 }
 
 /// An enum representing a Minecraft version.
@@ -294,7 +299,7 @@ impl Display for ListEntry {
 
 pub const LAUNCHER_VERSION_NAME: &str = "0.4.2";
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ModId {
     Modrinth(String),
     Curseforge(String),
@@ -363,31 +368,43 @@ pub enum SelectedMod {
 /// this will open the link with your default browser.
 ///
 /// If you input a path (for example, `C:\Users\Mrmayman\Documents\`)
-/// this will open it in the file explorer.
+/// this will open it in the file explorer using the system's default file manager.
 ///
-/// # Panics
-/// Only supported on windows, macOS and linux,
-/// other platforms will **panic**.
+/// # Platform details
+/// - Linux, BSDs: `xdg-open <PATH>`
+/// - macOS: `open <PATH>`
+/// - Windows: `cmd /c start /b <PATH>`
+///
+/// Unsupported platforms will log an error and not open anything.
 #[allow(clippy::zombie_processes)]
 pub fn open_file_explorer<S: AsRef<OsStr>>(path: S) {
     use std::process::Command;
 
     let path = path.as_ref();
     info!("Opening link: {}", path.to_string_lossy());
-    if let Err(err) = Command::new(
-        if cfg!(target_os = "linux") || cfg!(target_os = "freebsd") {
-            "xdg-open"
-        } else if cfg!(target_os = "windows") {
-            "explorer"
-        } else if cfg!(target_os = "macos") {
-            "open"
-        } else {
-            panic!("Opening file explorer not supported on this platform.")
-        },
-    )
-    .arg(path)
-    .spawn()
-    {
+
+    #[allow(unused)]
+    let result: std::io::Result<()> = Err(std::io::Error::other("Unsupported Platform!"));
+
+    #[cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd"))]
+    let result = Command::new("xdg-open").arg(path).spawn();
+    #[cfg(target_os = "macos")]
+    let result = Command::new("open").arg(path).spawn();
+    #[cfg(target_os = "windows")]
+    let result = {
+        // To not flash a terminal window
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+        // Respects the user's default file manager
+        Command::new("cmd")
+            .args(["/c", "start", "/b", ""])
+            .arg(path)
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()
+    };
+
+    if let Err(err) = result {
         err!("Could not open link: {err}");
     }
 }
@@ -421,14 +438,17 @@ pub enum OptifineUniqueVersion {
 
 impl OptifineUniqueVersion {
     #[must_use]
-    pub fn get(instance: &InstanceSelection) -> Option<Self> {
-        VersionDetails::load_s(&instance.get_instance_path()).and_then(|n| match n.id.as_str() {
-            "1.5.2" => Some(OptifineUniqueVersion::V1_5_2),
-            "1.2.5" => Some(OptifineUniqueVersion::V1_2_5),
-            "b1.7.3" => Some(OptifineUniqueVersion::B1_7_3),
-            "b1.6.6" => Some(OptifineUniqueVersion::B1_6_6),
-            _ => None,
-        })
+    pub async fn get(instance: &InstanceSelection) -> Option<Self> {
+        VersionDetails::load(instance)
+            .await
+            .ok()
+            .and_then(|n| match n.get_id() {
+                "1.5.2" => Some(OptifineUniqueVersion::V1_5_2),
+                "1.2.5" => Some(OptifineUniqueVersion::V1_2_5),
+                "b1.7.3" => Some(OptifineUniqueVersion::B1_7_3),
+                "b1.6.6" => Some(OptifineUniqueVersion::B1_6_6),
+                _ => None,
+            })
     }
 
     #[must_use]
@@ -447,12 +467,22 @@ pub fn get_jar_path(
     instance_dir: &Path,
     optifine_jar: Option<&Path>,
 ) -> PathBuf {
+    fn get_path_from_id(instance_dir: &Path, id: &str) -> PathBuf {
+        instance_dir
+            .join(".minecraft/versions")
+            .join(id)
+            .join(format!("{id}.jar"))
+    }
+
     optifine_jar.map_or_else(
         || {
-            instance_dir
-                .join(".minecraft/versions")
-                .join(&version_json.id)
-                .join(format!("{}.jar", version_json.id))
+            let id = version_json.get_id();
+            let path1 = get_path_from_id(instance_dir, id);
+            if path1.exists() {
+                path1
+            } else {
+                get_path_from_id(instance_dir, &version_json.id)
+            }
         },
         Path::to_owned,
     )

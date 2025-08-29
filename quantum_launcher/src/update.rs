@@ -5,17 +5,26 @@ use ql_core::{
 };
 use ql_instances::UpdateCheckInfo;
 use ql_mod_manager::loaders;
+use std::collections::HashMap;
 use tokio::io::AsyncWriteExt;
 
 use crate::state::{
-    LaunchTabId, Launcher, ManageModsMessage, MenuExportInstance, MenuLaunch, MenuLauncherUpdate,
-    MenuLicense, MenuServerCreate, MenuWelcome, Message, ProgressBar, ServerProcess, State,
+    InstanceLog, LaunchTabId, Launcher, ManageModsMessage, MenuExportInstance, MenuLaunch,
+    MenuLauncherUpdate, MenuLicense, MenuServerCreate, MenuWelcome, Message, ProgressBar,
+    ServerProcess, State,
 };
 
 impl Launcher {
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::Nothing | Message::CoreLogCleanComplete(Ok(())) => {}
+            Message::Multiple(msgs) => {
+                let mut task = Task::none();
+                for msg in msgs {
+                    task = task.chain(self.update(msg));
+                }
+                return task;
+            }
 
             Message::CoreTickConfigSaved(result)
             | Message::LaunchKillEnd(result)
@@ -47,18 +56,11 @@ impl Launcher {
 
             Message::Account(msg) => return self.update_account(msg),
             Message::ManageMods(message) => return self.update_manage_mods(message),
+            Message::ExportMods(message) => return self.update_export_mods(message),
             Message::ManageJarMods(message) => return self.update_manage_jar_mods(message),
             Message::LaunchInstanceSelected { name, is_server } => {
                 self.selected_instance = Some(InstanceSelection::new(&name, is_server));
-
-                if let State::Launch(MenuLaunch { .. }) = self.state {
-                    if let Err(err) = self.edit_instance() {
-                        err!("Could not open edit instance menu: {err}");
-                        if let State::Launch(MenuLaunch { edit_instance, .. }) = &mut self.state {
-                            *edit_instance = None;
-                        }
-                    }
-                }
+                self.load_edit_instance(None);
             }
             Message::LaunchUsernameSet(username) => {
                 self.config.username = username;
@@ -139,17 +141,11 @@ impl Launcher {
                     Message::UninstallLoaderEnd,
                 );
             }
-            Message::UninstallLoaderEnd(Ok(())) => {
-                match self.go_to_edit_mods_menu_without_update_check() {
-                    Ok(n) => return n,
-                    Err(err) => self.set_error(err),
-                }
-            }
             Message::InstallForgeStart { is_neoforge } => {
                 return self.install_forge(is_neoforge);
             }
-            Message::InstallForgeEnd(Ok(())) => {
-                return self.go_to_main_menu_with_message(Some("Installed Forge/NeoForge"));
+            Message::InstallForgeEnd(Ok(())) | Message::UninstallLoaderEnd(Ok(())) => {
+                return self.go_to_edit_mods_menu_without_update_check();
             }
             Message::LaunchEndedLog(Ok((status, name))) => {
                 info!("Game exited with status: {status}");
@@ -157,13 +153,42 @@ impl Launcher {
             }
             Message::LaunchKill => return self.kill_selected_instance(),
             Message::LaunchCopyLog => {
-                if let Some(log) = self
-                    .client_logs
-                    .get(self.selected_instance.as_ref().unwrap().get_name())
-                {
+                let (name, is_server) = self.selected_instance.as_ref().unwrap().get_pair();
+                let logs = self.get_logs(is_server);
+
+                if let Some(log) = logs.get(name) {
                     return iced::clipboard::write(log.log.join(""));
                 }
             }
+            Message::LaunchUploadLog => {
+                if let State::Launch(menu) = &mut self.state {
+                    menu.is_uploading_mclogs = true;
+                }
+
+                let selected_instance = self.selected_instance.as_ref().unwrap();
+                let (name, is_server) = selected_instance.get_pair();
+                let logs = self.get_logs(is_server);
+
+                if let Some(log) = logs.get(name) {
+                    let log_content = log.log.join("");
+                    if !log_content.trim().is_empty() {
+                        return Task::perform(
+                            crate::mclog_upload::upload_log(log_content),
+                            |res| Message::LaunchUploadLogResult(res.strerr()),
+                        );
+                    }
+                }
+            }
+            Message::LaunchUploadLogResult(result) => match result {
+                Ok(url) => {
+                    self.state = State::LogUploadResult { url };
+                }
+                Err(error) => {
+                    self.state = State::Error {
+                        error: format!("Failed to upload log: {error}"),
+                    };
+                }
+            },
             Message::UpdateCheckResult(Ok(info)) => match info {
                 UpdateCheckInfo::UpToDate => {
                     info_no_log!("Launcher is latest version. No new updates");
@@ -310,14 +335,6 @@ impl Launcher {
                     _ = block_on(future);
                 }
             }
-            Message::ServerManageCopyLog => {
-                let name = self.selected_instance.as_ref().unwrap().get_name();
-                if let Some(logs) = self.server_logs.get(name) {
-                    return iced::clipboard::write(
-                        logs.log.iter().fold(String::new(), |n, v| n + v + "\n"),
-                    );
-                }
-            }
             Message::InstallPaperStart => {
                 self.state = State::InstallPaper;
                 let instance_name = self
@@ -335,7 +352,7 @@ impl Launcher {
                 if let Err(err) = result {
                     self.set_error(err);
                 } else {
-                    return self.go_to_server_manage_menu(Some("Installed Paper".to_owned()));
+                    return self.go_to_edit_mods_menu_without_update_check();
                 }
             }
             Message::UninstallLoaderPaperStart => {
@@ -367,13 +384,10 @@ impl Launcher {
             Message::CoreOpenIntro => {
                 self.state = State::Welcome(MenuWelcome::P1InitialScreen);
             }
-            Message::EditPresets(msg) => match self.update_edit_presets(msg) {
-                Ok(n) => return n,
-                Err(err) => self.set_error(err),
-            },
+            Message::EditPresets(msg) => return self.update_edit_presets(msg),
             Message::UninstallLoaderConfirm(msg, name) => {
                 self.state = State::ConfirmAction {
-                    msg1: format!("uninstall {name}?"),
+                    msg1: format!("uninstall {name}"),
                     msg2: "This should be fine, you can always reinstall it later".to_owned(),
                     yes: (*msg).clone(),
                     no: Message::ManageMods(ManageModsMessage::ScreenOpenWithoutUpdate),
@@ -381,17 +395,7 @@ impl Launcher {
             }
             Message::CoreEvent(event, status) => return self.iced_event(event, status),
             Message::LaunchChangeTab(launch_tab_id) => {
-                if let LaunchTabId::Edit = launch_tab_id {
-                    if let Err(err) = self.edit_instance() {
-                        err!("Could not open edit instance menu: {err}");
-                        if let State::Launch(MenuLaunch { edit_instance, .. }) = &mut self.state {
-                            *edit_instance = None;
-                        }
-                    }
-                }
-                if let State::Launch(MenuLaunch { tab, .. }) = &mut self.state {
-                    *tab = launch_tab_id;
-                }
+                self.load_edit_instance(Some(launch_tab_id));
             }
             Message::CoreLogToggle => {
                 self.is_log_open = !self.is_log_open;
@@ -547,6 +551,27 @@ impl Launcher {
         Task::none()
     }
 
+    pub fn load_edit_instance(&mut self, new_tab: Option<LaunchTabId>) {
+        if let State::Launch(MenuLaunch {
+            tab, edit_instance, ..
+        }) = &mut self.state
+        {
+            if let (LaunchTabId::Edit, Some(selected_instance)) =
+                (new_tab.unwrap_or(*tab), self.selected_instance.as_ref())
+            {
+                if let Err(err) = Self::load_edit_instance_inner(edit_instance, selected_instance) {
+                    err!("Could not open edit instance menu: {err}");
+                    *edit_instance = None;
+                }
+            } else {
+                *edit_instance = None;
+            }
+            if let Some(new_tab) = new_tab {
+                *tab = new_tab;
+            }
+        }
+    }
+
     fn go_to_licenses_menu(&mut self) {
         if let State::License(_) = self.state {
             return;
@@ -556,5 +581,13 @@ impl Launcher {
             selected_tab,
             content: iced::widget::text_editor::Content::with_text(selected_tab.get_text()),
         });
+    }
+
+    pub fn get_logs(&self, is_server: bool) -> &HashMap<String, InstanceLog> {
+        if is_server {
+            &self.server_logs
+        } else {
+            &self.client_logs
+        }
     }
 }

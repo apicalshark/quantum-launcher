@@ -14,8 +14,6 @@ Btw, if you have any questions, feel free to ask me on [Discord](https://discord
 ### Core components
 
 - `ql_core` - Core utilities and shared code
-- `ql_reqwest` - A shim (wrapper) around the [reqwest](https://github.com/seanmonstar/reqwest) library, that
-  automatically deals with platform-specific features in the Cargo.toml.
 
 ### Specific-purpose "libraries"
 
@@ -65,7 +63,7 @@ Use `info!()`, `pt!()`, `err!()` for launcher log messages. Here's an example
 ```
 
 Make sure to only log useful things, don't spew endless garbage.
-As a rule of thumb, if a user's launcher breaks and they send the log,
+As a rule of thumb, if a user's launcher breaks, and they send the log,
 that message should be one that helps in troubleshooting/understanding what happened.
 
 - Info is for... well, informational messages that tell

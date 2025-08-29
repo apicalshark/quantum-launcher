@@ -1,3 +1,5 @@
+use crate::{WINDOW_HEIGHT, WINDOW_WIDTH};
+use ql_core::json::GlobalSettings;
 use ql_core::{
     err, IntoIoError, IntoJsonError, JsonFileError, LAUNCHER_CONFIG_DIR, LAUNCHER_VERSION_NAME,
 };
@@ -35,12 +37,9 @@ pub struct LauncherConfig {
     pub java_installs: Option<Vec<String>>,
 
     /// The theme (Light/Dark) set by the user.
-    ///
-    /// Implemented in v0.3
+    // Since: v0.3
     pub theme: Option<String>,
     /// The color scheme set by the user.
-    ///
-    /// Implemented in v0.3
     ///
     /// Valid options are:
     /// - Purple
@@ -48,24 +47,20 @@ pub struct LauncherConfig {
     /// - Sky Blue
     /// - Catppuccin
     /// - Teal
+    // Since: v0.3
     pub style: Option<String>,
 
     /// The version that the launcher was last time
     /// you opened it.
-    ///
-    /// Implemented in v0.3, so if it's missing then
-    /// it was last opened in v0.1 or v0.2
+    // Since: v0.3
     pub version: Option<String>,
 
     /// The width of the sidebar in the main menu
     /// (which shows the list of instances). You can
     /// drag it around to resize it.
-    ///
-    /// Implemented in v0.4
+    // Since: v0.4
     pub sidebar_width: Option<u32>,
     /// A list of Minecraft accounts logged into the launcher.
-    ///
-    /// Implemented in v0.4
     ///
     /// `String (username) : ConfigAccount { uuid: String, skin: None (unimplemented) }`
     ///
@@ -73,26 +68,39 @@ pub struct LauncherConfig {
     /// `read_refresh_token(username)` (in [`ql_instances::auth`])
     /// is called on each account's key value (username)
     /// to get the refresh token (stored securely on disk).
+    // Since: v0.4
     pub accounts: Option<HashMap<String, ConfigAccount>>,
+    /// Refers to the entry of the `accounts` map
+    /// that's selected in the UI when you open the launcher.
+    // Since: v0.4.2
+    pub account_selected: Option<String>,
+
     /// The scale of the UI, i.e. how big everything is.
-    ///
-    /// Implemented in v0.4
     ///
     /// - `(1.0-*)` A higher number means more zoomed in buttons, text
     ///   and everything else (useful if you are on a high DPI display
     ///   or have bad eyesight),
     /// - `1.0` is the default value.
     /// - `(0.x-1.0)` A lower number means zoomed out UI elements.
+    // Since: v0.4
     pub ui_scale: Option<f64>,
+
     /// Whether to enable antialiasing or not.
-    /// Smooths out UI rendering and makes it a bit
-    /// crisper, but not by much. Also fixes the UI
-    /// being jittery on KDE Wayland.
-    ///
-    /// Implemented in v0.4.2
+    /// Minor improvement in visual quality,
+    /// also nudges launcher to use dedicated GPU
+    /// for the interface.
     ///
     /// Default: `true`
+    // Since: v0.4.2
     pub antialiasing: Option<bool>,
+    /// Many launcher window related config options.
+    // Since: v0.4.2
+    pub window: Option<WindowProperties>,
+
+    /// Settings that apply both on a per-instance basis and with global overrides.
+    // Since: v0.4.2
+    pub global_settings: Option<GlobalSettings>,
+    pub extra_java_args: Option<Vec<String>>,
 }
 
 impl Default for LauncherConfig {
@@ -108,6 +116,10 @@ impl Default for LauncherConfig {
             ui_scale: None,
             java_installs: Some(Vec::new()),
             antialiasing: Some(true),
+            account_selected: None,
+            window: None,
+            global_settings: None,
+            extra_java_args: None,
         }
     }
 }
@@ -164,6 +176,27 @@ impl LauncherConfig {
         std::fs::write(path, serde_json::to_string(&config).json_to()?.as_bytes()).path(path)?;
         Ok(config)
     }
+
+    pub fn read_window_size(&mut self) -> (f32, f32) {
+        let window = self.window.get_or_insert_with(Default::default);
+        let scale = self.ui_scale.unwrap_or(1.0) as f32;
+        let window_width = window
+            .width
+            .filter(|_| window.save_window_size)
+            .unwrap_or(WINDOW_WIDTH * scale);
+        let window_height = window
+            .height
+            .filter(|_| window.save_window_size)
+            .unwrap_or(WINDOW_HEIGHT * scale);
+        (window_width, window_height)
+    }
+
+    pub fn get_launch_prefix(&mut self) -> &mut Vec<String> {
+        self.global_settings
+            .get_or_insert_with(GlobalSettings::default)
+            .pre_launch_prefix
+            .get_or_insert_with(Vec::new)
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -189,6 +222,12 @@ pub struct ConfigAccount {
     /// - `"LittleSkin"`
     pub account_type: Option<String>,
 
+    /// The original login identifier used for keyring operations.
+    /// This is the email address or username that was used during login.
+    /// For email/password logins, this will be the email.
+    /// For username/password logins, this will be the username.
+    pub keyring_identifier: Option<String>,
+
     /// A game-readable "nice" username.
     ///
     /// This will be identical to the regular
@@ -199,4 +238,30 @@ pub struct ConfigAccount {
     /// username while the regular "username"
     /// would be an email.
     pub username_nice: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct WindowProperties {
+    /// Whether to retain window size in the first place.
+    // Since: v0.4.2
+    pub save_window_size: bool,
+
+    /// The width of the window when the launcher was last closed.
+    /// Used to restore the window size between launches.
+    // Since: v0.4.2
+    pub width: Option<f32>,
+    /// The height of the window when the launcher was last closed.
+    /// Used to restore the window size between launches.
+    // Since: v0.4.2
+    pub height: Option<f32>,
+}
+
+impl Default for WindowProperties {
+    fn default() -> Self {
+        Self {
+            save_window_size: true,
+            width: None,
+            height: None,
+        }
+    }
 }

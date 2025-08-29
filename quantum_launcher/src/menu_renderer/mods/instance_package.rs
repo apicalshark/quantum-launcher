@@ -7,7 +7,7 @@ use crate::{
 };
 
 impl MenuExportInstance {
-    pub fn view(&self, tick_timer: usize) -> Element {
+    pub fn view(&'_ self, tick_timer: usize) -> Element<'_> {
         widget::column![
             back_button().on_press(Message::LaunchScreenOpen {
                 message: None,
