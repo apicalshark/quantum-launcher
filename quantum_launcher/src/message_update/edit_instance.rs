@@ -2,7 +2,7 @@ use iced::Task;
 use ql_core::{
     err,
     json::{GlobalSettings, InstanceConfigJson},
-    IntoIoError, IntoStringError, LAUNCHER_DATA_DIR,
+    IntoIoError, IntoStringError, LAUNCHER_DIR,
 };
 
 use crate::{
@@ -259,7 +259,7 @@ impl Launcher {
             Ok(Task::none())
         } else {
             let instances_dir =
-                LAUNCHER_DATA_DIR.join(if self.selected_instance.as_ref().unwrap().is_server() {
+                LAUNCHER_DIR.join(if self.selected_instance.as_ref().unwrap().is_server() {
                     "servers"
                 } else {
                     "instances"

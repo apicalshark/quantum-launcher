@@ -1,7 +1,7 @@
 use std::sync::mpsc::Sender;
 
 use ql_core::{
-    info, DownloadProgress, IntoIoError, ListEntry, LAUNCHER_DATA_DIR, LAUNCHER_VERSION_NAME,
+    info, DownloadProgress, IntoIoError, ListEntry, LAUNCHER_DIR, LAUNCHER_VERSION_NAME,
 };
 
 pub mod constants;
@@ -38,7 +38,7 @@ pub async fn create_instance(
     debug_assert!(!version.is_classic_server);
 
     // An empty asset directory.
-    let launcher_dir = &*LAUNCHER_DATA_DIR;
+    let launcher_dir = &*LAUNCHER_DIR;
 
     let assets_dir = launcher_dir.join("assets/null");
     tokio::fs::create_dir_all(&assets_dir)
