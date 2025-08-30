@@ -42,9 +42,9 @@ pub static LAUNCHER_DIR: LazyLock<PathBuf> = LazyLock::new(|| get_launcher_dir()
 ///
 /// This uses the current dir or executable location (portable mode)
 /// if a `qlportable.txt` is found, otherwise it uses the system config dir:
-/// - `~/.config` on Linux
+/// - `~/.local/share` on Linux
 /// - `~/AppData/Roaming` on Windows
-/// - `~/Library/Application Support` on macOS
+// - `~/Library/Application Support` on macOS
 ///
 /// # Errors
 /// - if config dir is not found
@@ -55,8 +55,8 @@ pub fn get_launcher_dir() -> Result<PathBuf, IoError> {
     let launcher_directory = if let Some(n) = check_qlportable_file() {
         strip_verbatim_prefix(&std::fs::canonicalize(&n.path).unwrap_or(n.path))
     } else {
-        dirs::config_dir()
-            .ok_or(IoError::ConfigDirNotFound)?
+        dirs::data_dir()
+            .ok_or(IoError::LauncherDirNotFound)?
             .join("QuantumLauncher")
     };
 
