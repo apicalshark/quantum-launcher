@@ -706,10 +706,10 @@ pub async fn zip_directory_to_bytes<P: AsRef<Path>>(dir: P) -> std::io::Result<V
     Ok(buffer.into_inner())
 }
 
-#[cfg(unix)]
 /// Used for moving the launcher dir from .config to .local
 /// Gets the old location of the launcher dir using the same methods as before the
 /// migration so if the user have overwriten it using \$XGD_CONFIG_DIR we dont lose track of it
+#[cfg(target_os = "linux")]
 pub fn migration_legacy_launcher_dir() -> Result<Result<PathBuf, ()>, IoError> {
     if check_qlportable_file().is_some() {
         return Ok(Err(()));
@@ -719,9 +719,9 @@ pub fn migration_legacy_launcher_dir() -> Result<Result<PathBuf, ()>, IoError> {
         .join("QuantumLauncher")))
 }
 
-#[cfg(unix)]
 /// used for moving the launcher dir from .config to .local
 /// same as `get_launcher_dir` but doesnt create the folder if not found.
+#[cfg(target_os = "linux")]
 pub fn migration_launcher_dir() -> Result<Result<PathBuf, ()>, IoError> {
     if check_qlportable_file().is_some() {
         return Ok(Err(()));
