@@ -164,7 +164,9 @@ fn main() {
 
     #[cfg(target_os = "linux")]
     if should_migrate() {
-        info!("Running migration");
+        // these logs cant be `info!` since that runs get_logs_dir which lazy allocates LAUNCHER_DIR
+        // which creates the new_dir and that would fail the migration
+        println!("Running migration");
         if let (Ok(Ok(legacy_dir)), Ok(Ok(new_dir))) = (
             file_utils::migration_legacy_launcher_dir(),
             file_utils::migration_launcher_dir(),
@@ -293,9 +295,6 @@ fn attach_to_console() {
 
 #[cfg(target_os = "linux")]
 fn should_migrate() -> bool {
-    use std::fs::File;
-    use std::io::Read;
-
     let legacy_dir = match file_utils::migration_legacy_launcher_dir() {
         Ok(Ok(dir)) => dir,
         _ => return false,
@@ -307,15 +306,6 @@ fn should_migrate() -> bool {
         return false;
     }
 
-    let old_config = File::open(legacy_dir.join("config.json"))
-        .and_then(|mut file| {
-            let mut buf = String::new();
-            file.read_to_string(&mut buf)?;
-            Ok(buf)
-        })
-        .ok()
-        .and_then(|config_str| serde_json::from_str::<LauncherConfig>(&config_str).ok());
-
     let new_dir = match file_utils::migration_launcher_dir() {
         Ok(Ok(dir)) => dir,
         _ => {
@@ -323,23 +313,6 @@ fn should_migrate() -> bool {
             return false;
         }
     };
-
-    let old_ver = old_config
-        .as_ref()
-        .and_then(|c| c.version.clone())
-        .unwrap_or("0.3.0".to_string());
-    let old_ver = semver::Version::parse(&old_ver);
-
-    // only migrate old versions
-    if let Ok(old_ver) = old_ver {
-        if old_ver <= semver::Version::new(0, 4, 2) {
-            dbg!("Skipping migration: version is after migration");
-            return false;
-        }
-    } else {
-        dbg!("Skipping migration: cant parse old config.json version");
-        return false;
-    }
 
     if new_dir.join("config.json").exists() {
         dbg!("Skipping migration: target config exists");
