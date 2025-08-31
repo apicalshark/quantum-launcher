@@ -3570,6 +3570,7 @@ dependencies = [
  "ql_packager",
  "ql_servers",
  "rfd",
+ "semver",
  "serde",
  "serde_json",
  "terminal_size",

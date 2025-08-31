@@ -31,7 +31,7 @@ use config::LauncherConfig;
 use iced::{futures::executor::block_on, Settings, Task};
 use state::{get_entries, Launcher, Message, ServerProcess};
 
-use ql_core::{err, err_no_log, file_utils, info_no_log, IntoStringError, JsonFileError};
+use ql_core::{err, err_no_log, file_utils, info, info_no_log, IntoStringError, JsonFileError};
 use ql_instances::OS_NAME;
 use tokio::io::AsyncWriteExt;
 
@@ -162,6 +162,26 @@ fn main() {
     #[cfg(target_os = "windows")]
     attach_to_console();
 
+    #[cfg(unix)]
+    if should_migrate() {
+        info!("Running migration");
+        if let (Ok(Ok(legacy_dir)), Ok(Ok(new_dir))) = (
+            file_utils::migration_legacy_launcher_dir(),
+            file_utils::migration_launcher_dir(),
+        ) {
+            if let Err(e) = std::fs::rename(&legacy_dir, &new_dir) {
+                eprintln!("Migration failed: {}", e);
+            } else if let Err(e) = ql_core::file_utils::create_symlink(&new_dir, &legacy_dir) {
+                eprintln!(
+                    "Migration successful but couldnt create symlink to the legacy dir: {}",
+                    e
+                );
+            } else {
+                info!("Migration successful your launcher files are now in ~./local/share/QuantumLauncher")
+            }
+        }
+    }
+
     let is_new_user = file_utils::is_new_user();
     // let is_new_user = true; // Uncomment to test the intro screen.
 
@@ -171,7 +191,11 @@ fn main() {
     info_no_log!("Starting up the launcher... (OS: {OS_NAME})");
 
     let icon = load_icon();
-    let (scale, mut config) = load_ui_scale(launcher_dir.is_some());
+    let mut config = load_config(launcher_dir.is_some());
+    let scale = match &config {
+        Ok(cfg) => cfg.ui_scale.unwrap_or(1.0),
+        Err(_e) => 1.0,
+    } as f32;
     let (width, height) = config.as_mut().ok().map_or(
         (WINDOW_WIDTH * scale, WINDOW_HEIGHT * scale),
         LauncherConfig::read_window_size,
@@ -222,17 +246,11 @@ fn load_launcher_dir() -> (Option<std::path::PathBuf>, bool) {
     (launcher_dir, is_dir_err)
 }
 
-fn load_ui_scale(dir_is_ok: bool) -> (f32, Result<LauncherConfig, JsonFileError>) {
+fn load_config(dir_is_ok: bool) -> Result<LauncherConfig, JsonFileError> {
     if let Some(cfg) = dir_is_ok.then(LauncherConfig::load_s) {
-        match cfg {
-            Ok(cfg) => (cfg.ui_scale.unwrap_or(1.0) as f32, Ok(cfg)),
-            Err(err) => (1.0, Err(err)),
-        }
+        cfg
     } else {
-        (
-            1.0,
-            Err(JsonFileError::Io(ql_core::IoError::ConfigDirNotFound)),
-        )
+        Err(JsonFileError::Io(ql_core::IoError::LauncherDirNotFound))
     }
 }
 
@@ -270,5 +288,66 @@ fn attach_to_console() {
 
     unsafe {
         _ = AttachConsole(ATTACH_PARENT_PROCESS);
+    }
+}
+
+#[cfg(unix)]
+fn should_migrate() -> bool {
+    use std::fs::File;
+    use std::io::Read;
+
+    let legacy_dir = match file_utils::migration_legacy_launcher_dir() {
+        Ok(Ok(dir)) => dir,
+        _ => return false,
+    };
+
+    // already migrated dont load the config for no reason
+    // or havent ran the launcher before migration
+    if legacy_dir.is_symlink() || !legacy_dir.exists() {
+        return false;
+    }
+
+    let old_config = File::open(legacy_dir.join("config.json"))
+        .and_then(|mut file| {
+            let mut buf = String::new();
+            file.read_to_string(&mut buf)?;
+            Ok(buf)
+        })
+        .ok()
+        .and_then(|config_str| serde_json::from_str::<LauncherConfig>(&config_str).ok());
+
+    let new_dir = match file_utils::migration_launcher_dir() {
+        Ok(Ok(dir)) => dir,
+        _ => {
+            eprintln!("Failed to get new directory");
+            return false;
+        }
+    };
+
+    let old_ver = old_config
+        .as_ref()
+        .and_then(|c| c.version.clone())
+        .unwrap_or("0.3.0".to_string());
+    let old_ver = semver::Version::parse(&old_ver);
+
+    // only migrate old versions
+    if let Ok(old_ver) = old_ver {
+        if old_ver <= semver::Version::new(0, 4, 2) {
+            dbg!("Skipping migration: version is after migration");
+            return false;
+        }
+    } else {
+        dbg!("Skipping migration: cant parse old config.json version");
+        return false;
+    }
+
+    if new_dir.join("config.json").exists() {
+        dbg!("Skipping migration: target config exists");
+        false
+    } else if legacy_dir == new_dir {
+        dbg!("Skipping migration: same directory");
+        false
+    } else {
+        true
     }
 }
