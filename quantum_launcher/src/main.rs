@@ -162,7 +162,7 @@ fn main() {
     #[cfg(target_os = "windows")]
     attach_to_console();
 
-    #[cfg(unix)]
+    #[cfg(target_os = "linux")]
     if should_migrate() {
         info!("Running migration");
         if let (Ok(Ok(legacy_dir)), Ok(Ok(new_dir))) = (
@@ -291,7 +291,7 @@ fn attach_to_console() {
     }
 }
 
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 fn should_migrate() -> bool {
     use std::fs::File;
     use std::io::Read;
