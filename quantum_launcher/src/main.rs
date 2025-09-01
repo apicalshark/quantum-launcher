@@ -161,27 +161,9 @@ const WINDOW_WIDTH: f32 = 600.0;
 fn main() {
     #[cfg(target_os = "windows")]
     attach_to_console();
-
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "freebsd"))]
     if should_migrate() {
-        // these logs cant be `info!` since that runs get_logs_dir which lazy allocates LAUNCHER_DIR
-        // which creates the new_dir and that would fail the migration
-        println!("Running migration");
-        if let (Ok(Ok(legacy_dir)), Ok(Ok(new_dir))) = (
-            file_utils::migration_legacy_launcher_dir(),
-            file_utils::migration_launcher_dir(),
-        ) {
-            if let Err(e) = std::fs::rename(&legacy_dir, &new_dir) {
-                eprintln!("Migration failed: {}", e);
-            } else if let Err(e) = ql_core::file_utils::create_symlink(&new_dir, &legacy_dir) {
-                eprintln!(
-                    "Migration successful but couldnt create symlink to the legacy dir: {}",
-                    e
-                );
-            } else {
-                info!("Migration successful your launcher files are now in ~./local/share/QuantumLauncher")
-            }
-        }
+        do_migration();
     }
 
     let is_new_user = file_utils::is_new_user();
@@ -293,34 +275,52 @@ fn attach_to_console() {
     }
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
 fn should_migrate() -> bool {
-    let legacy_dir = match file_utils::migration_legacy_launcher_dir() {
-        Ok(Ok(dir)) => dir,
-        _ => return false,
+    let Some(legacy_dir) = file_utils::migration_legacy_launcher_dir() else {
+        return false;
     };
 
-    // already migrated dont load the config for no reason
-    // or havent ran the launcher before migration
+    // Already migrated or haven't ran the launcher before migration
+    // Don't load the config for no reason
     if legacy_dir.is_symlink() || !legacy_dir.exists() {
         return false;
     }
 
-    let new_dir = match file_utils::migration_launcher_dir() {
-        Ok(Ok(dir)) => dir,
-        _ => {
-            eprintln!("Failed to get new directory");
-            return false;
-        }
+    let Some(new_dir) = file_utils::migration_launcher_dir() else {
+        eprintln!("Failed to get new directory");
+        return false;
     };
 
     if new_dir.join("config.json").exists() {
-        dbg!("Skipping migration: target config exists");
+        eprintln!("Skipping migration: target config exists");
         false
     } else if legacy_dir == new_dir {
-        dbg!("Skipping migration: same directory");
+        eprintln!("Skipping migration: same directory");
         false
     } else {
         true
+    }
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+fn do_migration() {
+    // Can't use `info!` for logs,
+    // since that runs get_logs_dir which lazy allocates LAUNCHER_DIR
+    // which creates the new_dir and that would fail the migration
+    println!("Running migration");
+    if let (Some(legacy_dir), Some(new_dir)) = (
+        file_utils::migration_legacy_launcher_dir(),
+        file_utils::migration_launcher_dir(),
+    ) {
+        if let Err(e) = std::fs::rename(&legacy_dir, &new_dir) {
+            eprintln!("Migration failed: {}", e);
+        } else if let Err(e) = ql_core::file_utils::create_symlink(&new_dir, &legacy_dir) {
+            eprintln!(
+                "Migration successful but couldnt create symlink to the legacy dir: {e}",
+            );
+        } else {
+            info!("Migration successful!\nYour launcher files are now in ~./local/share/QuantumLauncher")
+        }
     }
 }
