@@ -24,7 +24,7 @@ use crate::{
 /// The path to the QuantumLauncher root folder.
 ///
 /// This uses the current dir or executable location (portable mode)
-/// if a `qlportable.txt` is found, otherwise it uses the system data dir:
+/// if a `qldir.txt` is found, otherwise it uses the system data dir:
 /// - `~/.local/share` on Linux
 /// - `~/AppData/Roaming` on Windows
 /// - `~/Library/Application Support` on macOS
@@ -41,7 +41,7 @@ pub static LAUNCHER_DIR: LazyLock<PathBuf> = LazyLock::new(|| get_launcher_dir()
 /// Returns the path to the QuantumLauncher root folder.
 ///
 /// This uses the current dir or executable location (portable mode)
-/// if a `qlportable.txt` is found, otherwise it uses the system data dir:
+/// if a `qldir.txt` is found, otherwise it uses the system data dir:
 /// - `~/.local/share` on Linux
 /// - `~/AppData/Roaming` on Windows
 /// - `~/Library/Application Support` on macOS
@@ -717,25 +717,21 @@ pub async fn zip_directory_to_bytes<P: AsRef<Path>>(dir: P) -> std::io::Result<V
 
 /// Used for moving the launcher dir from .config to .local
 /// Gets the old location of the launcher dir using the same methods as before the
-/// migration so if the user have overwriten it using \$XGD_CONFIG_DIR we dont lose track of it
-#[cfg(target_os = "linux")]
-pub fn migration_legacy_launcher_dir() -> Result<Result<PathBuf, ()>, IoError> {
+/// migration so if the user have overwriten it using `$XGD_CONFIG_DIR` we dont lose track of it
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+pub fn migration_legacy_launcher_dir() -> Option<PathBuf> {
     if check_qlportable_file().is_some() {
-        return Ok(Err(()));
+        return None;
     }
-    Ok(Ok(dirs::config_dir()
-        .ok_or(IoError::LauncherDirNotFound)?
-        .join("QuantumLauncher")))
+    Some(dirs::config_dir()?.join("QuantumLauncher"))
 }
 
 /// used for moving the launcher dir from .config to .local
 /// same as `get_launcher_dir` but doesnt create the folder if not found.
-#[cfg(target_os = "linux")]
-pub fn migration_launcher_dir() -> Result<Result<PathBuf, ()>, IoError> {
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+pub fn migration_launcher_dir() -> Option<PathBuf> {
     if check_qlportable_file().is_some() {
-        return Ok(Err(()));
+        return None;
     }
-    Ok(Ok(dirs::data_dir()
-        .ok_or(IoError::LauncherDirNotFound)?
-        .join("QuantumLauncher")))
+    Some(dirs::data_dir()?.join("QuantumLauncher"))
 }
