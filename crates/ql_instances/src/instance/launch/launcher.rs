@@ -723,6 +723,9 @@ impl GameLauncher {
         let Some(mut library_path) = library_path.to_str() else {
             return Err(GameLaunchError::PathBufToString(library_path));
         };
+        if library_path.contains("20230311") {
+            return Ok(());
+        }
 
         #[cfg(target_os = "windows")]
         if library_path.starts_with(r"\\?\") {
