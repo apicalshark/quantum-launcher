@@ -398,19 +398,41 @@ impl MenuEditMods {
                                     widget::text!("- (DEPENDENCY) {}", config.name).into()
                                 }
                             }
-                            ModListEntry::Local { file_name } => widget::checkbox(
-                                file_name.clone(),
-                                self.selected_mods.contains(&SelectedMod::Local {
-                                    file_name: file_name.clone(),
-                                }),
-                            )
-                            .on_toggle(move |t| {
-                                Message::ManageMods(ManageModsMessage::ToggleCheckboxLocal(
-                                    file_name.clone(),
-                                    t,
-                                ))
-                            })
-                            .into(),
+                            ModListEntry::Local { file_name } => {
+                                let is_enabled = !file_name.ends_with(".disabled");
+                                let checkbox = widget::checkbox(
+                                    file_name
+                                        .strip_suffix(".disabled")
+                                        .unwrap_or(file_name)
+                                        .to_owned(),
+                                    self.selected_mods.contains(&SelectedMod::Local {
+                                        file_name: file_name.clone(),
+                                    }),
+                                )
+                                .style(move |t: &LauncherTheme, status| {
+                                    t.style_checkbox(
+                                        status,
+                                        Some(if is_enabled { Color::White } else { Color::Mid }),
+                                    )
+                                })
+                                .on_toggle(move |t| {
+                                    Message::ManageMods(ManageModsMessage::ToggleCheckboxLocal(
+                                        file_name.clone(),
+                                        t,
+                                    ))
+                                });
+
+                                if is_enabled {
+                                    checkbox.into()
+                                } else {
+                                    tooltip(
+                                        checkbox,
+                                        "Disabled",
+                                        widget::tooltip::Position::FollowCursor,
+                                    )
+                                    .into()
+                                }
+                            }
                         })
                 })
                 .padding(10)
