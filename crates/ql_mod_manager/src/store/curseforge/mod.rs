@@ -65,20 +65,22 @@ impl Mod {
             .iter()
             .filter(move |n| (query_type != QueryType::Mods) || (n.gameVersion == version))
             .find(|n| {
-                let is_loader_compatible = if let (Some(l), Some(n)) =
-                    (loader, n.modLoader.map(|n| n.to_string()).as_deref())
-                {
-                    l == n
-                } else {
-                    if loader.is_none() {
-                        err!("You haven't installed a valid mod loader!");
+                query_type != QueryType::Mods
+                    || if let (Some(l), Some(n)) =
+                        (loader, n.modLoader.map(|n| n.to_string()).as_deref())
+                    {
+                        l == n
                     } else {
-                        err!("Can't find a version of this mod compatible with your mod loader!");
+                        if loader.is_none() {
+                            err!("You haven't installed a valid mod loader!");
+                        } else {
+                            err!(
+                                "Can't find a version of this mod compatible with your mod loader!"
+                            );
+                        }
+                        pt!("Installing an arbitrary version anyway...");
+                        true
                     }
-                    pt!("Installing an arbitrary version anyway...");
-                    true
-                };
-                (query_type != QueryType::Mods) || is_loader_compatible
             })
         else {
             return Err(ModError::NoCompatibleVersionFound(title));
