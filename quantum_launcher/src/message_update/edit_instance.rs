@@ -107,7 +107,6 @@ impl Launcher {
                 }
             }
             EditInstanceMessage::JavaArgsAdd => {
-                // Bugfix: Add new argument to Java args (was incorrectly adding to game_args)
                 iflet_config!(&mut self.state, get, java_args, {
                     java_args.push(String::new());
                 });
