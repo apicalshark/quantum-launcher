@@ -37,7 +37,7 @@ impl Launcher {
                     }
                 }
             }
-            ManageModsMessage::AddFile => {
+            ManageModsMessage::AddFile(delete_file) => {
                 if let Some(paths) = rfd::FileDialog::new()
                     .add_filter("Mod/Modpack", &["jar", "zip", "mrpack", "qmp"])
                     .set_title("Add Mod, Modpack or Preset")
@@ -47,14 +47,26 @@ impl Launcher {
 
                     self.state = State::ImportModpack(ProgressBar::with_recv(receiver));
 
-                    return Task::perform(
+                    let files_task = Task::perform(
                         ql_mod_manager::add_files(
                             self.selected_instance.clone().unwrap(),
-                            paths,
+                            paths.clone(),
                             Some(sender),
                         ),
                         move |n| Message::ManageMods(ManageModsMessage::AddFileDone(n.strerr())),
                     );
+                    return if delete_file {
+                        files_task.chain(Task::perform(
+                            async move {
+                                for path in paths {
+                                    _ = tokio::fs::remove_file(&path).await;
+                                }
+                            },
+                            |()| Message::Nothing,
+                        ))
+                    } else {
+                        files_task
+                    };
                 }
             }
             ManageModsMessage::AddFileDone(n) => match n {
@@ -64,6 +76,7 @@ impl Launcher {
                             State::CurseforgeManualDownload(MenuCurseforgeManualDownload {
                                 unsupported,
                                 is_store: false,
+                                delete_mods: true,
                             });
                     }
                     return self.go_to_edit_mods_menu(false);
@@ -286,6 +299,11 @@ impl Launcher {
             ManageModsMessage::ToggleSubmenu1 => {
                 if let State::EditMods(menu) = &mut self.state {
                     menu.submenu1_shown = !menu.submenu1_shown;
+                }
+            }
+            ManageModsMessage::CurseforgeManualToggleDelete(t) => {
+                if let State::CurseforgeManualDownload(menu) = &mut self.state {
+                    menu.delete_mods = t;
                 }
             }
         }

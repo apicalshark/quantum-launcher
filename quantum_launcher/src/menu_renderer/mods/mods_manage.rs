@@ -49,7 +49,7 @@ impl MenuEditMods {
                 widget::horizontal_rule(1)
                     .style(|t: &LauncherTheme| t.style_rule(Color::SecondDark, 1)),
                 ctx_button("Import Modpack")
-                    .on_press(Message::ManageMods(ManageModsMessage::AddFile)),
+                    .on_press(Message::ManageMods(ManageModsMessage::AddFile(false))),
                 ctx_button("See recommended mods").on_press(Message::RecommendedMods(
                     crate::state::RecommendedModMessage::Open
                 )),
@@ -88,7 +88,7 @@ impl MenuEditMods {
                 widget::row![
                     back_button().on_press(back_to_launch_screen(selected_instance, None)),
                     button_with_icon(icon_manager::create_with_size(14), "Add File", 14)
-                        .on_press(Message::ManageMods(ManageModsMessage::AddFile))
+                        .on_press(Message::ManageMods(ManageModsMessage::AddFile(false)))
                 ]
                 .spacing(7),
                 self.get_mod_installer_buttons(selected_instance),

@@ -346,6 +346,7 @@ pub enum MenuWelcome {
 pub struct MenuCurseforgeManualDownload {
     pub unsupported: HashSet<CurseforgeNotAllowed>,
     pub is_store: bool,
+    pub delete_mods: bool,
 }
 
 pub struct MenuExportInstance {

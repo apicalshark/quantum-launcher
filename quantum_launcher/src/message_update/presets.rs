@@ -71,6 +71,7 @@ impl Launcher {
                             State::CurseforgeManualDownload(MenuCurseforgeManualDownload {
                                 unsupported: not_allowed,
                                 is_store: false,
+                                delete_mods: true,
                             });
                         Task::none()
                     }

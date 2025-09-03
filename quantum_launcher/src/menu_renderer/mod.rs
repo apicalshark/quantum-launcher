@@ -385,13 +385,18 @@ impl MenuCurseforgeManualDownload {
 
             "Warning: Ignoring this may lead to crashes!",
             widget::row![
-                widget::button("+ Select above downloaded files").on_press(Message::ManageMods(ManageModsMessage::AddFile)),
-                widget::button("Continue").on_press(if self.is_store {
+                widget::button(widget::text("+ Select above downloaded files").size(14)).on_press(Message::ManageMods(ManageModsMessage::AddFile(self.delete_mods))),
+                widget::button(widget::text("Continue").size(14)).on_press(if self.is_store {
                     Message::InstallMods(InstallModsMessage::Open)
                 } else {
                     Message::ManageMods(ManageModsMessage::ScreenOpenWithoutUpdate)
                 }),
-            ].spacing(5)
+                widget::checkbox("Delete files when done", self.delete_mods)
+                    .text_size(14)
+                    .on_toggle(|t|
+                        Message::ManageMods(ManageModsMessage::CurseforgeManualToggleDelete(t))
+                    )
+            ].spacing(5).align_y(Alignment::Center).wrap()
         ]
             .padding(10)
             .spacing(10)
