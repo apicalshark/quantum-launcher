@@ -1,5 +1,5 @@
 use iced::Task;
-use ql_core::{err, IntoIoError, IntoStringError, LAUNCHER_DIR};
+use ql_core::{err, IntoIoError, IntoStringError, LAUNCHER_DATA_DIR};
 
 use crate::{
     message_handler::format_memory,
@@ -171,7 +171,7 @@ impl Launcher {
             Ok(Task::none())
         } else {
             let instances_dir =
-                LAUNCHER_DIR.join(if self.selected_instance.as_ref().unwrap().is_server() {
+                LAUNCHER_DATA_DIR.join(if self.selected_instance.as_ref().unwrap().is_server() {
                     "servers"
                 } else {
                     "instances"

@@ -2,7 +2,7 @@ use colored::Colorize;
 use ql_core::{
     err, info,
     json::{InstanceConfigJson, VersionDetails},
-    InstanceSelection, IntoStringError, ListEntry, LAUNCHER_DIR,
+    InstanceSelection, IntoStringError, ListEntry, LAUNCHER_DATA_DIR,
 };
 use ql_instances::auth::{self, AccountType};
 use std::{io::Write, process::exit};
@@ -56,7 +56,7 @@ pub fn list_instances(cmds: &[PrintCmd], dirname: &str) {
                     if has_printed {
                         print!("\t");
                     }
-                    let instance_dir = LAUNCHER_DIR.join(dirname).join(&instance);
+                    let instance_dir = LAUNCHER_DATA_DIR.join(dirname).join(&instance);
 
                     let json = std::fs::read_to_string(instance_dir.join("details.json")).unwrap();
                     let mut json: VersionDetails = serde_json::from_str(&json).unwrap();
@@ -68,7 +68,7 @@ pub fn list_instances(cmds: &[PrintCmd], dirname: &str) {
                     if has_printed {
                         print!("\t");
                     }
-                    let instance_dir = LAUNCHER_DIR.join(dirname).join(&instance);
+                    let instance_dir = LAUNCHER_DATA_DIR.join(dirname).join(&instance);
                     let config_json =
                         std::fs::read_to_string(instance_dir.join("config.json")).unwrap();
                     let config_json: InstanceConfigJson =

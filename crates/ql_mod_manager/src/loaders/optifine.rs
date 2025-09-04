@@ -8,8 +8,8 @@ use std::{
 use ql_core::{
     file_utils, impl_3_errs_jri, info, jarmod,
     json::{optifine::JsonOptifine, VersionDetails},
-    no_window, pt, GenericProgress, InstanceSelection, IntoIoError, IoError, JsonError, Progress,
-    RequestError, CLASSPATH_SEPARATOR, LAUNCHER_DIR,
+    no_window, GenericProgress, InstanceSelection, IntoIoError, IntoJsonError, IoError, JsonError,
+    Progress, RequestError, CLASSPATH_SEPARATOR, LAUNCHER_DATA_DIR,
 };
 use ql_java_handler::{get_java_binary, JavaInstallError, JavaVersion, JAVA};
 use thiserror::Error;
@@ -110,7 +110,7 @@ pub async fn install(
         return Ok(());
     }
 
-    let instance_path = LAUNCHER_DIR.join("instances").join(&instance_name);
+    let instance_path = LAUNCHER_DATA_DIR.join("instances").join(&instance_name);
     create_details_json(&instance_path).await?;
     let dot_minecraft_path = instance_path.join(".minecraft");
 
@@ -157,7 +157,7 @@ fn send_progress(
 }
 
 pub async fn uninstall(instance_name: String) -> Result<(), OptifineError> {
-    let instance_path = LAUNCHER_DIR.join("instances").join(&instance_name);
+    let instance_path = LAUNCHER_DATA_DIR.join("instances").join(&instance_name);
 
     let optifine_path = instance_path.join("optifine");
     if optifine_path.is_dir() {

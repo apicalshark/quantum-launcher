@@ -1,7 +1,8 @@
 use std::path::Path;
 
 use ql_core::{
-    info, json::FabricJSON, InstanceSelection, IntoIoError, IntoJsonError, IoError, LAUNCHER_DIR,
+    info, json::FabricJSON, InstanceSelection, IntoIoError, IntoJsonError, IoError,
+    LAUNCHER_DATA_DIR,
 };
 
 use crate::loaders::change_instance_type;
@@ -18,7 +19,7 @@ async fn delete(server_dir: &Path, name: &str) -> Result<(), IoError> {
 }
 
 pub async fn uninstall_server(server_name: String) -> Result<(), FabricInstallError> {
-    let server_dir = LAUNCHER_DIR.join("servers").join(&server_name);
+    let server_dir = LAUNCHER_DATA_DIR.join("servers").join(&server_name);
 
     info!("Uninstalling fabric from server: {server_name}");
 
@@ -54,7 +55,7 @@ pub async fn uninstall_server(server_name: String) -> Result<(), FabricInstallEr
 }
 
 pub async fn uninstall_client(instance_name: String) -> Result<(), FabricInstallError> {
-    let instance_dir = LAUNCHER_DIR.join("instances").join(&instance_name);
+    let instance_dir = LAUNCHER_DATA_DIR.join("instances").join(&instance_name);
 
     let libraries_dir = instance_dir.join("libraries");
 

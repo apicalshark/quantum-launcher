@@ -6,7 +6,7 @@ use std::{
 use crate::json_profiles::ProfileJson;
 use ql_core::{
     do_jobs,
-    file_utils::{self, LAUNCHER_DIR},
+    file_utils::{self, LAUNCHER_DATA_DIR},
     impl_3_errs_jri, info,
     json::{AssetIndexMap, InstanceConfigJson, Manifest, VersionDetails},
     pt, DownloadFileError, DownloadProgress, IntoIoError, IntoJsonError, IoError, JsonError,
@@ -140,7 +140,7 @@ impl GameDownloader {
         let asset_index: AssetIndexMap =
             file_utils::download_file_to_json(&self.version_json.assetIndex.url, false).await?;
 
-        let assets_dir = LAUNCHER_DIR.join("assets");
+        let assets_dir = LAUNCHER_DATA_DIR.join("assets");
         tokio::fs::create_dir_all(&assets_dir)
             .await
             .path(&assets_dir)?;
@@ -361,7 +361,7 @@ impl GameDownloader {
     }
 
     async fn new_get_instance_dir(instance_name: &str) -> Result<Option<PathBuf>, IoError> {
-        let instances_dir = LAUNCHER_DIR.join("instances");
+        let instances_dir = LAUNCHER_DATA_DIR.join("instances");
         tokio::fs::create_dir_all(&instances_dir)
             .await
             .path(&instances_dir)?;

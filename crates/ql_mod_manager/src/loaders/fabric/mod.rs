@@ -3,8 +3,8 @@ use std::{path::Path, sync::mpsc::Sender};
 use ql_core::{
     file_utils, info,
     json::{FabricJSON, VersionDetails},
-    GenericProgress, InstanceSelection, IntoIoError, IntoJsonError, JsonDownloadError,
-    RequestError, LAUNCHER_DIR,
+    GenericProgress, InstanceSelection, IntoIoError, IntoJsonError, RequestError,
+    LAUNCHER_DATA_DIR,
 };
 use serde::Deserialize;
 use version_compare::compare_versions;
@@ -51,7 +51,7 @@ pub async fn get_list_of_versions(
     }
 
     let version_json = VersionDetails::load(&instance).await?;
-    
+
     let mut result = inner(&version_json, is_quilt).await;
     if result.is_err() {
         for _ in 0..5 {
@@ -85,7 +85,7 @@ pub async fn install_server(
         _ = progress.send(GenericProgress::default());
     }
 
-    let server_dir = LAUNCHER_DIR.join("servers").join(server_name);
+    let server_dir = LAUNCHER_DATA_DIR.join("servers").join(server_name);
 
     let libraries_dir = server_dir.join("libraries");
     tokio::fs::create_dir_all(&libraries_dir)
@@ -152,7 +152,7 @@ pub async fn install_client(
 ) -> Result<(), FabricInstallError> {
     let loader_name = if is_quilt { "Quilt" } else { "Fabric" };
 
-    let instance_dir = LAUNCHER_DIR.join("instances").join(instance_name);
+    let instance_dir = LAUNCHER_DATA_DIR.join("instances").join(instance_name);
 
     migrate_index_file(&instance_dir).await?;
 

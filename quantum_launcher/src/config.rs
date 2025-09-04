@@ -1,7 +1,7 @@
 use crate::{WINDOW_HEIGHT, WINDOW_WIDTH};
 use ql_core::json::GlobalSettings;
 use ql_core::{
-    err, IntoIoError, IntoJsonError, JsonFileError, LAUNCHER_DIR, LAUNCHER_VERSION_NAME,
+    err, IntoIoError, IntoJsonError, JsonFileError, LAUNCHER_CONFIG_DIR, LAUNCHER_VERSION_NAME,
 };
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::Path};
@@ -134,7 +134,7 @@ impl LauncherConfig {
     /// resetting the config if it's nonexistent or corrupted
     /// (with an error log message).
     pub fn load_s() -> Result<Self, JsonFileError> {
-        let config_path = LAUNCHER_DIR.join("config.json");
+        let config_path = LAUNCHER_CONFIG_DIR.join("config.json");
         if !config_path.exists() {
             return LauncherConfig::create(&config_path);
         }
@@ -162,7 +162,7 @@ impl LauncherConfig {
     }
 
     pub async fn save(&self) -> Result<(), JsonFileError> {
-        let config_path = LAUNCHER_DIR.join("config.json");
+        let config_path = LAUNCHER_CONFIG_DIR.join("config.json");
         let config = serde_json::to_string(&self).json_to()?;
 
         tokio::fs::write(&config_path, config.as_bytes())

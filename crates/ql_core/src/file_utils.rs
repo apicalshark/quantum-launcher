@@ -36,7 +36,10 @@ use crate::{
 /// - if you're on an unsupported platform (other than Windows, Linux, macOS, Redox, any linux-like unix)
 /// - if the launcher directory could not be created (permissions issue)
 #[allow(clippy::doc_markdown)]
-pub static LAUNCHER_DIR: LazyLock<PathBuf> = LazyLock::new(|| get_launcher_dir().unwrap());
+pub static LAUNCHER_DATA_DIR: LazyLock<PathBuf> =
+    LazyLock::new(|| get_launcher_data_dir().unwrap());
+pub static LAUNCHER_CONFIG_DIR: LazyLock<PathBuf> =
+    LazyLock::new(|| get_launcher_config_dir().unwrap());
 
 /// Returns the path to the QuantumLauncher root folder.
 ///
@@ -51,8 +54,21 @@ pub static LAUNCHER_DIR: LazyLock<PathBuf> = LazyLock::new(|| get_launcher_dir()
 /// - if you're on an unsupported platform (other than Windows, Linux, macOS, Redox, any linux-like unix)
 /// - if the launcher directory could not be created (permissions issue)
 #[allow(clippy::doc_markdown)]
-pub fn get_launcher_dir() -> Result<PathBuf, IoError> {
+pub fn get_launcher_data_dir() -> Result<PathBuf, IoError> {
     let launcher_directory = if let Some(n) = check_qlportable_file() {
+        strip_verbatim_prefix(&std::fs::canonicalize(&n.path).unwrap_or(n.path))
+    } else {
+        dirs::data_dir()
+            .ok_or(IoError::ConfigDirNotFound)?
+            .join("QuantumLauncher")
+    };
+
+    std::fs::create_dir_all(&launcher_directory).path(&launcher_directory)?;
+    Ok(launcher_directory)
+}
+
+pub fn get_launcher_config_dir() -> Result<PathBuf, IoError> {
+    let launcher_config_dir = if let Some(n) = check_qlportable_file() {
         strip_verbatim_prefix(&std::fs::canonicalize(&n.path).unwrap_or(n.path))
     } else {
         dirs::config_dir()
@@ -60,8 +76,9 @@ pub fn get_launcher_dir() -> Result<PathBuf, IoError> {
             .join("QuantumLauncher")
     };
 
-    std::fs::create_dir_all(&launcher_directory).path(&launcher_directory)?;
-    Ok(launcher_directory)
+    std::fs::create_dir_all(&launcher_config_dir).path(&launcher_config_dir)?;
+
+    Ok(launcher_config_dir)
 }
 
 fn strip_verbatim_prefix(path: &Path) -> PathBuf {
@@ -421,7 +438,7 @@ pub fn create_symlink(src: &Path, dest: &Path) -> Result<(), IoError> {
 pub async fn clean_log_spam() -> Result<(), IoError> {
     const SIZE_LIMIT_BYTES: u64 = 100 * 1024 * 1024; // 100 MB
 
-    let logs_dir = get_launcher_dir()?.join("logs");
+    let logs_dir = get_launcher_data_dir()?.join("logs");
     if !logs_dir.is_dir() {
         tokio::fs::create_dir_all(&logs_dir).await.path(logs_dir)?;
         return Ok(());
