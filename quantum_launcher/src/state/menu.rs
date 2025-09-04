@@ -166,7 +166,7 @@ pub struct MenuEditMods {
     pub drag_and_drop_hovered: bool,
     pub submenu1_shown: bool,
 
-    pub row_name_width: f32,
+    pub width_name: f32,
 }
 
 impl MenuEditMods {

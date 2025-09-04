@@ -363,24 +363,9 @@ impl MenuEditMods {
 
     fn get_mod_list_contents(&'_ self) -> Element<'_> {
         widget::scrollable(widget::column({
-            self.sorted_mods_list.iter().map(|mod_list_entry| {
-                widget::row![
-                    self.get_mod_entry(mod_list_entry),
-                    widget::Row::new().push_maybe(
-                        if let ModListEntry::Downloaded { config, .. } = mod_list_entry {
-                            Some(
-                                widget::text(&config.installed_version)
-                                    .style(|t: &LauncherTheme| t.style_text(Color::SecondLight)),
-                            )
-                        } else {
-                            None
-                        }
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(10)
-                .into()
-            })
+            self.sorted_mods_list
+                .iter()
+                .map(|mod_list_entry| self.get_mod_entry(mod_list_entry))
         }))
         .direction(widget::scrollable::Direction::Both {
             vertical: widget::scrollable::Scrollbar::new(),
@@ -394,9 +379,9 @@ impl MenuEditMods {
 
     fn get_mod_entry<'a>(&'a self, entry: &'a ModListEntry) -> Element<'a> {
         const PADDING: iced::Padding = iced::Padding {
-            top: 5.0,
-            bottom: 5.0,
-            right: 0.0,
+            top: 4.0,
+            bottom: 4.0,
+            right: 15.0,
             left: 15.0,
         };
         match entry {
@@ -409,21 +394,30 @@ impl MenuEditMods {
                     });
 
                     let checkbox = select_box(
-                        widget::text(&config.name).style(move |t: &LauncherTheme| {
-                            t.style_text(if is_enabled {
-                                Color::SecondLight
-                            } else {
-                                Color::Mid
-                            })
-                        }),
+                        widget::row![
+                            widget::text(&config.name)
+                                .style(move |t: &LauncherTheme| {
+                                    t.style_text(if is_enabled {
+                                        Color::SecondLight
+                                    } else {
+                                        Color::Mid
+                                    })
+                                })
+                                .size(14)
+                                .width(self.width_name),
+                            widget::text(&config.installed_version)
+                                .style(|t: &LauncherTheme| t.style_text(Color::Mid))
+                                .size(12)
+                        ]
+                        .align_y(Alignment::Center)
+                        .spacing(10),
                         is_selected,
                         Message::ManageMods(ManageModsMessage::ToggleCheckbox(
                             (config.name.clone(), Some(id.clone())),
                             !is_selected,
                         )),
                     )
-                    .padding(PADDING)
-                    .width(self.row_name_width);
+                    .padding(PADDING);
 
                     if is_enabled {
                         checkbox.into()
@@ -458,7 +452,8 @@ impl MenuEditMods {
                         } else {
                             Color::Mid
                         })
-                    }),
+                    })
+                    .size(14),
                     is_selected,
                     Message::ManageMods(ManageModsMessage::ToggleCheckbox(
                         (file_name.clone(), None),
@@ -466,7 +461,7 @@ impl MenuEditMods {
                     )),
                 )
                 .padding(PADDING)
-                .width(self.row_name_width);
+                .width(self.width_name);
 
                 if is_enabled {
                     checkbox.into()
