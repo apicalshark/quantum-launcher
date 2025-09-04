@@ -20,20 +20,23 @@ impl Launcher {
                 return self.go_to_edit_mods_menu(false);
             }
 
-            ManageModsMessage::ToggleCheckbox((name, id), enable) => {
+            ManageModsMessage::ToggleCheckbox(name, id) => {
                 if let State::EditMods(menu) = &mut self.state {
                     let selected_mod = SelectedMod::from_pair(name, id);
-                    if enable {
-                        menu.selected_mods.insert(selected_mod);
-                        menu.selected_state = SelectedState::Some;
-                    } else {
+
+                    if menu.selected_mods.contains(&selected_mod) {
                         menu.selected_mods.remove(&selected_mod);
-                        menu.selected_state = if menu.selected_mods.is_empty() {
-                            SelectedState::None
-                        } else {
-                            SelectedState::Some
-                        };
+                    } else {
+                        menu.selected_mods.insert(selected_mod);
                     }
+
+                    menu.selected_state = if menu.selected_mods.is_empty() {
+                        SelectedState::None
+                    } else if menu.selected_mods.len() == menu.sorted_mods_list.len() {
+                        SelectedState::All
+                    } else {
+                        SelectedState::Some
+                    };
                 }
             }
             ManageModsMessage::AddFile(delete_file) => {

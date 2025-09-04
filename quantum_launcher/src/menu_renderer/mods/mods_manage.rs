@@ -381,9 +381,10 @@ impl MenuEditMods {
         const PADDING: iced::Padding = iced::Padding {
             top: 4.0,
             bottom: 4.0,
-            right: 15.0,
+            right: 25.0,
             left: 15.0,
         };
+
         match entry {
             ModListEntry::Downloaded { id, config } => {
                 if config.manually_installed {
@@ -413,8 +414,8 @@ impl MenuEditMods {
                         .spacing(10),
                         is_selected,
                         Message::ManageMods(ManageModsMessage::ToggleCheckbox(
-                            (config.name.clone(), Some(id.clone())),
-                            !is_selected,
+                            config.name.clone(),
+                            Some(id.clone()),
                         )),
                     )
                     .padding(PADDING);
@@ -455,10 +456,7 @@ impl MenuEditMods {
                     })
                     .size(14),
                     is_selected,
-                    Message::ManageMods(ManageModsMessage::ToggleCheckbox(
-                        (file_name.clone(), None),
-                        !is_selected,
-                    )),
+                    Message::ManageMods(ManageModsMessage::ToggleCheckbox(file_name.clone(), None)),
                 )
                 .padding(PADDING)
                 .width(self.width_name);
