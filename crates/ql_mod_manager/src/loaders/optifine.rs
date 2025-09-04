@@ -8,8 +8,8 @@ use std::{
 use ql_core::{
     file_utils, impl_3_errs_jri, info, jarmod,
     json::{optifine::JsonOptifine, VersionDetails},
-    no_window, pt, GenericProgress, InstanceSelection, IntoIoError, IntoJsonError, IoError,
-    JsonError, Progress, RequestError, CLASSPATH_SEPARATOR, LAUNCHER_DIR,
+    no_window, pt, GenericProgress, InstanceSelection, IntoIoError, IoError, JsonError, Progress,
+    RequestError, CLASSPATH_SEPARATOR, LAUNCHER_DIR,
 };
 use ql_java_handler::{get_java_binary, JavaInstallError, JavaVersion, JAVA};
 use thiserror::Error;
