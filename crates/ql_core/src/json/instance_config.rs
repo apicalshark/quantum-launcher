@@ -368,7 +368,7 @@ impl InstanceConfigJson {
 
         let mut instance_prefix: Vec<String> = self
             .get_launch_prefix()
-            .into_iter()
+            .iter_mut()
             .map(|n| n.trim().to_owned())
             .filter(|n| !n.is_empty())
             .collect();
