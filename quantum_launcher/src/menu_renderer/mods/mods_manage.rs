@@ -2,7 +2,7 @@ use iced::widget::tooltip::Position;
 use iced::{widget, Alignment, Length};
 use ql_core::{InstanceSelection, SelectedMod};
 
-use crate::menu_renderer::select_box;
+use crate::menu_renderer::{select_box, FONT_MONO};
 use crate::stylesheet::styles::{BORDER_RADIUS, BORDER_WIDTH};
 use crate::{
     icon_manager,
@@ -14,6 +14,8 @@ use crate::{
     },
     stylesheet::{color::Color, styles::LauncherTheme},
 };
+
+pub const MODS_SIDEBAR_WIDTH: u16 = 190;
 
 impl MenuEditMods {
     pub fn view<'a>(
@@ -154,7 +156,7 @@ impl MenuEditMods {
                 )
                 .padding(10)
                 .spacing(10)
-                .width(190),
+                .width(MODS_SIDEBAR_WIDTH),
             )
             .into()
         }
@@ -353,7 +355,7 @@ impl MenuEditMods {
                     )
                     .padding(10)
                     .spacing(5),
-                self.get_mod_list_contents(),
+                widget::responsive(|s| self.get_mod_list_contents(s)),
             )
             .spacing(10),
         )
@@ -361,11 +363,11 @@ impl MenuEditMods {
         .into()
     }
 
-    fn get_mod_list_contents(&'_ self) -> Element<'_> {
+    fn get_mod_list_contents(&'_ self, size: iced::Size) -> Element<'_> {
         widget::scrollable(widget::column({
             self.sorted_mods_list
                 .iter()
-                .map(|mod_list_entry| self.get_mod_entry(mod_list_entry))
+                .map(|mod_list_entry| self.get_mod_entry(mod_list_entry, size))
         }))
         .direction(widget::scrollable::Direction::Both {
             vertical: widget::scrollable::Scrollbar::new(),
@@ -377,11 +379,11 @@ impl MenuEditMods {
         .into()
     }
 
-    fn get_mod_entry<'a>(&'a self, entry: &'a ModListEntry) -> Element<'a> {
+    fn get_mod_entry<'a>(&'a self, entry: &'a ModListEntry, size: iced::Size) -> Element<'a> {
         const PADDING: iced::Padding = iced::Padding {
             top: 4.0,
             bottom: 4.0,
-            right: 25.0,
+            right: 15.0,
             left: 15.0,
         };
 
@@ -408,8 +410,29 @@ impl MenuEditMods {
                                 .width(self.width_name),
                             widget::text(&config.installed_version)
                                 .style(|t: &LauncherTheme| t.style_text(Color::Mid))
+                                .font(FONT_MONO)
                                 .size(12)
                         ]
+                        .push_maybe({
+                            // Measure the length of the text
+                            // then from there measure the space it would occupy
+                            // (only possible because monospace font)
+
+                            // This is for finding the filler space
+                            //
+                            // ║ Some Mod         v0.0.1                ║
+                            // ║ Some other mod   2.4.1-fabric          ║
+                            //
+                            //  ╙═╦══════════════╜            ╙═╦══════╜
+                            //  Measured by:                   What we want
+                            //  `self.width_name`              to find
+
+                            let measured: f32 = (config.installed_version.len() as f32) * 7.2;
+                            let occupied =
+                                measured + self.width_name + PADDING.left + PADDING.right + 20.0;
+                            let space = size.width - occupied;
+                            (space > -10.0).then_some(widget::Space::with_width(space))
+                        })
                         .align_y(Alignment::Center)
                         .spacing(10),
                         is_selected,
@@ -459,7 +482,7 @@ impl MenuEditMods {
                     Message::ManageMods(ManageModsMessage::ToggleCheckbox(file_name.clone(), None)),
                 )
                 .padding(PADDING)
-                .width(self.width_name);
+                .width(size.width);
 
                 if is_enabled {
                     checkbox.into()
