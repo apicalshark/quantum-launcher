@@ -148,6 +148,8 @@ pub struct MenuEditMods {
     pub available_updates: Vec<(ModId, String, bool)>,
     pub drag_and_drop_hovered: bool,
     pub submenu1_shown: bool,
+
+    pub row_name_width: f32,
 }
 
 impl MenuEditMods {

@@ -30,6 +30,25 @@ pub const FONT_MONO: iced::Font = iced::Font::with_name("JetBrains Mono");
 
 pub type Element<'a> = iced::Element<'a, Message, LauncherTheme>;
 
+pub fn select_box<'a>(
+    e: impl Into<Element<'a>>,
+    is_checked: bool,
+    message: Message,
+) -> widget::Button<'a, Message, LauncherTheme> {
+    widget::button(e)
+        .on_press(message)
+        .style(move |t: &LauncherTheme, s| {
+            t.style_button(
+                s,
+                if is_checked {
+                    StyleButton::Flat
+                } else {
+                    StyleButton::FlatExtraDark
+                },
+            )
+        })
+}
+
 pub fn link<'a>(
     e: impl Into<Element<'a>>,
     url: String,

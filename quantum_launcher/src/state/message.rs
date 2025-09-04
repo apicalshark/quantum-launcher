@@ -80,8 +80,7 @@ pub enum ManageModsMessage {
     ScreenOpen,
     ScreenOpenWithoutUpdate,
 
-    ToggleCheckbox((String, ModId), bool),
-    ToggleCheckboxLocal(String, bool),
+    ToggleCheckbox((String, Option<ModId>), bool),
 
     DeleteSelected,
     DeleteFinished(Res<Vec<ModId>>),

@@ -22,13 +22,12 @@ impl Launcher {
 
             ManageModsMessage::ToggleCheckbox((name, id), enable) => {
                 if let State::EditMods(menu) = &mut self.state {
+                    let selected_mod = SelectedMod::from_pair(name, id);
                     if enable {
-                        menu.selected_mods
-                            .insert(SelectedMod::Downloaded { name, id });
+                        menu.selected_mods.insert(selected_mod);
                         menu.selected_state = SelectedState::Some;
                     } else {
-                        menu.selected_mods
-                            .remove(&SelectedMod::Downloaded { name, id });
+                        menu.selected_mods.remove(&selected_mod);
                         menu.selected_state = if menu.selected_mods.is_empty() {
                             SelectedState::None
                         } else {
@@ -83,23 +82,6 @@ impl Launcher {
                 }
                 Err(err) => self.set_error(err),
             },
-            ManageModsMessage::ToggleCheckboxLocal(name, enable) => {
-                if let State::EditMods(menu) = &mut self.state {
-                    if enable {
-                        menu.selected_mods
-                            .insert(SelectedMod::Local { file_name: name });
-                        menu.selected_state = SelectedState::Some;
-                    } else {
-                        menu.selected_mods
-                            .remove(&SelectedMod::Local { file_name: name });
-                        menu.selected_state = if menu.selected_mods.is_empty() {
-                            SelectedState::None
-                        } else {
-                            SelectedState::Some
-                        };
-                    }
-                }
-            }
             ManageModsMessage::DeleteSelected => {
                 if let State::EditMods(menu) = &self.state {
                     let command = Self::get_delete_mods_command(

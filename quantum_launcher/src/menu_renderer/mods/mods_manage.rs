@@ -1,7 +1,8 @@
 use iced::widget::tooltip::Position;
-use iced::{widget, Length};
+use iced::{widget, Alignment, Length};
 use ql_core::{InstanceSelection, SelectedMod};
 
+use crate::menu_renderer::select_box;
 use crate::stylesheet::styles::{BORDER_RADIUS, BORDER_WIDTH};
 use crate::{
     icon_manager,
@@ -317,10 +318,20 @@ impl MenuEditMods {
                     .push(widget::text("Select some mods to perform actions on them").size(14))
                     .push(
                         widget::row![
-                            button_with_icon(icon_manager::delete_with_size(13), "Delete", 13)
-                                .on_press(Message::ManageMods(ManageModsMessage::DeleteSelected)),
-                            button_with_icon(icon_manager::toggle_off_with_size(13), "Toggle", 13)
-                                .on_press(Message::ManageMods(ManageModsMessage::ToggleSelected)),
+                            widget::button(
+                                widget::row![icon_manager::delete_with_size(13), widget::text("Delete").size(13)]
+                                    .align_y(iced::alignment::Vertical::Center)
+                                    .spacing(10)
+                                    .padding(3),
+                            )
+                            .on_press(Message::ManageMods(ManageModsMessage::DeleteSelected)),
+                            widget::button(
+                                widget::row![icon_manager::toggle_off_with_size(13), widget::text("Toggle").size(13)]
+                                    .align_y(iced::alignment::Vertical::Center)
+                                    .spacing(10)
+                                    .padding(3),
+                            )
+                            .on_press(Message::ManageMods(ManageModsMessage::ToggleSelected)),
                             button_with_icon(
                                 icon_manager::tick_with_size(13),
                                 if matches!(self.selected_state, SelectedState::All) {
@@ -351,105 +362,26 @@ impl MenuEditMods {
     }
 
     fn get_mod_list_contents(&'_ self) -> Element<'_> {
-        widget::scrollable(
-            widget::row![
-                widget::column({
-                    self.sorted_mods_list
-                        .iter()
-                        .map(|mod_list_entry| match mod_list_entry {
-                            ModListEntry::Downloaded { id, config } => {
-                                if config.manually_installed {
-                                    let is_enabled = config.enabled;
-                                    let checkbox = widget::checkbox(
-                                        &config.name,
-                                        self.selected_mods.contains(&SelectedMod::Downloaded {
-                                            name: config.name.clone(),
-                                            id: (*id).clone(),
-                                        }),
-                                    )
-                                    .style(move |t: &LauncherTheme, status| {
-                                        t.style_checkbox(
-                                            status,
-                                            Some(if is_enabled {
-                                                Color::White
-                                            } else {
-                                                Color::Mid
-                                            }),
-                                        )
-                                    })
-                                    .on_toggle(move |t| {
-                                        Message::ManageMods(ManageModsMessage::ToggleCheckbox(
-                                            (config.name.clone(), id.clone()),
-                                            t,
-                                        ))
-                                    });
-
-                                    if is_enabled {
-                                        checkbox.into()
-                                    } else {
-                                        tooltip(
-                                            checkbox,
-                                            "Disabled",
-                                            widget::tooltip::Position::FollowCursor,
-                                        )
-                                        .into()
-                                    }
-                                } else {
-                                    widget::text!("- (DEPENDENCY) {}", config.name).into()
-                                }
-                            }
-                            ModListEntry::Local { file_name } => {
-                                let is_enabled = !file_name.ends_with(".disabled");
-                                let checkbox = widget::checkbox(
-                                    file_name
-                                        .strip_suffix(".disabled")
-                                        .unwrap_or(file_name)
-                                        .to_owned(),
-                                    self.selected_mods.contains(&SelectedMod::Local {
-                                        file_name: file_name.clone(),
-                                    }),
-                                )
-                                .style(move |t: &LauncherTheme, status| {
-                                    t.style_checkbox(
-                                        status,
-                                        Some(if is_enabled { Color::White } else { Color::Mid }),
-                                    )
-                                })
-                                .on_toggle(move |t| {
-                                    Message::ManageMods(ManageModsMessage::ToggleCheckboxLocal(
-                                        file_name.clone(),
-                                        t,
-                                    ))
-                                });
-
-                                if is_enabled {
-                                    checkbox.into()
-                                } else {
-                                    tooltip(
-                                        checkbox,
-                                        "Disabled",
-                                        widget::tooltip::Position::FollowCursor,
-                                    )
-                                    .into()
-                                }
-                            }
-                        })
-                })
-                .padding(10)
-                .spacing(10),
-                widget::column({
-                    self.sorted_mods_list.iter().map(|entry| match entry {
-                        ModListEntry::Downloaded { config, .. } => {
-                            widget::text(&config.installed_version).into()
+        widget::scrollable(widget::column({
+            self.sorted_mods_list.iter().map(|mod_list_entry| {
+                widget::row![
+                    self.get_mod_entry(mod_list_entry),
+                    widget::Row::new().push_maybe(
+                        if let ModListEntry::Downloaded { config, .. } = mod_list_entry {
+                            Some(
+                                widget::text(&config.installed_version)
+                                    .style(|t: &LauncherTheme| t.style_text(Color::SecondLight)),
+                            )
+                        } else {
+                            None
                         }
-                        ModListEntry::Local { .. } => widget::text(" ").into(),
-                    })
-                })
-                .padding(10)
+                    ),
+                ]
+                .align_y(Alignment::Center)
                 .spacing(10)
-            ]
-            .spacing(10),
-        )
+                .into()
+            })
+        }))
         .direction(widget::scrollable::Direction::Both {
             vertical: widget::scrollable::Scrollbar::new(),
             horizontal: widget::scrollable::Scrollbar::new(),
@@ -458,6 +390,96 @@ impl MenuEditMods {
         .width(Length::Fill)
         .height(Length::Fill)
         .into()
+    }
+
+    fn get_mod_entry<'a>(&'a self, entry: &'a ModListEntry) -> Element<'a> {
+        const PADDING: iced::Padding = iced::Padding {
+            top: 5.0,
+            bottom: 5.0,
+            right: 0.0,
+            left: 15.0,
+        };
+        match entry {
+            ModListEntry::Downloaded { id, config } => {
+                if config.manually_installed {
+                    let is_enabled = config.enabled;
+                    let is_selected = self.selected_mods.contains(&SelectedMod::Downloaded {
+                        name: config.name.clone(),
+                        id: (*id).clone(),
+                    });
+
+                    let checkbox = select_box(
+                        widget::text(&config.name).style(move |t: &LauncherTheme| {
+                            t.style_text(if is_enabled {
+                                Color::SecondLight
+                            } else {
+                                Color::Mid
+                            })
+                        }),
+                        is_selected,
+                        Message::ManageMods(ManageModsMessage::ToggleCheckbox(
+                            (config.name.clone(), Some(id.clone())),
+                            !is_selected,
+                        )),
+                    )
+                    .padding(PADDING)
+                    .width(self.row_name_width);
+
+                    if is_enabled {
+                        checkbox.into()
+                    } else {
+                        tooltip(
+                            checkbox,
+                            "Disabled",
+                            widget::tooltip::Position::FollowCursor,
+                        )
+                        .into()
+                    }
+                } else {
+                    widget::text!("- (DEPENDENCY) {}", config.name).into()
+                }
+            }
+            ModListEntry::Local { file_name } => {
+                let is_enabled = !file_name.ends_with(".disabled");
+                let is_selected = self.selected_mods.contains(&SelectedMod::Local {
+                    file_name: file_name.clone(),
+                });
+
+                let checkbox = select_box(
+                    widget::text(
+                        file_name
+                            .strip_suffix(".disabled")
+                            .unwrap_or(file_name)
+                            .to_owned(),
+                    )
+                    .style(move |t: &LauncherTheme| {
+                        t.style_text(if is_enabled {
+                            Color::SecondLight
+                        } else {
+                            Color::Mid
+                        })
+                    }),
+                    is_selected,
+                    Message::ManageMods(ManageModsMessage::ToggleCheckbox(
+                        (file_name.clone(), None),
+                        !is_selected,
+                    )),
+                )
+                .padding(PADDING)
+                .width(self.row_name_width);
+
+                if is_enabled {
+                    checkbox.into()
+                } else {
+                    tooltip(
+                        checkbox,
+                        "Disabled",
+                        widget::tooltip::Position::FollowCursor,
+                    )
+                    .into()
+                }
+            }
+        }
     }
 }
 

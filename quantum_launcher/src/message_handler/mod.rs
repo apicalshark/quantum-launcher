@@ -229,6 +229,7 @@ impl Launcher {
                 update_check_handle,
                 version_json,
                 submenu1_shown: false,
+                row_name_width: 250.0,
             });
 
             Ok(Task::batch([update_local_mods_task, update_cmd]))
