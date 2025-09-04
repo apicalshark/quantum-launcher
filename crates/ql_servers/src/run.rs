@@ -7,7 +7,7 @@ use std::{
 use ql_core::{
     err, find_forge_shim_file, info,
     json::{InstanceConfigJson, VersionDetails},
-    no_window, GenericProgress, IntoIoError, LAUNCHER_DATA_DIR,
+    no_window, GenericProgress, IntoIoError, LAUNCHER_DIR,
 };
 use ql_java_handler::{get_java_binary, JavaVersion};
 use tokio::process::{Child, Command};
@@ -37,7 +37,7 @@ pub async fn run(
     name: String,
     java_install_progress: Sender<GenericProgress>,
 ) -> Result<(Arc<Mutex<Child>>, bool), ServerError> {
-    let server_dir = LAUNCHER_DATA_DIR.join("servers").join(name);
+    let server_dir = LAUNCHER_DIR.join("servers").join(name);
 
     let config_json = InstanceConfigJson::read_from_dir(&server_dir).await?;
 
