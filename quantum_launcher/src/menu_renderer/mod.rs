@@ -93,11 +93,26 @@ pub fn back_button<'a>() -> widget::Button<'a, Message, LauncherTheme> {
     button_with_icon(icon_manager::back_with_size(14), "Back", 14)
 }
 
-pub fn button_with_icon<'element>(
-    icon: impl Into<Element<'element>>,
-    text: &'element str,
+pub fn subbutton_with_icon<'a>(
+    icon: impl Into<Element<'a>>,
+    text: &'a str,
+) -> widget::Button<'a, Message, LauncherTheme> {
+    widget::button(
+        widget::row![icon.into(), widget::text(text).size(13)]
+            .align_y(iced::alignment::Vertical::Center)
+            .spacing(8)
+            .padding(2),
+    )
+    .style(|t: &LauncherTheme, s| {
+        t.style_button(s, crate::stylesheet::widgets::StyleButton::RoundDark)
+    })
+}
+
+pub fn button_with_icon<'a>(
+    icon: impl Into<Element<'a>>,
+    text: &'a str,
     size: u16,
-) -> widget::Button<'element, Message, LauncherTheme> {
+) -> widget::Button<'a, Message, LauncherTheme> {
     widget::button(
         widget::row![icon.into(), widget::text(text).size(size)]
             .align_y(iced::alignment::Vertical::Center)

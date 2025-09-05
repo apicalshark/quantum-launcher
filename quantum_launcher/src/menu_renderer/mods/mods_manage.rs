@@ -2,7 +2,7 @@ use iced::widget::tooltip::Position;
 use iced::{widget, Alignment, Length};
 use ql_core::{InstanceSelection, SelectedMod};
 
-use crate::menu_renderer::{select_box, FONT_MONO};
+use crate::menu_renderer::{select_box, subbutton_with_icon, FONT_MONO};
 use crate::stylesheet::styles::{BORDER_RADIUS, BORDER_WIDTH};
 use crate::{
     icon_manager,
@@ -62,9 +62,9 @@ impl MenuEditMods {
             widget::stack!(
                 menu_main,
                 widget::row![
-                    widget::horizontal_space(),
+                    widget::Space::with_width(MODS_SIDEBAR_WIDTH + 30),
                     widget::column![
-                        widget::Space::with_height(60),
+                        widget::Space::with_height(70),
                         widget::container(submenu).padding(10).width(200).style(
                             |t: &LauncherTheme| t.style_container_round_box(
                                 BORDER_WIDTH,
@@ -321,34 +321,24 @@ impl MenuEditMods {
                     .push(
                         widget::row![
                             widget::button(
-                                widget::row![icon_manager::delete_with_size(13), widget::text("Delete").size(13)]
-                                    .align_y(iced::alignment::Vertical::Center)
-                                    .spacing(10)
-                                    .padding(3),
-                            )
-                            .on_press(Message::ManageMods(ManageModsMessage::DeleteSelected)),
-                            widget::button(
-                                widget::row![icon_manager::toggle_off_with_size(13), widget::text("Toggle").size(13)]
-                                    .align_y(iced::alignment::Vertical::Center)
-                                    .spacing(10)
-                                    .padding(3),
-                            )
-                            .on_press(Message::ManageMods(ManageModsMessage::ToggleSelected)),
-                            button_with_icon(
-                                icon_manager::tick_with_size(13),
-                                if matches!(self.selected_state, SelectedState::All) {
-                                    "Unselect All"
-                                } else {
-                                    "Select All"
-                                },
-                                13
-                            )
-                            .on_press(Message::ManageMods(ManageModsMessage::SelectAll)),
-                            widget::button(
                                 widget::row![icon_manager::three_lines_with_size(13)]
                                     .align_y(iced::alignment::Vertical::Center)
-                                    .padding(3),
-                            ).on_press(Message::ManageMods(ManageModsMessage::ToggleSubmenu1)),
+                                    .padding(2),
+                            )
+                            .style(|t: &LauncherTheme, s| {
+                                t.style_button(s, crate::stylesheet::widgets::StyleButton::RoundDark)
+                            })
+                            .on_press(Message::ManageMods(ManageModsMessage::ToggleSubmenu1)),
+                            subbutton_with_icon(icon_manager::delete_with_size(13), "Delete")
+                            .on_press_maybe((!self.selected_mods.is_empty()).then_some(Message::ManageMods(ManageModsMessage::DeleteSelected))),
+                            subbutton_with_icon(icon_manager::toggle_off_with_size(13), "Toggle")
+                            .on_press_maybe((!self.selected_mods.is_empty()).then_some(Message::ManageMods(ManageModsMessage::ToggleSelected))),
+                            subbutton_with_icon(icon_manager::tick_with_size(13), if matches!(self.selected_state, SelectedState::All) {
+                                "Unselect All"
+                            } else {
+                                "Select All"
+                            })
+                            .on_press(Message::ManageMods(ManageModsMessage::SelectAll)),
                         ]
                         .spacing(5)
                         .wrap()
@@ -384,7 +374,7 @@ impl MenuEditMods {
             top: 4.0,
             bottom: 4.0,
             right: 15.0,
-            left: 15.0,
+            left: 20.0,
         };
 
         match entry {
@@ -409,7 +399,11 @@ impl MenuEditMods {
                                 .size(14)
                                 .width(self.width_name),
                             widget::text(&config.installed_version)
-                                .style(|t: &LauncherTheme| t.style_text(Color::Mid))
+                                .style(move |t: &LauncherTheme| t.style_text(if is_enabled {
+                                    Color::Mid
+                                } else {
+                                    Color::SecondDark
+                                }))
                                 .font(FONT_MONO)
                                 .size(12)
                         ]
