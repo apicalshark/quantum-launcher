@@ -584,16 +584,8 @@ pub fn view_log_upload_result(url: &'_ str, is_server: bool) -> Element<'_> {
             widget::container(
                 widget::row![
                     widget::text(url).font(FONT_MONO),
-                    widget::button("Copy")
-                        .on_press(Message::CoreCopyText(url.to_string()))
-                        .style(|theme: &LauncherTheme, status| {
-                            theme.style_button(status, StyleButton::Round)
-                        }),
-                    widget::button("Open")
-                        .on_press(Message::CoreOpenLink(url.to_string()))
-                        .style(|theme: &LauncherTheme, status| {
-                            theme.style_button(status, StyleButton::Round)
-                        }),
+                    widget::button("Copy").on_press(Message::CoreCopyText(url.to_string())),
+                    widget::button("Open").on_press(Message::CoreOpenLink(url.to_string()))
                 ]
                 .spacing(10)
                 .align_y(iced::Alignment::Center)
