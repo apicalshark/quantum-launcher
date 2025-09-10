@@ -115,10 +115,11 @@ impl Launcher {
                 let command = self.tick();
                 tasks.push(command);
 
-                if let Some(_) = self
+                if self
                     .custom_jar
                     .as_ref()
                     .and_then(|n| n.recv.try_recv().ok())
+                    .is_some()
                 {
                     tasks.push(CustomJarState::load());
                 }

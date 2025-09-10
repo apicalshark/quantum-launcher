@@ -35,6 +35,8 @@ use ql_core::{err, err_no_log, file_utils, info, info_no_log, IntoStringError, J
 use ql_instances::OS_NAME;
 use tokio::io::AsyncWriteExt;
 
+use crate::state::CustomJarState;
+
 /// The CLI interface of the launcher.
 mod cli;
 /// Launcher configuration (global).
