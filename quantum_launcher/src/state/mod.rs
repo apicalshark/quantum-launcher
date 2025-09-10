@@ -1,11 +1,16 @@
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
+    path::Path,
     str::FromStr,
-    sync::{mpsc::Receiver, Arc, Mutex},
+    sync::{
+        mpsc::{self, Receiver},
+        Arc, Mutex,
+    },
 };
 
 use iced::{widget::image::Handle, Task};
+use notify::Watcher;
 use ql_core::{
     err, file_utils, GenericProgress, InstanceSelection, IntoIoError, IntoStringError, IoError,
     JsonFileError, ListEntry, Progress, LAUNCHER_DIR, LAUNCHER_VERSION_NAME,
@@ -54,7 +59,7 @@ pub struct Launcher {
     pub is_launching_game: bool,
 
     pub java_recv: Option<ProgressBar<GenericProgress>>,
-    pub custom_jar_choices: Option<Vec<String>>,
+    pub custom_jar: Option<CustomJarState>,
 
     pub accounts: HashMap<String, AccountData>,
     pub accounts_dropdown: Vec<String>,
@@ -72,6 +77,20 @@ pub struct Launcher {
     pub window_size: (f32, f32),
     pub mouse_pos: (f32, f32),
     pub keys_pressed: HashSet<iced::keyboard::Key>,
+}
+
+pub struct CustomJarState {
+    pub choices: Vec<String>,
+    pub recv: Receiver<notify::Event>,
+    pub _watcher: notify::RecommendedWatcher,
+}
+
+impl CustomJarState {
+    pub fn load() -> Task<Message> {
+        Task::perform(load_custom_jars(), |n| {
+            Message::EditInstance(EditInstanceMessage::CustomJarLoaded(n.strerr()))
+        })
+    }
 }
 
 #[derive(Default)]
@@ -192,7 +211,7 @@ impl Launcher {
             accounts_selected: Some(selected_account),
             keys_pressed: HashSet::new(),
             tick_timer: 0,
-            custom_jar_choices: None,
+            custom_jar: None,
         })
     }
 
@@ -247,7 +266,7 @@ impl Launcher {
             accounts_selected: Some(OFFLINE_ACCOUNT_NAME.to_owned()),
             keys_pressed: HashSet::new(),
             tick_timer: 0,
-            custom_jar_choices: None,
+            custom_jar: None,
         }
     }
 
@@ -474,4 +493,20 @@ pub async fn load_custom_jars() -> Result<Vec<String>, IoError> {
     list.push(REMOVE_JAR_NAME.to_owned());
 
     Ok(list)
+}
+
+pub fn dir_watch<P: AsRef<Path>>(
+    path: P,
+) -> notify::Result<(mpsc::Receiver<notify::Event>, notify::RecommendedWatcher)> {
+    let (tx, rx) = mpsc::channel();
+
+    // `notify` runs callbacks in its own thread.
+    let mut watcher: notify::RecommendedWatcher = notify::recommended_watcher(move |res| {
+        if let Ok(event) = res {
+            _ = tx.send(event);
+        }
+    })?;
+    watcher.watch(path.as_ref(), notify::RecursiveMode::NonRecursive)?;
+
+    Ok((rx, watcher))
 }

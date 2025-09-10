@@ -1,7 +1,7 @@
 use crate::{
     icon_manager,
     menu_renderer::{button_with_icon, FONT_MONO},
-    state::{EditInstanceMessage, MenuEditInstance, Message, NONE_JAR_NAME},
+    state::{CustomJarState, EditInstanceMessage, MenuEditInstance, Message, NONE_JAR_NAME},
     stylesheet::{color::Color, styles::LauncherTheme},
 };
 use iced::{widget, Length};
@@ -17,7 +17,7 @@ impl MenuEditInstance {
     pub fn view<'a>(
         &'a self,
         selected_instance: &InstanceSelection,
-        jar_choices: Option<&'a [String]>,
+        jar_choices: Option<&'a CustomJarState>,
     ) -> Element<'a> {
         let ts = |n: &LauncherTheme| n.style_text(Color::SecondLight);
 
@@ -253,13 +253,13 @@ impl MenuEditInstance {
 
     fn item_custom_jar<'a>(
         &'a self,
-        jar_choices: Option<&'a [String]>,
+        jar_choices: Option<&'a CustomJarState>,
     ) -> widget::Column<'a, Message, LauncherTheme> {
         let ts = |n: &LauncherTheme| n.style_text(Color::SecondLight);
 
         let picker: Element = if let Some(choices) = jar_choices {
             widget::pick_list(
-                choices,
+                choices.choices.as_slice(),
                 Some(
                     self.config
                         .custom_jar

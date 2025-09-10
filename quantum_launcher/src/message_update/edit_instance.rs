@@ -8,8 +8,8 @@ use ql_core::{
 use crate::{
     message_handler::format_memory,
     state::{
-        get_entries, EditInstanceMessage, Launcher, MenuEditInstance, MenuLaunch, Message, State,
-        ADD_JAR_NAME, NONE_JAR_NAME, REMOVE_JAR_NAME,
+        dir_watch, get_entries, CustomJarState, EditInstanceMessage, Launcher, MenuEditInstance,
+        MenuLaunch, Message, State, ADD_JAR_NAME, NONE_JAR_NAME, REMOVE_JAR_NAME,
     },
 };
 
@@ -235,9 +235,9 @@ impl Launcher {
                 {
                     if path == REMOVE_JAR_NAME {
                         if let (Some(jar), Some(list)) =
-                            (&menu.config.custom_jar, &mut self.custom_jar_choices)
+                            (&menu.config.custom_jar, &mut self.custom_jar)
                         {
-                            list.retain(|n| *n != jar.name);
+                            list.choices.retain(|n| *n != jar.name);
                             let name = jar.name.clone();
                             menu.config.custom_jar = None;
                             return Ok(Task::perform(
@@ -256,8 +256,42 @@ impl Launcher {
                 }
             }
             EditInstanceMessage::CustomJarLoaded(items) => match items {
-                Ok(items) => self.custom_jar_choices = Some(items),
-                Err(err) => err!("Couldn't load list of custom jars! {err}"),
+                Ok(items) => {
+                    match &mut self.custom_jar {
+                        Some(cx) => {
+                            cx.choices = items.clone();
+                        }
+                        None => {
+                            let (recv, watcher) = match dir_watch(LAUNCHER_DIR.join("custom_jars"))
+                            {
+                                Ok(n) => n,
+                                Err(err) => {
+                                    err!("Couldn't load list of custom jars (2)! {err}");
+                                    return Ok(Task::none());
+                                }
+                            };
+                            self.custom_jar = Some(CustomJarState {
+                                choices: items.clone(),
+                                recv,
+                                _watcher: watcher,
+                            })
+                        }
+                    }
+                    // If the currently selected jar got deleted/renamed
+                    // then unselect it
+                    if let State::Launch(MenuLaunch {
+                        edit_instance: Some(menu),
+                        ..
+                    }) = &mut self.state
+                    {
+                        if let Some(jar) = &menu.config.custom_jar {
+                            if !items.contains(&jar.name) {
+                                menu.config.custom_jar = None;
+                            }
+                        }
+                    }
+                }
+                Err(err) => err!("Couldn't load list of custom jars (1)! {err}"),
             },
             EditInstanceMessage::AutoSetMainClassToggle(t) => {
                 if let State::Launch(MenuLaunch {
@@ -289,7 +323,7 @@ impl Launcher {
             }),
             Some((path, file_name)),
         ) = (
-            &mut self.custom_jar_choices,
+            &mut self.custom_jar,
             &mut self.state,
             rfd::FileDialog::new()
                 .set_title("Select Custom Minecraft JAR")
@@ -298,8 +332,8 @@ impl Launcher {
                 .and_then(|n| n.file_name().map(|f| (n.clone(), f.to_owned()))),
         ) {
             let file_name = file_name.to_string_lossy().to_string();
-            if !custom_jars.contains(&file_name) {
-                custom_jars.insert(1, file_name.clone());
+            if !custom_jars.choices.contains(&file_name) {
+                custom_jars.choices.insert(1, file_name.clone());
             }
 
             *menu
