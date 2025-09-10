@@ -448,7 +448,11 @@ impl MenuEditMods {
                         .into()
                     }
                 } else {
-                    widget::text!("- (DEPENDENCY) {}", config.name).into()
+                    widget::row![widget::text!("(dependency) {}", config.name)
+                        .size(14)
+                        .style(|t: &LauncherTheme| t.style_text(Color::SecondLight))]
+                    .padding(PADDING)
+                    .into()
                 }
             }
             ModListEntry::Local { file_name } => {
