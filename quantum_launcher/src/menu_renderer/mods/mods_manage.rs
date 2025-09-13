@@ -371,7 +371,7 @@ impl MenuEditMods {
 
     fn get_mod_entry<'a>(&'a self, entry: &'a ModListEntry, size: iced::Size) -> Element<'a> {
         const PADDING: iced::Padding = iced::Padding {
-            top: 4.0,
+            top: 2.0,
             bottom: 4.0,
             right: 15.0,
             left: 20.0,
@@ -428,6 +428,7 @@ impl MenuEditMods {
                             (space > -10.0).then_some(widget::Space::with_width(space))
                         })
                         .align_y(Alignment::Center)
+                        .padding(PADDING)
                         .spacing(10),
                         is_selected,
                         Message::ManageMods(ManageModsMessage::ToggleCheckbox(
@@ -435,7 +436,7 @@ impl MenuEditMods {
                             Some(id.clone()),
                         )),
                     )
-                    .padding(PADDING);
+                    .padding(0);
 
                     if is_enabled {
                         checkbox.into()

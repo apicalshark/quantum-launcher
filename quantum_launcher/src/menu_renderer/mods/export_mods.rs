@@ -165,7 +165,7 @@ impl MenuExportMods {
                             widget::text("-")
                                 .size(13)
                                 .style(|theme: &LauncherTheme| theme.style_text(Color::Mid)),
-                            underline(widget::text(name).size(13)),
+                            underline(widget::text(name).size(13), Color::Light),
                             widget::text("→")
                                 .size(13)
                                 .style(|theme: &LauncherTheme| theme

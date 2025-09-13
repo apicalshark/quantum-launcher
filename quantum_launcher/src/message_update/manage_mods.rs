@@ -1,5 +1,5 @@
-use iced::futures::executor::block_on;
 use iced::Task;
+use iced::{futures::executor::block_on, keyboard::Modifiers};
 use ql_core::{
     err, err_no_log, jarmod::JarMods, InstanceSelection, IntoIoError, IntoStringError, ModId,
     SelectedMod,
@@ -24,19 +24,56 @@ impl Launcher {
                 if let State::EditMods(menu) = &mut self.state {
                     let selected_mod = SelectedMod::from_pair(name, id);
 
-                    if menu.selected_mods.contains(&selected_mod) {
-                        menu.selected_mods.remove(&selected_mod);
-                    } else {
-                        menu.selected_mods.insert(selected_mod);
+                    let pressed_ctrl = self.modifiers_pressed.contains(Modifiers::COMMAND);
+                    let pressed_shift = self.modifiers_pressed.contains(Modifiers::SHIFT);
+
+                    if pressed_ctrl {
+                        menu.shift_selected_mods.clear();
+                    }
+                    if !pressed_ctrl && !pressed_shift {
+                        menu.selected_mods.clear();
                     }
 
-                    menu.selected_state = if menu.selected_mods.is_empty() {
-                        SelectedState::None
-                    } else if menu.selected_mods.len() == menu.sorted_mods_list.len() {
-                        SelectedState::All
-                    } else {
-                        SelectedState::Some
+                    let Some(idx) = menu
+                        .sorted_mods_list
+                        .iter()
+                        .position(|n| selected_mod == *n)
+                    else {
+                        debug_assert!(false, "couldn't find index of mod");
+                        return Task::none();
                     };
+
+                    match (pressed_shift, menu.list_shift_index) {
+                        // Range selection, shift pressed
+                        (true, Some(shift_idx)) if shift_idx != idx => {
+                            menu.selected_mods
+                                .retain(|n| !menu.shift_selected_mods.contains(n));
+                            menu.shift_selected_mods.clear();
+
+                            let (idx, shift_idx) =
+                                (std::cmp::min(idx, shift_idx), std::cmp::max(idx, shift_idx));
+
+                            for i in idx..=shift_idx {
+                                let current_mod: SelectedMod =
+                                    menu.sorted_mods_list[i].clone().into();
+                                if menu.selected_mods.insert(current_mod.clone()) {
+                                    menu.shift_selected_mods.insert(current_mod);
+                                }
+                            }
+                        }
+
+                        // Normal selection
+                        _ => {
+                            menu.list_shift_index = Some(idx);
+                            if pressed_ctrl && menu.selected_mods.contains(&selected_mod) {
+                                menu.selected_mods.remove(&selected_mod);
+                            } else {
+                                menu.selected_mods.insert(selected_mod);
+                            }
+                        }
+                    }
+
+                    menu.update_selected_state();
                 }
             }
             ManageModsMessage::AddFile(delete_file) => {
@@ -138,20 +175,20 @@ impl Launcher {
                     let (ids_downloaded, ids_local) = menu.get_kinds_of_ids();
                     let instance_name = self.selected_instance.clone().unwrap();
 
-                    menu.selected_mods.clear();
-                    menu.selected_state = SelectedState::None;
-                    /*menu.selected_mods.retain(|n| {
+                    // menu.selected_mods.clear();
+                    // menu.selected_state = SelectedState::None;
+
+                    menu.selected_mods.retain(|n| {
                         if let SelectedMod::Local { file_name } = n {
                             !ids_local.contains(file_name)
                         } else {
                             true
                         }
                     });
-
                     menu.selected_mods
                         .extend(ids_local.iter().map(|n| SelectedMod::Local {
                             file_name: ql_mod_manager::store::flip_filename(n),
-                        }));*/
+                        }));
 
                     let toggle_downloaded = Task::perform(
                         ql_mod_manager::store::toggle_mods(

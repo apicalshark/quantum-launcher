@@ -159,10 +159,14 @@ pub struct MenuEditMods {
     pub sorted_mods_list: Vec<ModListEntry>,
 
     pub selected_mods: HashSet<SelectedMod>,
+    pub shift_selected_mods: HashSet<SelectedMod>,
     pub selected_state: SelectedState,
 
     pub update_check_handle: Option<iced::task::Handle>,
     pub available_updates: Vec<(ModId, String, bool)>,
+
+    /// Index of the item selected before pressing shift
+    pub list_shift_index: Option<usize>,
     pub drag_and_drop_hovered: bool,
     pub submenu1_shown: bool,
 
@@ -217,6 +221,16 @@ impl MenuEditMods {
             })
             .collect();
         (ids_downloaded, ids_local)
+    }
+
+    pub fn update_selected_state(&mut self) {
+        self.selected_state = if self.selected_mods.is_empty() {
+            SelectedState::None
+        } else if self.selected_mods.len() == self.sorted_mods_list.len() {
+            SelectedState::All
+        } else {
+            SelectedState::Some
+        };
     }
 }
 

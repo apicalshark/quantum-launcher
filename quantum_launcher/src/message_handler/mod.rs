@@ -220,6 +220,7 @@ impl Launcher {
                 config: config_json,
                 mods,
                 selected_mods: HashSet::new(),
+                shift_selected_mods: HashSet::new(),
                 sorted_mods_list,
                 selected_state: SelectedState::None,
                 available_updates: Vec::new(),
@@ -230,6 +231,7 @@ impl Launcher {
                 version_json,
                 submenu1_shown: false,
                 width_name: 220.0,
+                list_shift_index: None,
             });
 
             Ok(Task::batch([update_local_mods_task, update_cmd]))

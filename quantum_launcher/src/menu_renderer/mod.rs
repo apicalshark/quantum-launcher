@@ -35,7 +35,7 @@ pub fn select_box<'a>(
     is_checked: bool,
     message: Message,
 ) -> widget::Button<'a, Message, LauncherTheme> {
-    widget::button(e)
+    widget::button(underline(e, Color::Dark))
         .on_press(message)
         .style(move |t: &LauncherTheme, s| {
             t.style_button(
@@ -53,19 +53,21 @@ pub fn link<'a>(
     e: impl Into<Element<'a>>,
     url: String,
 ) -> widget::Button<'a, Message, LauncherTheme> {
-    widget::button(underline(e))
+    widget::button(underline(e, Color::Light))
         .on_press(Message::CoreOpenLink(url))
         .padding(0)
         .style(|n: &LauncherTheme, status| n.style_button(status, StyleButton::FlatDark))
 }
 
-pub fn underline<'a>(e: impl Into<Element<'a>>) -> widget::Stack<'a, Message, LauncherTheme> {
+pub fn underline<'a>(
+    e: impl Into<Element<'a>>,
+    color: Color,
+) -> widget::Stack<'a, Message, LauncherTheme> {
     widget::stack!(
         widget::column![e.into()],
         widget::column![
             widget::vertical_space(),
-            widget::horizontal_rule(1)
-                .style(|theme: &LauncherTheme| theme.style_rule(Color::Light, 1)),
+            widget::horizontal_rule(1).style(move |t: &LauncherTheme| t.style_rule(color, 1)),
             widget::Space::with_height(1),
         ]
     )
