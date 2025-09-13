@@ -432,20 +432,20 @@ pub fn create_symlink(src: &Path, dest: &Path) -> Result<(), IoError> {
     }
 }
 
-pub async fn clean_log_spam() -> Result<(), IoError> {
+pub async fn clean_dir(path: &str) -> Result<(), IoError> {
     const SIZE_LIMIT_BYTES: u64 = 100 * 1024 * 1024; // 100 MB
 
-    let logs_dir = get_launcher_dir()?.join("logs");
-    if !logs_dir.is_dir() {
-        tokio::fs::create_dir_all(&logs_dir).await.path(logs_dir)?;
+    let dir = get_launcher_dir()?.join(path);
+    if !dir.is_dir() {
+        tokio::fs::create_dir_all(&dir).await.path(dir)?;
         return Ok(());
     }
     let mut total_size = 0;
     let mut files: Vec<(DirEntry, Metadata)> = Vec::new();
 
-    let mut read_dir = tokio::fs::read_dir(&logs_dir).await.dir(&logs_dir)?;
+    let mut read_dir = tokio::fs::read_dir(&dir).await.dir(&dir)?;
 
-    while let Some(entry) = read_dir.next_entry().await.dir(&logs_dir)? {
+    while let Some(entry) = read_dir.next_entry().await.dir(&dir)? {
         let metadata = entry.metadata().await.path(entry.path())?;
         if metadata.is_file() {
             total_size += metadata.len();
@@ -458,7 +458,7 @@ pub async fn clean_log_spam() -> Result<(), IoError> {
     }
 
     info_no_log!(
-        "Log exceeded {} MB, cleaning up",
+        "Exceeded {} MB, cleaning up {dir:?}",
         SIZE_LIMIT_BYTES / (1024 * 1024)
     );
     files.sort_unstable_by_key(|(_, metadata)| {

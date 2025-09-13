@@ -316,7 +316,7 @@ pub enum Message {
     CoreOpenChangeLog,
     CoreOpenIntro,
     CoreEvent(iced::Event, iced::event::Status),
-    CoreLogCleanComplete(Res),
+    CoreCleanComplete(Res),
 
     CoreLogToggle,
     CoreLogScroll(isize),

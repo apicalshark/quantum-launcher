@@ -25,6 +25,7 @@ mod loader;
 /// Logging macros.
 pub mod print;
 mod progress;
+mod urlcache;
 
 use std::{
     ffi::OsStr,
@@ -44,6 +45,8 @@ use json::VersionDetails;
 pub use loader::Loader;
 pub use print::{logger_finish, LogType, LoggingState, LOGGER};
 pub use progress::{DownloadProgress, GenericProgress, Progress};
+pub use urlcache::url_cache_get;
+
 use regex::Regex;
 
 pub static REGEX_SNAPSHOT: LazyLock<Regex> =
