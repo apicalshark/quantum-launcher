@@ -10,7 +10,7 @@ use super::{
     widgets::{IsFlat, StyleButton, StyleScrollable},
 };
 
-pub const BORDER_WIDTH: f32 = 2.0;
+pub const BORDER_WIDTH: f32 = 1.0;
 pub const BORDER_RADIUS: f32 = 8.0;
 
 #[derive(Copy, Clone, Debug, Default)]
@@ -453,7 +453,7 @@ impl LauncherTheme {
                     | StyleButton::RoundDark
                     | StyleButton::Flat
                     | StyleButton::FlatDark => Color::Mid,
-                    StyleButton::FlatExtraDark => Color::SecondDark,
+                    StyleButton::FlatExtraDark => Color::Dark,
                 };
                 widget::button::Style {
                     background: Some(self.get_bg(color, true)),

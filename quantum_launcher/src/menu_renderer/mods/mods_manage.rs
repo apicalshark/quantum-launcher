@@ -3,6 +3,7 @@ use iced::{widget, Alignment, Length};
 use ql_core::{InstanceSelection, SelectedMod};
 
 use crate::menu_renderer::{select_box, subbutton_with_icon, FONT_MONO};
+use crate::state::ImageState;
 use crate::stylesheet::styles::{BORDER_RADIUS, BORDER_WIDTH};
 use crate::{
     icon_manager,
@@ -22,6 +23,7 @@ impl MenuEditMods {
         &'a self,
         selected_instance: &'a InstanceSelection,
         tick_timer: usize,
+        images: &'a ImageState,
     ) -> Element<'a> {
         if let Some(progress) = &self.mod_update_progress {
             return widget::column!(widget::text("Updating mods").size(20), progress.view())
@@ -32,7 +34,7 @@ impl MenuEditMods {
 
         let menu_main = widget::row!(
             self.get_sidebar(selected_instance, tick_timer),
-            self.get_mod_list()
+            self.get_mod_list(images)
         );
 
         if self.drag_and_drop_hovered {
@@ -289,7 +291,7 @@ impl MenuEditMods {
             .into()
     }
 
-    fn get_mod_list(&'_ self) -> Element<'_> {
+    fn get_mod_list<'a>(&'a self, images: &'a ImageState) -> Element<'a> {
         if self.sorted_mods_list.is_empty() {
             return widget::column!(
                 "Download some mods to get started",
@@ -345,7 +347,7 @@ impl MenuEditMods {
                     )
                     .padding(10)
                     .spacing(5),
-                widget::responsive(|s| self.get_mod_list_contents(s)),
+                widget::responsive(|s| self.get_mod_list_contents(s, images)),
             )
             .spacing(10),
         )
@@ -353,11 +355,11 @@ impl MenuEditMods {
         .into()
     }
 
-    fn get_mod_list_contents(&'_ self, size: iced::Size) -> Element<'_> {
+    fn get_mod_list_contents(&'_ self, size: iced::Size, images: &ImageState) -> Element<'_> {
         widget::scrollable(widget::column({
             self.sorted_mods_list
                 .iter()
-                .map(|mod_list_entry| self.get_mod_entry(mod_list_entry, size))
+                .map(|mod_list_entry| self.get_mod_entry(mod_list_entry, size, images))
         }))
         .direction(widget::scrollable::Direction::Both {
             vertical: widget::scrollable::Scrollbar::new(),
@@ -369,13 +371,25 @@ impl MenuEditMods {
         .into()
     }
 
-    fn get_mod_entry<'a>(&'a self, entry: &'a ModListEntry, size: iced::Size) -> Element<'a> {
+    fn get_mod_entry<'a>(
+        &'a self,
+        entry: &'a ModListEntry,
+        size: iced::Size,
+        images: &ImageState,
+    ) -> Element<'a> {
         const PADDING: iced::Padding = iced::Padding {
             top: 2.0,
             bottom: 4.0,
             right: 15.0,
             left: 20.0,
         };
+        const ICON_SIZE: u16 = 18;
+        const SPACING: u16 = 25;
+
+        let no_icon = widget::Column::new()
+            .width(ICON_SIZE)
+            .height(ICON_SIZE)
+            .into();
 
         match entry {
             ModListEntry::Downloaded { id, config } => {
@@ -386,8 +400,29 @@ impl MenuEditMods {
                         id: (*id).clone(),
                     });
 
+                    let image: Element = if let Some(url) = &config.icon_url {
+                        if let Some(handle) = images.bitmap.get(url) {
+                            widget::image(handle.clone())
+                                .width(ICON_SIZE)
+                                .height(ICON_SIZE)
+                                .into()
+                        } else if let Some(handle) = images.svg.get(url) {
+                            widget::svg(handle.clone())
+                                .width(ICON_SIZE)
+                                .height(ICON_SIZE)
+                                .into()
+                        } else {
+                            let mut to_load = images.to_load.lock().unwrap();
+                            to_load.insert(url.clone());
+                            no_icon
+                        }
+                    } else {
+                        no_icon
+                    };
+
                     let checkbox = select_box(
                         widget::row![
+                            image,
                             widget::text(&config.name)
                                 .style(move |t: &LauncherTheme| {
                                     t.style_text(if is_enabled {
@@ -429,7 +464,7 @@ impl MenuEditMods {
                         })
                         .align_y(Alignment::Center)
                         .padding(PADDING)
-                        .spacing(10),
+                        .spacing(SPACING),
                         is_selected,
                         Message::ManageMods(ManageModsMessage::ToggleCheckbox(
                             config.name.clone(),
@@ -463,20 +498,25 @@ impl MenuEditMods {
                 });
 
                 let checkbox = select_box(
-                    widget::text(
-                        file_name
-                            .strip_suffix(".disabled")
-                            .unwrap_or(file_name)
-                            .to_owned(),
-                    )
-                    .style(move |t: &LauncherTheme| {
-                        t.style_text(if is_enabled {
-                            Color::SecondLight
-                        } else {
-                            Color::Mid
+                    widget::row![
+                        no_icon,
+                        widget::text(
+                            file_name
+                                .strip_suffix(".disabled")
+                                .unwrap_or(file_name)
+                                .to_owned(),
+                        )
+                        .font(FONT_MONO)
+                        .style(move |t: &LauncherTheme| {
+                            t.style_text(if is_enabled {
+                                Color::SecondLight
+                            } else {
+                                Color::Mid
+                            })
                         })
-                    })
-                    .size(14),
+                        .size(14)
+                    ]
+                    .spacing(SPACING),
                     is_selected,
                     Message::ManageMods(ManageModsMessage::ToggleCheckbox(file_name.clone(), None)),
                 )
