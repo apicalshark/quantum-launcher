@@ -1,4 +1,4 @@
-use colored::Colorize;
+use owo_colors::OwoColorize;
 use ql_core::{
     err, info,
     json::{InstanceConfigJson, VersionDetails},
@@ -30,10 +30,11 @@ pub fn list_available_versions() {
     }
 }
 
-pub fn list_instances(cmds: &[PrintCmd], dirname: &str) {
+pub fn list_instances(cmds: &[PrintCmd], is_server: bool) {
+    let dirname = if is_server { "servers" } else { "instances" };
     let instances = match tokio::runtime::Runtime::new()
         .unwrap()
-        .block_on(get_entries(dirname.to_owned(), false))
+        .block_on(get_entries(is_server))
         .strerr()
     {
         Ok(n) => n.0,
@@ -59,7 +60,8 @@ pub fn list_instances(cmds: &[PrintCmd], dirname: &str) {
                     let instance_dir = LAUNCHER_DIR.join(dirname).join(&instance);
 
                     let json = std::fs::read_to_string(instance_dir.join("details.json")).unwrap();
-                    let json: VersionDetails = serde_json::from_str(&json).unwrap();
+                    let mut json: VersionDetails = serde_json::from_str(&json).unwrap();
+                    json.fix();
 
                     print!("{}", json.id);
                 }

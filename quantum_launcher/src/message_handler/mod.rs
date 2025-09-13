@@ -56,6 +56,7 @@ impl Launcher {
 
         let global_settings = self.config.global_settings.clone();
         let extra_java_args = self.config.extra_java_args.clone().unwrap_or_default();
+
         let instance_name = selected_instance.to_owned();
         Task::perform(
             async move {
@@ -298,10 +299,7 @@ impl Launcher {
             }
             self.state = State::Launch(menu_launch);
         }
-        Task::perform(
-            get_entries("servers".to_owned(), true),
-            Message::CoreListLoaded,
-        )
+        Task::perform(get_entries(true), Message::CoreListLoaded)
     }
 
     pub fn install_forge(&mut self, is_neoforge: bool) -> Task<Message> {

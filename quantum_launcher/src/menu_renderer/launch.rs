@@ -57,21 +57,21 @@ impl Launcher {
         let last_parts = widget::column![
             widget::horizontal_space(),
             widget::row![
-                // ENABLE THE BELOW CODE TO ENABLE SERVERS:
-                // widget::column![
-                //     widget::vertical_space(),
-                //     if menu.is_viewing_server {
-                //         widget::button("View Instances...").on_press(Message::LaunchScreenOpen {
-                //             message: None,
-                //             clear_selection: true,
-                //         })
-                //     } else {
-                //         widget::button("View Servers...").on_press(Message::ServerManageOpen {
-                //             selected_server: None,
-                //             message: None,
-                //         })
-                //     },
-                // ],
+                // Server UI enabled
+                widget::column![
+                    widget::vertical_space(),
+                    if menu.is_viewing_server {
+                        widget::button("View Instances...").on_press(Message::LaunchScreenOpen {
+                            message: None,
+                            clear_selection: true,
+                        })
+                    } else {
+                        widget::button("View Servers...").on_press(Message::ServerManageOpen {
+                            selected_server: None,
+                            message: None,
+                        })
+                    },
+                ],
                 get_footer_text(menu),
             ],
         ]
@@ -127,7 +127,7 @@ impl Launcher {
                     .into(),
                 LaunchTabId::Edit => {
                     if let Some(menu) = &menu.edit_instance {
-                        menu.view(selected)
+                        menu.view(selected, self.custom_jar.as_ref())
                     } else {
                         widget::column!(
                             "Error: Could not read config json!",
@@ -193,6 +193,14 @@ impl Launcher {
                 scroll,
                 Message::LaunchLogScroll,
                 Message::LaunchLogScrollAbsolute,
+                |msg| {
+                    widget::text(msg.clone())
+                        .font(iced::Font::with_name("JetBrains Mono"))
+                        .size(TEXT_SIZE)
+                        .width(Length::Fill)
+                        .into()
+                },
+                |msg| msg.clone(),
             );
 
             widget::column![widget::row!(

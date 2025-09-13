@@ -69,10 +69,20 @@ pub enum EditInstanceMessage {
     GameArgDelete(usize),
     GameArgShiftUp(usize),
     GameArgShiftDown(usize),
+    PreLaunchPrefixAdd,
+    PreLaunchPrefixEdit(String, usize),
+    PreLaunchPrefixDelete(usize),
+    PreLaunchPrefixShiftUp(usize),
+    PreLaunchPrefixShiftDown(usize),
+    PreLaunchPrefixModeChanged(ql_core::json::instance_config::PreLaunchPrefixMode),
     RenameEdit(String),
     RenameApply,
     WindowWidthChanged(String),
     WindowHeightChanged(String),
+
+    CustomJarPathChanged(String),
+    CustomJarLoaded(Res<Vec<String>>),
+    AutoSetMainClassToggle(bool),
 }
 
 #[derive(Debug, Clone)]
@@ -239,11 +249,17 @@ pub enum LauncherSettingsMessage {
     GlobalJavaArgDelete(usize),
     GlobalJavaArgShiftUp(usize),
     GlobalJavaArgShiftDown(usize),
+
+    // Global pre-launch prefix
+    GlobalPreLaunchPrefixAdd,
+    GlobalPreLaunchPrefixEdit(String, usize),
+    GlobalPreLaunchPrefixDelete(usize),
+    GlobalPreLaunchPrefixShiftUp(usize),
+    GlobalPreLaunchPrefixShiftDown(usize),
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    #[allow(unused)]
     Nothing,
     #[allow(unused)]
     Multiple(Vec<Message>),
@@ -305,8 +321,8 @@ pub enum Message {
     ExportInstanceFinished(Res<Vec<u8>>),
     ExportInstanceLoaded(Res<Vec<DirItem>>),
 
-    CoreErrorCopy,
-    CoreErrorCopyLog,
+    CoreCopyError,
+    CoreCopyLog,
     CoreOpenLink(String),
     CoreOpenPath(PathBuf),
     CoreCopyText(String),

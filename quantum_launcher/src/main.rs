@@ -31,9 +31,11 @@ use config::LauncherConfig;
 use iced::{futures::executor::block_on, Settings, Task};
 use state::{get_entries, Launcher, Message, ServerProcess};
 
-use ql_core::{err, err_no_log, file_utils, info_no_log, IntoStringError, JsonFileError};
+use ql_core::{err, err_no_log, file_utils, info, info_no_log, IntoStringError, JsonFileError};
 use ql_instances::OS_NAME;
 use tokio::io::AsyncWriteExt;
+
+use crate::state::CustomJarState;
 
 /// The CLI interface of the launcher.
 mod cli;
@@ -93,11 +95,7 @@ impl Launcher {
             async move { ql_instances::check_for_launcher_updates().await.strerr() },
             Message::UpdateCheckResult,
         );
-
-        let get_entries_command = Task::perform(
-            get_entries("instances".to_owned(), false),
-            Message::CoreListLoaded,
-        );
+        let get_entries_command = Task::perform(get_entries(false), Message::CoreListLoaded);
 
         (
             Launcher::load_new(None, is_new_user, config).unwrap_or_else(Launcher::with_error),
@@ -110,6 +108,7 @@ impl Launcher {
                 Task::perform(file_utils::clean_dir("downloads/cache"), |n| {
                     Message::CoreCleanComplete(n.strerr())
                 }),
+                CustomJarState::load(),
             ]),
         )
     }
@@ -166,6 +165,10 @@ const WINDOW_WIDTH: f32 = 600.0;
 fn main() {
     #[cfg(target_os = "windows")]
     attach_to_console();
+    #[cfg(any(target_os = "linux", target_os = "freebsd"))]
+    if should_migrate() {
+        do_migration();
+    }
 
     let is_new_user = file_utils::is_new_user();
     // let is_new_user = true; // Uncomment to test the intro screen.
@@ -176,7 +179,11 @@ fn main() {
     info_no_log!("Starting up the launcher... (OS: {OS_NAME})");
 
     let icon = load_icon();
-    let (scale, mut config) = load_ui_scale(launcher_dir.is_some());
+    let mut config = load_config(launcher_dir.is_some());
+    let scale = match &config {
+        Ok(cfg) => cfg.ui_scale.unwrap_or(1.0),
+        Err(_e) => 1.0,
+    } as f32;
     let (width, height) = config.as_mut().ok().map_or(
         (WINDOW_WIDTH * scale, WINDOW_HEIGHT * scale),
         LauncherConfig::read_window_size,
@@ -227,17 +234,11 @@ fn load_launcher_dir() -> (Option<std::path::PathBuf>, bool) {
     (launcher_dir, is_dir_err)
 }
 
-fn load_ui_scale(dir_is_ok: bool) -> (f32, Result<LauncherConfig, JsonFileError>) {
+fn load_config(dir_is_ok: bool) -> Result<LauncherConfig, JsonFileError> {
     if let Some(cfg) = dir_is_ok.then(LauncherConfig::load_s) {
-        match cfg {
-            Ok(cfg) => (cfg.ui_scale.unwrap_or(1.0) as f32, Ok(cfg)),
-            Err(err) => (1.0, Err(err)),
-        }
+        cfg
     } else {
-        (
-            1.0,
-            Err(JsonFileError::Io(ql_core::IoError::ConfigDirNotFound)),
-        )
+        Err(JsonFileError::Io(ql_core::IoError::LauncherDirNotFound))
     }
 }
 
@@ -275,5 +276,53 @@ fn attach_to_console() {
 
     unsafe {
         _ = AttachConsole(ATTACH_PARENT_PROCESS);
+    }
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+fn should_migrate() -> bool {
+    let Some(legacy_dir) = file_utils::migration_legacy_launcher_dir() else {
+        return false;
+    };
+
+    // Already migrated or haven't ran the launcher before migration
+    // Don't load the config for no reason
+    if legacy_dir.is_symlink() || !legacy_dir.exists() {
+        return false;
+    }
+
+    let Some(new_dir) = file_utils::migration_launcher_dir() else {
+        eprintln!("Failed to get new directory");
+        return false;
+    };
+
+    if new_dir.join("config.json").exists() {
+        eprintln!("Skipping migration: target config exists");
+        false
+    } else if legacy_dir == new_dir {
+        eprintln!("Skipping migration: same directory");
+        false
+    } else {
+        true
+    }
+}
+
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+fn do_migration() {
+    // Can't use `info!` for logs,
+    // since that runs get_logs_dir which lazy allocates LAUNCHER_DIR
+    // which creates the new_dir and that would fail the migration
+    println!("Running migration");
+    if let (Some(legacy_dir), Some(new_dir)) = (
+        file_utils::migration_legacy_launcher_dir(),
+        file_utils::migration_launcher_dir(),
+    ) {
+        if let Err(e) = std::fs::rename(&legacy_dir, &new_dir) {
+            eprintln!("Migration failed: {}", e);
+        } else if let Err(e) = ql_core::file_utils::create_symlink(&new_dir, &legacy_dir) {
+            eprintln!("Migration successful but couldnt create symlink to the legacy dir: {e}",);
+        } else {
+            info!("Migration successful!\nYour launcher files are now in ~./local/share/QuantumLauncher")
+        }
     }
 }

@@ -1,17 +1,24 @@
 use crate::{
     icon_manager,
     menu_renderer::{button_with_icon, FONT_MONO},
-    state::{EditInstanceMessage, MenuEditInstance, Message},
+    state::{CustomJarState, EditInstanceMessage, MenuEditInstance, Message, NONE_JAR_NAME},
     stylesheet::{color::Color, styles::LauncherTheme},
 };
 use iced::{widget, Length};
-use ql_core::json::{instance_config::JavaArgsMode, GlobalSettings};
+use ql_core::json::{
+    instance_config::{JavaArgsMode, PreLaunchPrefixMode},
+    GlobalSettings,
+};
 use ql_core::InstanceSelection;
 
 use super::Element;
 
 impl MenuEditInstance {
-    pub fn view(&'_ self, selected_instance: &InstanceSelection) -> Element<'_> {
+    pub fn view<'a>(
+        &'a self,
+        selected_instance: &InstanceSelection,
+        jar_choices: Option<&'a CustomJarState>,
+    ) -> Element<'a> {
         let ts = |n: &LauncherTheme| n.style_text(Color::SecondLight);
 
         widget::scrollable(
@@ -40,11 +47,14 @@ impl MenuEditInstance {
                 )
                 .padding(10)
                 .spacing(10))
-                .style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::ExtraDark)),
+                .style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::Dark)),
 
                 widget::container(
                     self.item_java_override()
-                ).style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::Dark)),
+                ).style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::ExtraDark)),
+                widget::container(
+                    self.item_custom_jar(jar_choices)
+                ).style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::ExtraDark)),
                 widget::container(
                     self.item_mem_alloc(),
                 ).style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::ExtraDark)),
@@ -135,6 +145,44 @@ impl MenuEditInstance {
                 button_with_icon(icon_manager::create(), "Add", 16)
                     .on_press(Message::EditInstance(EditInstanceMessage::GameArgsAdd))
             ),
+            widget::text("Pre-launch prefix:").size(20),
+            widget::container(
+                widget::column![
+                    widget::text("Interaction with global pre-launch prefix:").size(14),
+                    widget::pick_list(
+                        PreLaunchPrefixMode::ALL,
+                        Some(self.config.pre_launch_prefix_mode.unwrap_or_default()),
+                        |mode| {
+                            Message::EditInstance(EditInstanceMessage::PreLaunchPrefixModeChanged(
+                                mode,
+                            ))
+                        }
+                    )
+                    .placeholder("Select mode...")
+                    .width(200)
+                    .text_size(14),
+                    Self::get_prefix_mode_description(
+                        self.config.pre_launch_prefix_mode.unwrap_or_default()
+                    ),
+                ]
+                .padding(10)
+                .spacing(7)
+            ),
+            widget::column!(
+                Self::get_java_args_list(
+                    self.config
+                        .global_settings
+                        .as_ref()
+                        .and_then(|n| n.pre_launch_prefix.as_deref()),
+                    |n| Message::EditInstance(EditInstanceMessage::PreLaunchPrefixDelete(n)),
+                    |n| Message::EditInstance(EditInstanceMessage::PreLaunchPrefixShiftUp(n)),
+                    |n| Message::EditInstance(EditInstanceMessage::PreLaunchPrefixShiftDown(n)),
+                    &|n, i| Message::EditInstance(EditInstanceMessage::PreLaunchPrefixEdit(n, i))
+                ),
+                button_with_icon(icon_manager::create(), "Add", 16).on_press(
+                    Message::EditInstance(EditInstanceMessage::PreLaunchPrefixAdd)
+                )
+            ),
         )
         .padding(10)
         .spacing(10)
@@ -142,6 +190,16 @@ impl MenuEditInstance {
     }
 
     fn get_mode_description<'a>(mode: JavaArgsMode) -> widget::Text<'a, LauncherTheme> {
+        let description = mode.get_description();
+
+        widget::text(description)
+            .size(12)
+            .style(|theme: &LauncherTheme| theme.style_text(Color::SecondLight))
+    }
+
+    fn get_prefix_mode_description<'a>(
+        mode: PreLaunchPrefixMode,
+    ) -> widget::Text<'a, LauncherTheme> {
         let description = mode.get_description();
 
         widget::text(description)
@@ -191,6 +249,67 @@ impl MenuEditInstance {
         ]
         .padding(10)
         .spacing(10)
+    }
+
+    fn item_custom_jar<'a>(
+        &'a self,
+        jar_choices: Option<&'a CustomJarState>,
+    ) -> widget::Column<'a, Message, LauncherTheme> {
+        let ts = |n: &LauncherTheme| n.style_text(Color::SecondLight);
+
+        let picker: Element = if let Some(choices) = jar_choices {
+            widget::pick_list(
+                choices.choices.as_slice(),
+                Some(
+                    self.config
+                        .custom_jar
+                        .as_ref()
+                        .map(|n| n.name.clone())
+                        .unwrap_or(NONE_JAR_NAME.to_owned()),
+                ),
+                |t| Message::EditInstance(EditInstanceMessage::CustomJarPathChanged(t)),
+            )
+            .into()
+        } else {
+            "Loading...".into()
+        };
+
+        widget::column![
+            "Custom JAR file",
+            widget::text(
+                r#"This feature is for *replacing* the Minecraft JAR,
+not adding to it.
+If you want to apply tweaks to your existing JAR file,
+use "Mods->Jar Mods""#
+            )
+            .size(12)
+            .style(ts),
+            widget::Space::with_height(2),
+            picker,
+            widget::Column::new().push_maybe(
+                self.config.custom_jar.is_some().then_some(
+                    widget::column![
+                        widget::text("Try this in case the game crashes otherwise")
+                            .size(12)
+                            .style(ts),
+                        widget::checkbox(
+                            "Auto-set mainClass",
+                            self.config
+                                .custom_jar
+                                .as_ref()
+                                .is_some_and(|n| n.autoset_main_class)
+                        )
+                        .on_toggle(|n| Message::EditInstance(
+                            EditInstanceMessage::AutoSetMainClassToggle(n)
+                        )),
+                        widget::Space::with_height(5),
+                    ]
+                    .spacing(5)
+                )
+            ),
+        ]
+        .padding(10)
+        .spacing(5)
     }
 
     fn get_java_args_list<'a>(
@@ -305,6 +424,39 @@ You can override or customize their behaviour on a per-instance basis too."
         widget::column!(
             MenuEditInstance::get_java_args_list(java_args, delete_msg, up_msg, down_msg, edit_msg),
             button_with_icon(icon_manager::create(), "Add Argument", 16).on_press(add_msg)
+        )
+        .spacing(5),
+    ]
+    .spacing(5)
+}
+
+pub fn global_pre_launch_prefix_dialog<'a>(
+    prefix_args: Option<&'a [String]>,
+    add_msg: Message,
+    delete_msg: impl Fn(usize) -> Message + 'a,
+    edit_msg: &'a dyn Fn(String, usize) -> Message,
+    up_msg: impl Fn(usize) -> Message + 'a,
+    down_msg: impl Fn(usize) -> Message + 'a,
+) -> widget::Column<'a, Message, LauncherTheme> {
+    let ts = |n: &LauncherTheme| n.style_text(Color::SecondLight);
+
+    widget::column![
+        "Global Pre-Launch Prefix:",
+        widget::text(
+            r"Commands to prepend to the game launch command.
+Example: Use 'prime-run' to force NVIDIA GPU usage on Linux with Optimus graphics."
+        )
+        .size(12)
+        .style(ts),
+        widget::column!(
+            MenuEditInstance::get_java_args_list(
+                prefix_args,
+                delete_msg,
+                up_msg,
+                down_msg,
+                edit_msg
+            ),
+            button_with_icon(icon_manager::create(), "Add Command", 16).on_press(add_msg)
         )
         .spacing(5),
     ]

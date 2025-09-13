@@ -581,15 +581,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b05b61dc5112cbb17e4b6cd61790d9845d13888356391624cbe7e41efeac1e75"
 
 [[package]]
-name = "colored"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fde0e0ec90c9dfb3b4b1a0891a7dcd0e2bffde2f7efed5fe7c9bb00e5bfb915e"
-dependencies = [
- "windows-sys 0.59.0",
-]
-
-[[package]]
 name = "com"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1353,6 +1344,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e13624c2627564efccf4934284bdd98cbaa14e79b0b5a141218e507b3a823456"
 dependencies = [
  "percent-encoding",
+]
+
+[[package]]
+name = "fsevent-sys"
+version = "4.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76ee7a02da4d231650c7cea31349b889be2f45ddb3ef3032d2ec8185f6313fd2"
+dependencies = [
+ "libc",
 ]
 
 [[package]]
@@ -2193,6 +2193,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "inotify"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f37dccff2791ab604f9babef0ba14fbe0be30bd368dc541e2b08d07c8aa908f3"
+dependencies = [
+ "bitflags 2.9.2",
+ "inotify-sys",
+ "libc",
+]
+
+[[package]]
+name = "inotify-sys"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e05c02b5e89bff3b946cedeca278abc628fe811e604f027c45a8aa3cf793d0eb"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "instant"
 version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2332,6 +2352,26 @@ name = "khronos_api"
 version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2db585e1d738fc771bf08a151420d3ed193d9d895a36df7f6f8a9456b911ddc"
+
+[[package]]
+name = "kqueue"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eac30106d7dce88daf4a3fcb4879ea939476d5074a9b7ddd0fb97fa4bed5596a"
+dependencies = [
+ "kqueue-sys",
+ "libc",
+]
+
+[[package]]
+name = "kqueue-sys"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed9625ffda8729b85e45cf04090035ac368927b8cebc34898e7c120f52e4838b"
+dependencies = [
+ "bitflags 1.3.2",
+ "libc",
+]
 
 [[package]]
 name = "kurbo"
@@ -2587,6 +2627,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78bed444cc8a2160f01cbcf811ef18cac863ad68ae8ca62092e8db51d51c761c"
 dependencies = [
  "libc",
+ "log",
  "wasi 0.11.1+wasi-snapshot-preview1",
  "windows-sys 0.59.0",
 ]
@@ -2674,6 +2715,30 @@ dependencies = [
  "libc",
  "memoffset",
 ]
+
+[[package]]
+name = "notify"
+version = "8.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4d3d07927151ff8575b7087f245456e549fea62edf0ec4e565a5ee50c8402bc3"
+dependencies = [
+ "bitflags 2.9.2",
+ "fsevent-sys",
+ "inotify",
+ "kqueue",
+ "libc",
+ "log",
+ "mio",
+ "notify-types",
+ "walkdir",
+ "windows-sys 0.60.2",
+]
+
+[[package]]
+name = "notify-types"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e0826a989adedc2a244799e823aece04662b66609d96af8dff7ac6df9a8925d"
 
 [[package]]
 name = "num"
@@ -3189,6 +3254,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "owo-colors"
+version = "3.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1b04fb49957986fdce4d6ee7a65027d55d4b6d2265e5848bbb507b58ccfdb6f"
+
+[[package]]
 name = "palette"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3485,9 +3556,9 @@ name = "ql_core"
 version = "0.0.0"
 dependencies = [
  "chrono",
- "colored",
  "dirs",
  "futures",
+ "owo-colors",
  "regex",
  "reqwest",
  "serde",
@@ -3506,9 +3577,9 @@ version = "0.0.0"
 dependencies = [
  "any_ascii",
  "chrono",
- "colored",
  "indicatif",
  "keyring",
+ "owo-colors",
  "ql_core",
  "ql_java_handler",
  "quick-xml",
@@ -3526,9 +3597,9 @@ dependencies = [
 name = "ql_java_handler"
 version = "0.0.0"
 dependencies = [
- "colored",
  "flate2",
  "lzma-rs",
+ "owo-colors",
  "ql_core",
  "serde",
  "serde_json",
@@ -3543,9 +3614,9 @@ name = "ql_mod_manager"
 version = "0.0.0"
 dependencies = [
  "chrono",
- "colored",
  "futures",
  "image",
+ "owo-colors",
  "ql_core",
  "ql_java_handler",
  "regex",
@@ -3561,7 +3632,7 @@ dependencies = [
 name = "ql_packager"
 version = "0.0.0"
 dependencies = [
- "colored",
+ "owo-colors",
  "ql_core",
  "ql_instances",
  "ql_mod_manager",
@@ -3580,7 +3651,7 @@ name = "ql_servers"
 version = "0.0.0"
 dependencies = [
  "chrono",
- "colored",
+ "owo-colors",
  "ql_core",
  "ql_java_handler",
  "serde",
@@ -3605,13 +3676,14 @@ version = "0.4.2"
 dependencies = [
  "chrono",
  "clap",
- "colored",
  "comrak",
  "embed-resource",
  "html5ever",
  "iced",
  "image",
  "markup5ever_rcdom",
+ "notify",
+ "owo-colors",
  "paste",
  "ql_core",
  "ql_instances",

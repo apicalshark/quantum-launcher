@@ -290,7 +290,7 @@ impl MenuLauncherUpdate {
                         }
                     ),
                     button_with_icon(icon_manager::globe(), "Open Website", 16)
-                        .on_press(Message::CoreOpenLink("https://mrmayman.github.com/quantumlauncher".to_owned())),
+                        .on_press(Message::CoreOpenLink("https://mrmayman.github.io/quantumlauncher".to_owned())),
                 ).push_maybe(cfg!(target_os = "linux").then_some(
                     widget::column!(
                         // WARN: Package manager
@@ -566,8 +566,8 @@ pub fn view_error(error: &'_ str) -> Element<'_> {
                     message: None,
                     clear_selection: true
                 }),
-                widget::button("Copy Error").on_press(Message::CoreErrorCopy),
-                widget::button("Copy Error + Log").on_press(Message::CoreErrorCopyLog),
+                widget::button("Copy Error").on_press(Message::CoreCopyError),
+                widget::button("Copy Error + Log").on_press(Message::CoreCopyLog),
                 widget::button("Join Discord for help")
                     .on_press(Message::CoreOpenLink(DISCORD.to_owned()))
             ]
