@@ -1,7 +1,7 @@
 use std::sync::{mpsc::Sender, Arc, Mutex};
 
-use colored::Colorize;
 use futures::StreamExt;
+use owo_colors::colored::OwoColorize;
 use ql_core::{
     err_no_log, info, info_no_log, json::VersionDetails, pt, GenericProgress, InstanceSelection,
     Loader, ModId, StoreBackendType,
@@ -82,9 +82,6 @@ impl RecommendedMod {
                 true
             }
             Err(ModError::NoCompatibleVersionFound(_)) => {
-                #[cfg(target_os = "windows")]
-                pt!("{} not compatible!", self.name);
-                #[cfg(not(target_os = "windows"))]
                 pt!("{} {}", self.name, "not compatible!".bright_black());
                 false
             }

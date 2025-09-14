@@ -18,7 +18,7 @@ use zip::{write::FileOptions, ZipArchive, ZipWriter};
 
 use crate::{
     error::{DownloadFileError, IoError},
-    info_no_log, retry, IntoIoError, IntoJsonError, JsonDownloadError, CLIENT,
+    info_no_log, retry, IntoIoError, IntoJsonError, JsonDownloadError, CLIENT, WEBSITE,
 };
 
 /// The path to the QuantumLauncher root folder.
@@ -188,7 +188,7 @@ pub async fn download_file_to_string(url: &str, user_agent: bool) -> Result<Stri
         if user_agent {
             get = get.header(
                 "User-Agent",
-                "Mrmayman/quantumlauncher (mrmayman.github.io/quantumlauncher)",
+                format!("Mrmayman/quantumlauncher ({WEBSITE})"),
             );
         }
         let response = get.send().await?;

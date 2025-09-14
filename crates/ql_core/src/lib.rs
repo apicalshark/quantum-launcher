@@ -54,6 +54,8 @@ pub static REGEX_SNAPSHOT: LazyLock<Regex> =
 
 pub const CLASSPATH_SEPARATOR: char = if cfg!(unix) { ':' } else { ';' };
 
+pub const WEBSITE: &str = "https://mrmayman.github.io/quantumlauncher";
+
 /// To prevent spawning of terminal (windows only).
 ///
 /// Takes in a `Command` (owned or mutable reference, both are fine).

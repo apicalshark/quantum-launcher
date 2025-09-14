@@ -228,10 +228,11 @@ macro_rules! pt {
     }};
 }
 
+/// Regex: ESC [ ... letters
+/// ESC = `\x1B` or `\u{1b}`
+const ANSI_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\x1B\[[0-9;]*[A-Za-z]").unwrap());
+
 /// Removes ANSI escape codes (colors, formatting, cursor moves) from a string.
 pub fn strip_ansi_codes(input: &str) -> String {
-    // Regex: ESC [ ... letters
-    // ESC = \x1B or \u{1b}
-    let re = Regex::new(r"\x1B\[[0-9;]*[A-Za-z]").unwrap();
-    re.replace_all(input, "").to_string()
+    ANSI_REGEX.replace_all(input, "").to_string()
 }

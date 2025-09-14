@@ -1,6 +1,6 @@
 use iced::widget::tooltip::Position;
 use iced::{widget, Alignment, Length};
-use ql_core::{InstanceSelection, Progress};
+use ql_core::{InstanceSelection, Progress, WEBSITE};
 
 use crate::{
     config::LauncherConfig,
@@ -290,7 +290,7 @@ impl MenuLauncherUpdate {
                         }
                     ),
                     button_with_icon(icon_manager::globe(), "Open Website", 16)
-                        .on_press(Message::CoreOpenLink("https://mrmayman.github.io/quantumlauncher".to_owned())),
+                        .on_press(Message::CoreOpenLink(WEBSITE.to_owned())),
                 ).push_maybe(cfg!(target_os = "linux").then_some(
                     widget::column!(
                         // WARN: Package manager

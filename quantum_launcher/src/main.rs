@@ -177,6 +177,9 @@ fn main() {
     cli::start_cli(is_dir_err);
 
     info_no_log!("Starting up the launcher... (OS: {OS_NAME})");
+    if let Some(dir) = &launcher_dir {
+        eprintln!("- {}", dir.to_string_lossy());
+    }
 
     let icon = load_icon();
     let mut config = load_config(launcher_dir.is_some());
@@ -222,7 +225,6 @@ fn load_launcher_dir() -> (Option<std::path::PathBuf>, bool) {
     let mut launcher_dir = None;
     let is_dir_err = match launcher_dir_res {
         Ok(n) => {
-            eprintln!("- Launcher dir: {}", n.display());
             launcher_dir = Some(n);
             false
         }
