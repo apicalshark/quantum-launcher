@@ -36,6 +36,7 @@ pub const NEW_ACCOUNT_NAME: &str = "+ Add Account";
 
 pub const ADD_JAR_NAME: &str = "+ Add JAR";
 pub const REMOVE_JAR_NAME: &str = "- Remove Selected";
+pub const OPEN_FOLDER_JAR_NAME: &str = "> Open Folder";
 pub const NONE_JAR_NAME: &str = "(None)";
 
 type Res<T = ()> = Result<T, String>;
@@ -495,6 +496,7 @@ pub async fn load_custom_jars() -> Result<Vec<String>, IoError> {
     list.insert(0, NONE_JAR_NAME.to_owned());
     list.push(ADD_JAR_NAME.to_owned());
     list.push(REMOVE_JAR_NAME.to_owned());
+    list.push(OPEN_FOLDER_JAR_NAME.to_owned());
 
     Ok(list)
 }
