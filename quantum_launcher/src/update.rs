@@ -109,9 +109,17 @@ impl Launcher {
                 }
                 return iced::clipboard::write(format!("QuantumLauncher Log:\n{log}"));
             }
+            Message::CoreImageDownloaded(res) => match res {
+                Ok(image) => {
+                    self.images.insert_image(image);
+                }
+                Err(err) => {
+                    err!("Could not download image: {err}");
+                }
+            },
             Message::CoreTick => {
                 self.tick_timer = self.tick_timer.wrapping_add(1);
-                let mut tasks = self.get_imgs_to_load();
+                let mut tasks = self.images.get_imgs_to_load();
                 let command = self.tick();
                 tasks.push(command);
 

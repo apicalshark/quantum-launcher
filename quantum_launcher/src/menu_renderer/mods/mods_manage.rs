@@ -355,7 +355,11 @@ impl MenuEditMods {
         .into()
     }
 
-    fn get_mod_list_contents(&'_ self, size: iced::Size, images: &ImageState) -> Element<'_> {
+    fn get_mod_list_contents<'a>(
+        &'a self,
+        size: iced::Size,
+        images: &'a ImageState,
+    ) -> Element<'a> {
         widget::scrollable(widget::column({
             self.sorted_mods_list
                 .iter()
@@ -375,7 +379,7 @@ impl MenuEditMods {
         &'a self,
         entry: &'a ModListEntry,
         size: iced::Size,
-        images: &ImageState,
+        images: &'a ImageState,
     ) -> Element<'a> {
         const PADDING: iced::Padding = iced::Padding {
             top: 2.0,
@@ -401,21 +405,7 @@ impl MenuEditMods {
                     });
 
                     let image: Element = if let Some(url) = &config.icon_url {
-                        if let Some(handle) = images.bitmap.get(url) {
-                            widget::image(handle.clone())
-                                .width(ICON_SIZE)
-                                .height(ICON_SIZE)
-                                .into()
-                        } else if let Some(handle) = images.svg.get(url) {
-                            widget::svg(handle.clone())
-                                .width(ICON_SIZE)
-                                .height(ICON_SIZE)
-                                .into()
-                        } else {
-                            let mut to_load = images.to_load.lock().unwrap();
-                            to_load.insert(url.clone());
-                            no_icon
-                        }
+                        images.view(url, Some(ICON_SIZE), no_icon)
                     } else {
                         no_icon
                     };

@@ -203,15 +203,7 @@ fn draw_image<'a>(
         .find(|attr| attr.name.local.to_string().as_str() == "src")
     {
         let url = attr.value.to_string();
-        *element = if let Some(image) = images.bitmap.get(&url) {
-            widget::image(image.clone()).into()
-        } else if let Some(image) = images.svg.get(&url) {
-            widget::svg(image.clone()).into()
-        } else {
-            let mut images_to_load = images.to_load.lock().unwrap();
-            images_to_load.insert(url);
-            widget::text("(Loading image...)").into()
-        }
+        *element = images.view(&url, None, widget::text("(Loading image...)").into());
     } else {
         *element = widget::text("[HTML error: malformed image]]").into();
     }

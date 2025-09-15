@@ -141,7 +141,6 @@ pub enum InstallModsMessage {
     SearchResult(Res<SearchResult>),
     Open,
     SearchInput(String),
-    ImageDownloaded(Res<ImageResult>),
     Click(usize),
     BackToMainScreen,
     LoadData(Res<(ModId, String)>),
@@ -333,6 +332,8 @@ pub enum Message {
     CoreOpenIntro,
     CoreEvent(iced::Event, iced::event::Status),
     CoreCleanComplete(Res),
+
+    CoreImageDownloaded(Res<ImageResult>),
 
     CoreLogToggle,
     CoreLogScroll(isize),

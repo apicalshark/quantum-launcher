@@ -2,6 +2,7 @@ use iced::widget::tooltip::Position;
 use iced::{widget, Alignment, Length};
 use ql_core::{InstanceSelection, Progress, WEBSITE};
 
+use crate::state::ImageState;
 use crate::{
     config::LauncherConfig,
     icon_manager,
@@ -150,6 +151,8 @@ fn sidebar_button<'a, A: PartialEq>(
             .into()
     }
 }
+
+impl ImageState {}
 
 impl MenuCreateInstance {
     pub fn view(&'_ self, list: Option<&Vec<String>>) -> Element<'_> {
