@@ -13,6 +13,8 @@ Support for a few alternate implementations of Fabric were added:
 These are for versions where Fabric isn't officially supported.
 If multiple are available you can choose between them.
 
+- Made fabric installer faster
+
 ## UX
 - (TODO) Presets and text exporting (explained below) are now grouped together
   under a hamburger menu for easier access

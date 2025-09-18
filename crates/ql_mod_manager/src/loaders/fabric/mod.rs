@@ -1,9 +1,12 @@
-use std::{path::Path, sync::mpsc::Sender};
+use std::{
+    path::Path,
+    sync::{mpsc::Sender, Mutex},
+};
 
 use ql_core::{
-    file_utils, info,
+    do_jobs, file_utils, info,
     json::{instance_config::ModTypeInfo, FabricJSON, VersionDetails},
-    GenericProgress, InstanceSelection, IntoIoError, IntoJsonError, RequestError, LAUNCHER_DIR,
+    pt, GenericProgress, InstanceSelection, IntoIoError, IntoJsonError, RequestError, LAUNCHER_DIR,
 };
 use version_compare::compare_versions;
 
@@ -76,22 +79,24 @@ pub async fn install_server(
     let json: FabricJSON = serde_json::from_str(&json).json(json)?;
 
     let number_of_libraries = json.libraries.len();
-    let mut library_files = Vec::new();
-    for (i, library) in json.libraries.iter().enumerate() {
-        send_progress(i, library, progress, number_of_libraries);
+    let i = Mutex::new(0);
+
+    let library_files = do_jobs(json.libraries.iter().map(|library| async {
+        send_progress(&i, library, progress, number_of_libraries);
 
         let library_path = libraries_dir.join(library.get_path());
 
         let library_parent_dir = library_path
             .parent()
             .ok_or(FabricInstallError::PathBufParentError(library_path.clone()))?;
-        library_files.push(library_path.clone());
         tokio::fs::create_dir_all(&library_parent_dir)
             .await
             .path(library_parent_dir)?;
 
         file_utils::download_file_to_path(&library.get_url(), false, &library_path).await?;
-    }
+        Ok::<_, FabricInstallError>(library_path.clone())
+    }))
+    .await?;
 
     let shade_libraries = compare_versions(&loader_version, "0.12.5").is_le();
     let launch_jar = server_dir.join("fabric-server-launch.jar");
@@ -175,9 +180,9 @@ pub async fn install_client(
     }
 
     let number_of_libraries = json.libraries.len();
-    for (i, library) in json.libraries.iter().enumerate() {
-        send_progress(i, library, progress, number_of_libraries);
+    let i = Mutex::new(0);
 
+    do_jobs(json.libraries.iter().map(|library| async {
         let path = libraries_dir.join(library.get_path());
         let url = library.get_url();
 
@@ -188,7 +193,11 @@ pub async fn install_client(
             .await
             .path(parent_dir)?;
         file_utils::download_file_to_path(&url, false, &path).await?;
-    }
+
+        send_progress(&i, library, progress, number_of_libraries);
+        Ok::<_, FabricInstallError>(())
+    }))
+    .await?;
 
     change_instance_type(
         &instance_dir,
@@ -234,17 +243,20 @@ async fn migrate_index_file(instance_dir: &Path) -> Result<(), FabricInstallErro
 }
 
 fn send_progress(
-    i: usize,
+    i: &Mutex<usize>,
     library: &ql_core::json::fabric::Library,
     progress: Option<&Sender<GenericProgress>>,
     number_of_libraries: usize,
 ) {
+    let mut i = i.lock().unwrap();
+    *i += 1;
+    let i = *i;
     let message = format!(
-        "Downloading library ({} / {number_of_libraries}) {}",
+        "Downloaded library ({} / {number_of_libraries}) {}",
         i + 1,
         library.name
     );
-    info!("{message}");
+    pt!("{message}");
     if let Some(progress) = progress {
         _ = progress.send(GenericProgress {
             done: i + 1,
