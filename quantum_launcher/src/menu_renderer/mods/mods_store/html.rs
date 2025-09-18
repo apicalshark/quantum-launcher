@@ -181,7 +181,7 @@ fn render_html<'a>(
             } else {
                 widget::text("- ")
             };
-            let mut children: Element = widget::column![].into();
+            let mut children: Element = widget::Column::new().into();
             draw_children!(info, &mut children);
             *element = widget::row![bullet, children].into();
             true
@@ -222,7 +222,7 @@ fn draw_link<'a>(
         let url = attr.value.to_string();
         let children_empty = { node.children.borrow().is_empty() };
 
-        let mut children: Element = widget::column![].into();
+        let mut children: Element = widget::Column::new().into();
         draw_children!(info, &mut children);
 
         if children_empty {
@@ -246,8 +246,9 @@ fn render_children<'a>(
 ) {
     let children = node.children.borrow();
 
-    let mut column = widget::column![];
-    let mut row = widget::row![].push_maybe(data.indent.then_some(widget::Space::with_width(16)));
+    let mut column = widget::Column::new();
+    let mut row =
+        widget::Row::new().push_maybe(data.indent.then_some(widget::Space::with_width(16)));
 
     let mut is_newline = false;
 
@@ -255,7 +256,8 @@ fn render_children<'a>(
     for item in children.iter() {
         if is_newline {
             column = column.push(row.wrap());
-            row = widget::row![].push_maybe(data.indent.then_some(widget::Space::with_width(16)));
+            row =
+                widget::Row::new().push_maybe(data.indent.then_some(widget::Space::with_width(16)));
         }
         if is_node_useless(item) {
             continue;

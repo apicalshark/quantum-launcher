@@ -65,7 +65,7 @@ impl Launcher {
                         // Normal selection
                         _ => {
                             menu.list_shift_index = Some(idx);
-                            if pressed_ctrl && menu.selected_mods.contains(&selected_mod) {
+                            if menu.selected_mods.contains(&selected_mod) {
                                 menu.selected_mods.remove(&selected_mod);
                             } else {
                                 menu.selected_mods.insert(selected_mod);

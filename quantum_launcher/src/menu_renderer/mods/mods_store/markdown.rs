@@ -186,8 +186,8 @@ fn render_children<'arena, 'element>(
     images: &'element ImageState,
     window_size: (f32, f32),
 ) -> widget::Column<'element, Message, crate::stylesheet::styles::LauncherTheme> {
-    let mut column = widget::column![];
-    let mut row = widget::row![];
+    let mut column = widget::Column::new();
+    let mut row = widget::Row::new();
 
     let mut is_newline = false;
 
@@ -198,7 +198,7 @@ fn render_children<'arena, 'element>(
         };
         if is_newline | force_newline {
             column = column.push(row.wrap());
-            row = widget::row![];
+            row = widget::Row::new();
         }
 
         let mut element = widget::column!().into();

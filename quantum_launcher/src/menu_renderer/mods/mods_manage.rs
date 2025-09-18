@@ -53,8 +53,6 @@ impl MenuEditMods {
                     .on_press(Message::EditPresets(EditPresetsMessage::Open)),
                 widget::horizontal_rule(1)
                     .style(|t: &LauncherTheme| t.style_rule(Color::SecondDark, 1)),
-                ctx_button("Import Modpack")
-                    .on_press(Message::ManageMods(ManageModsMessage::AddFile(false))),
                 ctx_button("See recommended mods").on_press(Message::RecommendedMods(
                     crate::state::RecommendedModMessage::Open
                 )),
@@ -66,7 +64,7 @@ impl MenuEditMods {
                 widget::row![
                     widget::Space::with_width(MODS_SIDEBAR_WIDTH + 30),
                     widget::column![
-                        widget::Space::with_height(70),
+                        widget::Space::with_height(40),
                         widget::container(submenu).padding(10).width(200).style(
                             |t: &LauncherTheme| t.style_container_round_box(
                                 BORDER_WIDTH,
@@ -90,12 +88,7 @@ impl MenuEditMods {
     ) -> widget::Scrollable<'a, Message, LauncherTheme> {
         widget::scrollable(
             widget::column!(
-                widget::row![
-                    back_button().on_press(back_to_launch_screen(selected_instance, None)),
-                    button_with_icon(icon_manager::create_with_size(14), "Add File", 14)
-                        .on_press(Message::ManageMods(ManageModsMessage::AddFile(false)))
-                ]
-                .spacing(7),
+                back_button().on_press(back_to_launch_screen(selected_instance, None)),
                 self.get_mod_installer_buttons(selected_instance),
                 widget::column!(
                     button_with_icon(icon_manager::download_with_size(14), "Download Content", 15)
@@ -307,7 +300,7 @@ impl MenuEditMods {
 
         widget::container(
             widget::column!(
-                widget::column![]
+                widget::Column::new()
                     .push_maybe(
                         (self.config.mod_type == "Vanilla" && !self.sorted_mods_list.is_empty())
                         .then_some(
@@ -319,23 +312,34 @@ impl MenuEditMods {
                             ).padding(10).width(Length::Fill).style(|n: &LauncherTheme| n.style_container_sharp_box(0.0, Color::ExtraDark)),
                         )
                     )
-                    .push(widget::text("Select some mods to perform actions on them").size(14))
                     .push(
                         widget::row![
                             widget::button(
-                                widget::row![icon_manager::three_lines_with_size(13)]
+                                widget::row![icon_manager::three_lines_with_size(12)]
                                     .align_y(iced::alignment::Vertical::Center)
-                                    .padding(2),
+                                    .padding(1),
                             )
                             .style(|t: &LauncherTheme, s| {
                                 t.style_button(s, crate::stylesheet::widgets::StyleButton::RoundDark)
                             })
                             .on_press(Message::ManageMods(ManageModsMessage::ToggleSubmenu1)),
-                            subbutton_with_icon(icon_manager::delete_with_size(13), "Delete")
+                            tooltip(
+                                widget::button(
+                                    widget::row![icon_manager::blank_file_with_size(12)]
+                                        .align_y(iced::alignment::Vertical::Center)
+                                        .padding(1),
+                                )
+                                .style(|t: &LauncherTheme, s| {
+                                    t.style_button(s, crate::stylesheet::widgets::StyleButton::RoundDark)
+                                }).on_press(Message::ManageMods(ManageModsMessage::AddFile(false))),
+                                widget::text("Import mod or modpack").size(12),
+                                Position::Bottom
+                            ),
+                            subbutton_with_icon(icon_manager::delete_with_size(12), "Delete")
                             .on_press_maybe((!self.selected_mods.is_empty()).then_some(Message::ManageMods(ManageModsMessage::DeleteSelected))),
-                            subbutton_with_icon(icon_manager::toggle_off_with_size(13), "Toggle")
+                            subbutton_with_icon(icon_manager::toggle_off_with_size(12), "Toggle")
                             .on_press_maybe((!self.selected_mods.is_empty()).then_some(Message::ManageMods(ManageModsMessage::ToggleSelected))),
-                            subbutton_with_icon(icon_manager::tick_with_size(13), if matches!(self.selected_state, SelectedState::All) {
+                            subbutton_with_icon(icon_manager::tick_with_size(12), if matches!(self.selected_state, SelectedState::All) {
                                 "Unselect All"
                             } else {
                                 "Select All"
@@ -345,11 +349,16 @@ impl MenuEditMods {
                         .spacing(5)
                         .wrap()
                     )
+                    .push(if self.selected_mods.is_empty() {
+                        widget::text("Select some mods to perform actions on them")
+                    } else {
+                        widget::text!("{} mods selected", self.selected_mods.len())
+                    }.size(12).style(|t: &LauncherTheme| t.style_text(Color::Mid)))
                     .padding(10)
-                    .spacing(5),
+                    .spacing(10),
                 widget::responsive(|s| self.get_mod_list_contents(s, images)),
             )
-            .spacing(10),
+            .spacing(0),
         )
         .style(|n| n.style_container_sharp_box(0.0, Color::ExtraDark))
         .into()
@@ -474,9 +483,14 @@ impl MenuEditMods {
                         .into()
                     }
                 } else {
-                    widget::row![widget::text!("(dependency) {}", config.name)
-                        .size(14)
-                        .style(|t: &LauncherTheme| t.style_text(Color::SecondLight))]
+                    widget::row![
+                        widget::text("(dependency) ")
+                            .size(12)
+                            .style(|t: &LauncherTheme| t.style_text(Color::Mid)),
+                        widget::text(&config.name)
+                            .size(13)
+                            .style(|t: &LauncherTheme| t.style_text(Color::SecondLight))
+                    ]
                     .padding(PADDING)
                     .into()
                 }

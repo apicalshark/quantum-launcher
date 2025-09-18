@@ -101,10 +101,10 @@ pub fn subbutton_with_icon<'a>(
     text: &'a str,
 ) -> widget::Button<'a, Message, LauncherTheme> {
     widget::button(
-        widget::row![icon.into(), widget::text(text).size(13)]
+        widget::row![icon.into(), widget::text(text).size(12)]
             .align_y(iced::alignment::Vertical::Center)
             .spacing(8)
-            .padding(2),
+            .padding(1),
     )
     .style(|t: &LauncherTheme, s| {
         t.style_button(s, crate::stylesheet::widgets::StyleButton::RoundDark)
