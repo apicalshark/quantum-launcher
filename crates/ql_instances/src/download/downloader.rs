@@ -325,6 +325,7 @@ impl GameDownloader {
             java_args_mode: None,
             pre_launch_prefix_mode: None,
             custom_jar: None,
+            mod_type_info: None,
         };
         let config_json = serde_json::to_string(&config_json).json_to()?;
 
