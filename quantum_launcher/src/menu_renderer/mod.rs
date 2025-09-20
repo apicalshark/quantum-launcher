@@ -196,8 +196,14 @@ impl MenuCreateInstance {
                             Position::Bottom
                         ),
                         create_button,
-                        widget::text("To install Fabric/Forge/OptiFine/etc and mods, click on Mods after installing the instance").size(12),
-                        widget::text("To sideload your own custom JARs, create an instance with a similar version, then go to \"Edit->Custom Jar File\"").size(12),
+                        widget::horizontal_rule(1),
+                        widget::column![
+                            widget::text("- To install Fabric/Forge/OptiFine/etc and mods, click on Mods after installing the instance").size(12),
+                            widget::row!(
+                                widget::text("- To sideload your own custom JARs, create an instance with a similar version, then go to").size(12),
+                                widget::text(" \"Edit->Custom Jar File\"").size(12)
+                            ).wrap(),
+                        ].spacing(5)
                     ].push_maybe(
                         {
                             let real_platform = if cfg!(target_arch = "x86") { "x86_64" } else { "aarch64" };

@@ -23,7 +23,7 @@ mod version_compare;
 mod version_list;
 
 pub use version_list::{
-    get_list_of_versions, BackendType, FabricVersion, FabricVersionListItem, VersionList,
+    get_list_of_versions, BackendType, FabricVersion, FabricVersionList, FabricVersionListItem,
 };
 
 const CURSED_LEGACY_JSON: &str =
@@ -261,23 +261,31 @@ async fn get_fabric_json(
         "client"
     };
 
-    Ok(if let BackendType::OrnitheMC = backend {
-        let url1 = format!("https://meta.ornithemc.net/v3/versions/fabric-loader/{game_version}/{loader_version}/{implementation}/json");
-        let url2 = format!("https://meta.ornithemc.net/v3/versions/fabric-loader/{game_version}-{implementation_kind}/{loader_version}/{implementation}/json");
-        match file_utils::download_file_to_string(&url1, false).await {
-            Ok(n) => n,
-            Err(err) => match file_utils::download_file_to_string(&url2, false).await {
+    Ok(
+        if let BackendType::OrnitheMCFabric | BackendType::OrnitheMCQuilt = backend {
+            let fq = if backend.is_quilt() {
+                "quilt"
+            } else {
+                "fabric"
+            };
+            let url1 = format!("https://meta.ornithemc.net/v3/versions/{fq}-loader/{game_version}/{loader_version}/{implementation}/json");
+            let url2 = format!("https://meta.ornithemc.net/v3/versions/{fq}-loader/{game_version}-{implementation_kind}/{loader_version}/{implementation}/json");
+
+            match file_utils::download_file_to_string(&url1, false).await {
                 Ok(n) => n,
-                Err(_) => Err(err)?,
-            },
-        }
-    } else {
-        download_file_to_string(
-            &format!("/versions/loader/{game_version}/{loader_version}/{implementation}/json"),
-            backend,
-        )
-        .await?
-    })
+                Err(err) => match file_utils::download_file_to_string(&url2, false).await {
+                    Ok(n) => n,
+                    Err(_) => Err(err)?,
+                },
+            }
+        } else {
+            download_file_to_string(
+                &format!("/versions/loader/{game_version}/{loader_version}/{implementation}/json"),
+                backend,
+            )
+            .await?
+        },
+    )
 }
 
 async fn migrate_index_file(instance_dir: &Path) -> Result<(), FabricInstallError> {

@@ -1,6 +1,6 @@
 use iced::{widget, Alignment, Length};
 use ql_core::InstanceSelection;
-use ql_mod_manager::loaders::fabric::{self, FabricVersionListItem};
+use ql_mod_manager::loaders::fabric::{self, FabricVersionList, FabricVersionListItem};
 
 use crate::{
     icon_manager,
@@ -136,7 +136,7 @@ impl MenuInstallFabric {
                 )
             }
             MenuInstallFabric::Loaded {
-                fabric_versions: fabric::VersionList::Unsupported,
+                fabric_versions: FabricVersionList::Unsupported,
                 backend,
                 ..
             } => {
@@ -154,29 +154,30 @@ impl MenuInstallFabric {
                 ..
             } => {
                 let picker = match fabric_versions {
-                    fabric::VersionList::Quilt(l)
-                    | fabric::VersionList::Fabric(l)
-                    | fabric::VersionList::LegacyFabric(l)
-                    | fabric::VersionList::OrnitheMC(l) => version_list(l, fabric_version),
+                    FabricVersionList::Quilt(l)
+                    | FabricVersionList::Fabric(l)
+                    | FabricVersionList::LegacyFabric(l)
+                    | FabricVersionList::OrnitheMCQuilt(l)
+                    | FabricVersionList::OrnitheMCFabric(l) => version_list(l, fabric_version),
 
-                    fabric::VersionList::Beta173 {
+                    FabricVersionList::Beta173 {
                         ornithe_mc,
                         babric,
                         cursed_legacy,
                     } => {
                         let list = match backend {
-                            fabric::BackendType::OrnitheMC => ornithe_mc,
+                            fabric::BackendType::OrnitheMCFabric => ornithe_mc,
                             fabric::BackendType::Babric => babric,
                             fabric::BackendType::CursedLegacy => cursed_legacy,
                             _ => unreachable!(),
                         };
 
                         widget::column![
-                            "Pick an implementation of Fabric:",
+                            "Pick an implementation of Fabric for beta 1.7.3:",
                             widget::pick_list(
                                 [
                                     fabric::BackendType::Babric,
-                                    fabric::BackendType::OrnitheMC,
+                                    fabric::BackendType::OrnitheMCFabric,
                                     fabric::BackendType::CursedLegacy
                                 ],
                                 Some(backend),
@@ -186,13 +187,13 @@ impl MenuInstallFabric {
                         ]
                         .spacing(5)
                     }
-                    fabric::VersionList::Both {
+                    FabricVersionList::Both {
                         legacy_fabric,
                         ornithe_mc,
                     } => {
                         let list = match backend {
                             fabric::BackendType::LegacyFabric => legacy_fabric,
-                            fabric::BackendType::OrnitheMC => ornithe_mc,
+                            fabric::BackendType::OrnitheMCFabric => ornithe_mc,
                             _ => unreachable!(),
                         };
 
@@ -201,7 +202,7 @@ impl MenuInstallFabric {
                             widget::pick_list(
                                 [
                                     fabric::BackendType::LegacyFabric,
-                                    fabric::BackendType::OrnitheMC,
+                                    fabric::BackendType::OrnitheMCFabric,
                                 ],
                                 Some(backend),
                                 |b| Message::InstallFabric(InstallFabricMessage::ChangeBackend(b))
@@ -211,7 +212,7 @@ impl MenuInstallFabric {
                         .spacing(5)
                     }
 
-                    fabric::VersionList::Unsupported => unreachable!(),
+                    FabricVersionList::Unsupported => unreachable!(),
                 };
 
                 widget::column![

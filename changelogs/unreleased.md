@@ -13,6 +13,7 @@ Support for a few alternate implementations of Fabric were added:
 These are for versions where Fabric isn't officially supported.
 If multiple are available you can choose between them.
 
+- Added extra Quilt support via OrnitheMC for older versions
 - Made fabric installer faster
 
 ## UX

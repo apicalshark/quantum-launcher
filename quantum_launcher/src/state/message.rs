@@ -28,7 +28,7 @@ use super::{LaunchTabId, LauncherSettingsTab, LicenseTab, Res};
 pub enum InstallFabricMessage {
     End(Res),
     VersionSelected(String),
-    VersionsLoaded(Res<fabric::VersionList>),
+    VersionsLoaded(Res<fabric::FabricVersionList>),
     ButtonClicked,
     ScreenOpen { is_quilt: bool },
     ChangeBackend(fabric::BackendType),
