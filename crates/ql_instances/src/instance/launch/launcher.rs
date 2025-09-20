@@ -815,7 +815,15 @@ impl GameLauncher {
                 .and_then(|n| n.pre_launch_prefix.clone())
                 .unwrap_or_default(),
         );
-        if !prefix_commands.is_empty() {
+        if prefix_commands.is_empty() {
+            // No prefix, use normal Java command
+            command.args(
+                java_arguments
+                    .iter()
+                    .chain(game_arguments.iter())
+                    .filter(|n| !n.is_empty()),
+            );
+        } else {
             info!("Pre args: {prefix_commands:?}");
 
             let original_java_path = path.to_string_lossy().to_string();
@@ -834,14 +842,6 @@ impl GameLauncher {
 
             command = new_command;
             path = PathBuf::from(&prefix_commands[0]);
-        } else {
-            // No prefix, use normal Java command
-            command.args(
-                java_arguments
-                    .iter()
-                    .chain(game_arguments.iter())
-                    .filter(|n| !n.is_empty()),
-            );
         }
 
         command.current_dir(&self.minecraft_dir);

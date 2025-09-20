@@ -89,7 +89,7 @@ pub async fn install_server(
     .collect();
 
     // TODO: Check if Legacy Fabric needs this
-    let shade_libraries = (matches!(backend, BackendType::Fabric)
+    let shade_libraries = (matches!(backend, BackendType::Fabric | BackendType::LegacyFabric)
         && compare_versions(&loader_version, "0.12.5").is_le())
         | matches!(backend, BackendType::CursedLegacy);
     let launch_jar = server_dir.join("fabric-server-launch.jar");

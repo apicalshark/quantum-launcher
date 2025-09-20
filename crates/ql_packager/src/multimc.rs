@@ -62,7 +62,7 @@ pub async fn import(
                 .await?;
             }
             name @ ("Fabric Loader" | "Quilt Loader") => {
-                ql_mod_manager::loaders::fabric::install(
+                fabric::install(
                     Some(component.cachedVersion.clone()),
                     instance_selection.clone(),
                     sender.as_deref(),

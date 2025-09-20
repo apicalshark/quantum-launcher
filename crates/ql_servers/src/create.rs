@@ -26,7 +26,7 @@ use crate::ServerError;
 /// - EULA and `config.json` file couldn't be saved
 /// ## Server Jar...
 /// - ...couldn't be downloaded from
-///   mojang/omniarchive (internet/server issue)
+///   Mojang/Omniarchive (internet/server issue)
 /// - ...couldn't be saved to a file
 /// - classic server zip file couldn't be extracted
 /// - classic server zip file doesn't have a `minecraft-server.jar`

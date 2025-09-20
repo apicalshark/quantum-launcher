@@ -30,8 +30,9 @@ pub enum JavaArgsMode {
 }
 
 impl JavaArgsMode {
-    pub const ALL: &[Self] = &[Self::Combine, Self::Disable, Self::Fallback];
+    pub const ALL: [Self; 3] = [Self::Combine, Self::Disable, Self::Fallback];
 
+    #[must_use]
     pub fn get_description(self) -> &'static str {
         match self {
             JavaArgsMode::Fallback => "Use global arguments only when instance has no arguments",
@@ -74,13 +75,14 @@ pub enum PreLaunchPrefixMode {
 }
 
 impl PreLaunchPrefixMode {
-    pub const ALL: &[Self] = &[
+    pub const ALL: [Self; 4] = [
         Self::CombineGlobalLocal,
         Self::CombineLocalGlobal,
         Self::Disable,
         Self::Fallback,
     ];
 
+    #[must_use]
     pub fn get_description(self) -> &'static str {
         match self {
             PreLaunchPrefixMode::Fallback => "Use global prefix only when instance has no prefix",
@@ -402,7 +404,7 @@ impl InstanceConfigJson {
         match mode {
             PreLaunchPrefixMode::Fallback => {
                 if instance_prefix.is_empty() {
-                    global_prefix.to_owned()
+                    global_prefix.clone()
                 } else {
                     instance_prefix
                 }

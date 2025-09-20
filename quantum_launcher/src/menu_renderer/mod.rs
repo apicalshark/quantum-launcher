@@ -379,7 +379,7 @@ impl MenuCurseforgeManualDownload {
                         widget::button(widget::text("Open link").size(14)).on_press(Message::CoreOpenLink(url)),
                         widget::text(&entry.name)
                     ]
-                    .align_y(iced::Alignment::Center)
+                    .align_y(Alignment::Center)
                     .spacing(10)
                     .into()
                 }))
@@ -510,7 +510,7 @@ pub fn view_account_login<'a>() -> Element<'a> {
                     }
                 )),
             ]
-            .align_x(iced::Alignment::Center)
+            .align_x(Alignment::Center)
             .spacing(5),
             widget::horizontal_space(),
         ],
@@ -577,7 +577,7 @@ pub fn view_log_upload_result(url: &'_ str, is_server: bool) -> Element<'_> {
                         }),
                 ]
                 .spacing(10)
-                .align_y(iced::Alignment::Center)
+                .align_y(Alignment::Center)
             )
             .padding(10),
             widget::vertical_space(),

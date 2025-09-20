@@ -40,6 +40,7 @@ pub enum BackendType {
 }
 
 impl BackendType {
+    #[must_use]
     pub fn get_url(self) -> &'static str {
         match self {
             BackendType::Fabric => "https://meta.fabricmc.net/v2",
@@ -55,6 +56,7 @@ impl BackendType {
         }
     }
 
+    #[must_use]
     pub fn is_quilt(self) -> bool {
         matches!(self, BackendType::Quilt | BackendType::OrnitheMCQuilt)
     }
@@ -101,6 +103,7 @@ pub enum FabricVersionList {
 }
 
 impl FabricVersionList {
+    #[must_use]
     pub fn just_get_one(self) -> (List, BackendType) {
         match self {
             FabricVersionList::Quilt(l) => (l, BackendType::Quilt),
@@ -126,58 +129,35 @@ impl FabricVersionList {
         }
     }
 
-    pub fn get_choices(&self) -> &'static [BackendType] {
-        match self {
-            FabricVersionList::Quilt(_) => &[BackendType::Quilt],
-            FabricVersionList::Fabric(_) => &[BackendType::Fabric],
-            FabricVersionList::LegacyFabric(_) => &[BackendType::LegacyFabric],
-            FabricVersionList::OrnitheMCFabric(_) => &[BackendType::OrnitheMCFabric],
-            FabricVersionList::OrnitheMCQuilt(_) => &[BackendType::OrnitheMCQuilt],
-            FabricVersionList::Unsupported => &[BackendType::Fabric],
-
-            #[allow(unused)]
-            FabricVersionList::Beta173 {
-                ornithe_mc,
-                babric,
-                cursed_legacy,
-            } => &[
-                BackendType::OrnitheMCFabric,
-                BackendType::Babric,
-                BackendType::CursedLegacy,
-            ],
-            #[allow(unused)]
-            FabricVersionList::Both {
-                legacy_fabric,
-                ornithe_mc,
-            } => &[BackendType::LegacyFabric, BackendType::OrnitheMCFabric],
-        }
-    }
-
-    pub fn get_specific(self, backend: BackendType) -> Option<Vec<FabricVersionListItem>> {
+    #[must_use]
+    pub fn get_specific(self, backend: BackendType) -> Option<List> {
         match (self, backend) {
-            (FabricVersionList::Beta173 { ornithe_mc, .. }, BackendType::OrnitheMCFabric) => {
+            (FabricVersionList::Beta173 { ornithe_mc, .. }, BackendType::OrnitheMCFabric)
+            | (FabricVersionList::Both { ornithe_mc, .. }, BackendType::OrnitheMCFabric) => {
                 Some(ornithe_mc)
             }
+
             (FabricVersionList::Beta173 { cursed_legacy, .. }, BackendType::CursedLegacy) => {
                 Some(cursed_legacy)
             }
+
             (FabricVersionList::Beta173 { babric, .. }, BackendType::Babric) => Some(babric),
+
             (FabricVersionList::Both { legacy_fabric, .. }, BackendType::LegacyFabric) => {
                 Some(legacy_fabric)
-            }
-            (FabricVersionList::Both { ornithe_mc, .. }, BackendType::OrnitheMCFabric) => {
-                Some(ornithe_mc)
             }
 
             (FabricVersionList::Fabric(l), BackendType::Fabric)
             | (FabricVersionList::LegacyFabric(l), BackendType::LegacyFabric)
             | (FabricVersionList::OrnitheMCFabric(l), BackendType::OrnitheMCFabric)
-            | (FabricVersionList::Quilt(l), BackendType::Quilt) => Some(l),
+            | (FabricVersionList::Quilt(l), BackendType::Quilt)
+            | (FabricVersionList::OrnitheMCQuilt(l), BackendType::OrnitheMCQuilt) => Some(l),
 
             _ => None,
         }
     }
 
+    #[must_use]
     pub fn is_unsupported(&self) -> bool {
         match self {
             FabricVersionList::Quilt(l)
@@ -204,131 +184,14 @@ pub async fn get_list_of_versions(
     instance: InstanceSelection,
     is_quilt: bool,
 ) -> Result<FabricVersionList, FabricInstallError> {
-    async fn try_backend(
-        version: &str,
-        backend: BackendType,
-        is_server: bool,
-    ) -> Result<List, JsonDownloadError> {
-        let versions: List = if let BackendType::CursedLegacy = backend {
-            vec![FabricVersionListItem {
-                loader: FabricVersion {
-                    version: "b1.7.3".to_owned(),
-                },
-            }]
-        } else {
-            let list = if let BackendType::OrnitheMCFabric | BackendType::OrnitheMCQuilt = backend {
-                let name = if backend.is_quilt() {
-                    "quilt"
-                } else {
-                    "fabric"
-                };
-                let url1 =
-                    format!("https://meta.ornithemc.net/v3/versions/{name}-loader/{version}");
-                let url2 = format!(
-                    "https://meta.ornithemc.net/v3/versions/{name}-loader/{version}-{}",
-                    if is_server { "server" } else { "client" }
-                );
-
-                let list = file_utils::download_file_to_json::<List>(&url1, false).await?;
-                if list.is_empty() {
-                    if let Ok(new_list) =
-                        file_utils::download_file_to_json::<List>(&url2, false).await
-                    {
-                        new_list
-                    } else {
-                        list
-                    }
-                } else {
-                    list
-                }
-            } else {
-                let list = download_file_to_string(&format!("/versions/loader/{version}"), backend)
-                    .await?;
-                serde_json::from_str(&list).json(list)?
-            };
-
-            list
-        };
-        Ok(versions)
-    }
-
-    async fn inner(
-        version: &str,
-        is_quilt: bool,
-        is_server: bool,
-    ) -> Result<FabricVersionList, JsonDownloadError> {
-        if is_quilt {
-            let (versions, should_try_ornithe) =
-                match try_backend(version, BackendType::Quilt, is_server).await {
-                    // If the list is empty or an error 404
-                    // then try OrnitheMC backend, otherwise
-                    // stick to official Quilt backend
-                    Ok(n) => {
-                        let is_empty = n.is_empty();
-                        (n, is_empty)
-                    }
-                    Err(JsonDownloadError::RequestError(RequestError::DownloadError {
-                        code,
-                        ..
-                    })) if code.as_u16() == 404 => (Vec::new(), true),
-                    Err(err) => Err(err)?,
-                };
-
-            return Ok(if should_try_ornithe {
-                let versions = try_backend(version, BackendType::OrnitheMCQuilt, is_server).await?;
-                if versions.is_empty() {
-                    FabricVersionList::Unsupported
-                } else {
-                    FabricVersionList::OrnitheMCQuilt(versions)
-                }
-            } else {
-                FabricVersionList::Quilt(versions)
-            });
-        }
-
-        let official_versions = try_backend(version, BackendType::Fabric, is_server).await?;
-        if !official_versions.is_empty() {
-            return Ok(FabricVersionList::Fabric(official_versions));
-        }
-
-        if version == "b1.7.3" {
-            let (ornithe_mc, cursed_legacy, babric) = tokio::try_join!(
-                try_backend(version, BackendType::OrnitheMCFabric, is_server),
-                try_backend(version, BackendType::CursedLegacy, is_server),
-                try_backend(version, BackendType::Babric, is_server),
-            )?;
-
-            return Ok(FabricVersionList::Beta173 {
-                ornithe_mc,
-                babric,
-                cursed_legacy,
-            });
-        }
-
-        let (legacy_fabric, ornithe_mc) = tokio::try_join!(
-            try_backend(version, BackendType::LegacyFabric, is_server),
-            try_backend(version, BackendType::OrnitheMCFabric, is_server)
-        )?;
-
-        Ok(match (legacy_fabric.is_empty(), ornithe_mc.is_empty()) {
-            (true, true) => FabricVersionList::Unsupported,
-            (true, false) => FabricVersionList::OrnitheMCFabric(ornithe_mc),
-            (false, true) => FabricVersionList::LegacyFabric(legacy_fabric),
-            (false, false) => FabricVersionList::Both {
-                legacy_fabric,
-                ornithe_mc,
-            },
-        })
-    }
-
     let is_server = instance.is_server();
     let version_json = VersionDetails::load(&instance).await?;
     let version = version_json.get_id();
 
-    let mut result = inner(version, is_quilt, is_server).await;
+    let mut result = get_list_of_versions_inner(version, is_quilt, is_server).await;
     if result.is_err() {
         for _ in 0..5 {
-            result = inner(version, is_quilt, is_server).await;
+            result = get_list_of_versions_inner(version, is_quilt, is_server).await;
             match &result {
                 Ok(_) => break,
                 Err(JsonDownloadError::RequestError(RequestError::DownloadError {
@@ -350,6 +213,120 @@ pub async fn get_list_of_versions(
     result.map_err(FabricInstallError::from)
 }
 
+async fn try_backend(
+    version: &str,
+    backend: BackendType,
+    is_server: bool,
+) -> Result<List, JsonDownloadError> {
+    let versions: List = if let BackendType::CursedLegacy = backend {
+        vec![FabricVersionListItem {
+            loader: FabricVersion {
+                version: "b1.7.3".to_owned(),
+            },
+        }]
+    } else {
+        let list = if let BackendType::OrnitheMCFabric | BackendType::OrnitheMCQuilt = backend {
+            let name = if backend.is_quilt() {
+                "quilt"
+            } else {
+                "fabric"
+            };
+            let url1 = format!("https://meta.ornithemc.net/v3/versions/{name}-loader/{version}");
+            let url2 = format!(
+                "https://meta.ornithemc.net/v3/versions/{name}-loader/{version}-{}",
+                if is_server { "server" } else { "client" }
+            );
+
+            let list = file_utils::download_file_to_json::<List>(&url1, false).await?;
+            if list.is_empty() {
+                if let Ok(new_list) = file_utils::download_file_to_json::<List>(&url2, false).await
+                {
+                    new_list
+                } else {
+                    list
+                }
+            } else {
+                list
+            }
+        } else {
+            let list =
+                download_file_to_string(&format!("/versions/loader/{version}"), backend).await?;
+            serde_json::from_str(&list).json(list)?
+        };
+
+        list
+    };
+    Ok(versions)
+}
+
+async fn get_list_of_versions_inner(
+    version: &str,
+    is_quilt: bool,
+    is_server: bool,
+) -> Result<FabricVersionList, JsonDownloadError> {
+    if is_quilt {
+        let (versions, should_try_ornithe) =
+            match try_backend(version, BackendType::Quilt, is_server).await {
+                // If the list is empty or an error 404
+                // then try OrnitheMC backend, otherwise
+                // stick to official Quilt backend
+                Ok(n) => {
+                    let is_empty = n.is_empty();
+                    (n, is_empty)
+                }
+                Err(JsonDownloadError::RequestError(RequestError::DownloadError {
+                    code, ..
+                })) if code.as_u16() == 404 => (Vec::new(), true),
+                Err(err) => Err(err)?,
+            };
+
+        return Ok(if should_try_ornithe {
+            let versions = try_backend(version, BackendType::OrnitheMCQuilt, is_server).await?;
+            if versions.is_empty() {
+                FabricVersionList::Unsupported
+            } else {
+                FabricVersionList::OrnitheMCQuilt(versions)
+            }
+        } else {
+            FabricVersionList::Quilt(versions)
+        });
+    }
+
+    let official_versions = try_backend(version, BackendType::Fabric, is_server).await?;
+    if !official_versions.is_empty() {
+        return Ok(FabricVersionList::Fabric(official_versions));
+    }
+
+    if version == "b1.7.3" {
+        let (ornithe_mc, cursed_legacy, babric) = tokio::try_join!(
+            try_backend(version, BackendType::OrnitheMCFabric, is_server),
+            try_backend(version, BackendType::CursedLegacy, is_server),
+            try_backend(version, BackendType::Babric, is_server),
+        )?;
+
+        return Ok(FabricVersionList::Beta173 {
+            ornithe_mc,
+            babric,
+            cursed_legacy,
+        });
+    }
+
+    let (legacy_fabric, ornithe_mc) = tokio::try_join!(
+        try_backend(version, BackendType::LegacyFabric, is_server),
+        try_backend(version, BackendType::OrnitheMCFabric, is_server)
+    )?;
+
+    Ok(match (legacy_fabric.is_empty(), ornithe_mc.is_empty()) {
+        (true, true) => FabricVersionList::Unsupported,
+        (true, false) => FabricVersionList::OrnitheMCFabric(ornithe_mc),
+        (false, true) => FabricVersionList::LegacyFabric(legacy_fabric),
+        (false, false) => FabricVersionList::Both {
+            legacy_fabric,
+            ornithe_mc,
+        },
+    })
+}
+
 pub async fn get_latest_cursed_legacy_commit() -> Result<String, FabricInstallError> {
     #[derive(Deserialize)]
     struct GithubCommit {
@@ -368,8 +345,7 @@ pub async fn get_latest_cursed_legacy_commit() -> Result<String, FabricInstallEr
     )
     .await?;
 
-    Ok(version
-        .first()
-        .map(|n| first_seven_chars(&n.sha).to_owned())
-        .unwrap_or("5e8a1e8".to_owned()))
+    Ok(version.first().map_or("5e8a1e8".to_owned(), |n| {
+        first_seven_chars(&n.sha).to_owned()
+    }))
 }

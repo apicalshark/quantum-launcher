@@ -247,6 +247,7 @@ pub struct Library {
 }
 
 impl Library {
+    #[must_use]
     pub fn is_allowed(&self) -> bool {
         let mut allowed: bool = true;
 
