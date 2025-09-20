@@ -316,7 +316,6 @@ impl Launcher {
                     info!("Server {name} crashed with status: {status}");
                 }
 
-                // TODO: Implement server crash handling
                 if let Some(log) = self.server_logs.get_mut(&name) {
                     log.has_crashed = !status.success();
                 }

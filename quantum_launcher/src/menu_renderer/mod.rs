@@ -139,15 +139,13 @@ impl MenuCreateInstance {
             } => {
                 let already_exists = list.is_some_and(|n| n.contains(instance_name));
 
-                let create_button = widget::button(
-                    widget::row![icon_manager::create(), "Create Instance"]
-                        .spacing(10)
-                        .padding(5),
-                )
-                .on_press_maybe(
-                    (selected_version.is_some() && !instance_name.is_empty() && !already_exists)
-                        .then(|| Message::CreateInstance(CreateInstanceMessage::Start)),
-                );
+                let create_button = button_with_icon(icon_manager::create(), "Create Instance", 16)
+                    .on_press_maybe(
+                        (selected_version.is_some()
+                            && !instance_name.is_empty()
+                            && !already_exists)
+                            .then(|| Message::CreateInstance(CreateInstanceMessage::Start)),
+                    );
 
                 let create_button: Element = if selected_version.is_none() {
                     tooltip(
@@ -199,6 +197,7 @@ impl MenuCreateInstance {
                         ),
                         create_button,
                         widget::text("To install Fabric/Forge/OptiFine/etc and mods, click on Mods after installing the instance").size(12),
+                        widget::text("To sideload your own custom JARs, create an instance with a similar version, then go to \"Edit->Custom Jar File\"").size(12),
                     ].push_maybe(
                         {
                             let real_platform = if cfg!(target_arch = "x86") { "x86_64" } else { "aarch64" };

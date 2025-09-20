@@ -16,10 +16,10 @@ If multiple are available you can choose between them.
 - Made fabric installer faster
 
 ## UX
-- (TODO) Presets and text exporting (explained below) are now grouped together
+- Presets and text exporting (explained below) are now grouped together
   under a hamburger menu for easier access
 - Disabled mods are now tinted darker
-- (TODO) Mod selection no longer uses clunky checkboxes, but rather proper list items
+- Mods in the list now have icons, better styling and shift multiple selection
 - Ctrl-A can now select all mods and jarmods
 ## Text export
 - You can now export your mods as a text list, making it easy to share with others.

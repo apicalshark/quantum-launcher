@@ -196,9 +196,8 @@ impl Launcher {
                 ),
                 widget::button(widget::text("Join Discord").size(14))
                     .on_press(Message::CoreOpenLink(DISCORD.to_owned())),
-                widget::text("Having issues? Copy and send the game log for support").size(12),
             )
-            .spacing(10)]
+            .spacing(7)
             .push_maybe(
                 has_crashed.then_some(
                     widget::text!(
@@ -212,6 +211,7 @@ impl Launcher {
                     .size(18),
                 ),
             )
+            .wrap()]
             .push_maybe(
                 menu.is_viewing_server.then_some(
                     widget::text_input("Enter command...", command)

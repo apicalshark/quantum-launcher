@@ -56,7 +56,6 @@ pub struct VersionDetails {
     /// Unused field.
     pub minimumLauncherVersion: Option<usize>,
 
-    // TODO: Find difference between `releaseTime` and `time`
     pub releaseTime: String,
     pub time: String,
 
