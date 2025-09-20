@@ -1,4 +1,4 @@
-use ql_core::{info, IntoIoError};
+use ql_core::{pt, IntoIoError};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, BufReader, BufWriter, Write};
@@ -9,7 +9,8 @@ use super::error::FabricInstallError;
 
 const MANIFEST_PATH: &str = "META-INF/MANIFEST.MF";
 const SERVICES_DIR: &str = "META-INF/services/";
-const MAIN_CLASS_MANIFEST: &str = "net.fabricmc.loader.impl.launch.server.FabricServerLauncher";
+// const MAIN_CLASS_MANIFEST: &str = "net.fabricmc.loader.impl.launch.server.FabricServerLauncher";
+const MAIN_CLASS_MANIFEST: &str = "net.fabricmc.loader.launch.server.FabricServerLauncher";
 
 /// Makes a jar file that launches the Minecraft Fabric server,
 /// essentially acting as a glorified launch script.
@@ -86,7 +87,7 @@ pub async fn make_launch_jar(
 
     // Shade libraries if required
     if shade_libraries {
-        info!("Shading libraries");
+        pt!("Shading libraries");
         let mut services = HashMap::<String, HashSet<String>>::new();
 
         let library_files_len = library_files.len();
@@ -94,7 +95,7 @@ pub async fn make_launch_jar(
         let regex = regex::Regex::new(r"META-INF/[^/]+\.(SF|DSA|RSA|EC)").unwrap();
 
         for (i, library_path) in library_files.iter().enumerate() {
-            info!("({i}/{library_files_len}) {library_path:?}");
+            pt!("({i}/{library_files_len}) {library_path:?}");
             let library_file = File::open(library_path).path(library_path)?;
             let mut jar_reader = zip::read::ZipArchive::new(BufReader::new(library_file))?;
 

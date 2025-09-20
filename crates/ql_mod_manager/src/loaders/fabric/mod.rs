@@ -26,6 +26,9 @@ pub use version_list::{
     get_list_of_versions, BackendType, FabricVersion, FabricVersionListItem, VersionList,
 };
 
+const CURSED_LEGACY_JSON: &str =
+    &include_str!("../../../../../assets/installers/cursed_legacy_fabric.json");
+
 async fn download_file_to_string(url: &str, backend: BackendType) -> Result<String, RequestError> {
     file_utils::download_file_to_string(
         &format!(
@@ -44,8 +47,6 @@ pub async fn install_server(
     progress: Option<&Sender<GenericProgress>>,
     backend: BackendType,
 ) -> Result<(), FabricInstallError> {
-    // TODO: Add legacy fabric support for servers
-
     let loader_name = if backend.is_quilt() {
         "Quilt"
     } else {
@@ -67,11 +68,11 @@ pub async fn install_server(
     let json = VersionDetails::load_from_path(&server_dir).await?;
     let game_version = json.get_id();
 
-    let json = download_file_to_string(
-        &format!("/versions/loader/{game_version}/{loader_version}/server/json"),
-        backend,
-    )
-    .await?;
+    let json = if let BackendType::CursedLegacy = backend {
+        CURSED_LEGACY_JSON.replace("INSERT_COMMIT", &get_latest_cursed_legacy_commit().await?)
+    } else {
+        get_fabric_json(&loader_version, backend, game_version, "server").await?
+    };
 
     let json_path = server_dir.join("fabric.json");
     tokio::fs::write(&json_path, &json).await.path(json_path)?;
@@ -98,14 +99,17 @@ pub async fn install_server(
     }))
     .await?;
 
-    let shade_libraries = compare_versions(&loader_version, "0.12.5").is_le();
+    // TODO: Check if Legacy Fabric needs this
+    let shade_libraries = (matches!(backend, BackendType::Fabric)
+        && compare_versions(&loader_version, "0.12.5").is_le())
+        | matches!(backend, BackendType::CursedLegacy);
     let launch_jar = server_dir.join("fabric-server-launch.jar");
 
     info!("Making launch jar");
     make_launch_jar::make_launch_jar(
         &launch_jar,
         &server_dir,
-        &json.mainClass,
+        json.mainClassServer.as_deref().unwrap_or(&json.mainClass),
         &library_files,
         shade_libraries,
     )
@@ -116,7 +120,11 @@ pub async fn install_server(
         loader_name.to_owned(),
         Some(ModTypeInfo {
             version: loader_version,
-            backend_implementation: None, // TODO
+            backend_implementation: if let BackendType::Fabric | BackendType::Quilt = backend {
+                None
+            } else {
+                Some(backend.to_string())
+            },
         }),
     )
     .await?;
@@ -161,30 +169,9 @@ pub async fn install_client(
 
     let json_path = instance_dir.join("fabric.json");
     let json = if let BackendType::CursedLegacy = backend {
-        include_str!("../../../../../assets/installers/cursed_legacy_fabric.json")
-            .replace("INSERT_COMMIT", &get_latest_cursed_legacy_commit().await?)
+        CURSED_LEGACY_JSON.replace("INSERT_COMMIT", &get_latest_cursed_legacy_commit().await?)
     } else {
-        match download_file_to_string(
-            &format!("/versions/loader/{game_version}/{loader_version}/profile/json"),
-            backend,
-        )
-        .await
-        {
-            Ok(n) => n,
-            Err(err) => {
-                match download_file_to_string(
-                    &format!(
-                        "/versions/loader/{game_version}-client/{loader_version}/profile/json"
-                    ),
-                    backend,
-                )
-                .await
-                {
-                    Ok(n) => n,
-                    Err(_) => Err(err)?,
-                }
-            }
-        }
+        get_fabric_json(&loader_version, backend, game_version, "profile").await?
     };
     tokio::fs::write(&json_path, &json).await.path(json_path)?;
 
@@ -239,6 +226,37 @@ pub async fn install_client(
     info!("Finished installing {loader_name}",);
 
     Ok(())
+}
+
+async fn get_fabric_json(
+    loader_version: &str,
+    backend: BackendType,
+    game_version: &str,
+    implementation: &str,
+) -> Result<String, FabricInstallError> {
+    let implementation_kind = if implementation == "server" {
+        "server"
+    } else {
+        "client"
+    };
+
+    Ok(if let BackendType::OrnitheMC = backend {
+        let url1 = format!("https://meta.ornithemc.net/v3/versions/fabric-loader/{game_version}/{loader_version}/{implementation}/json");
+        let url2 = format!("https://meta.ornithemc.net/v3/versions/fabric-loader/{game_version}-{implementation_kind}/{loader_version}/{implementation}/json");
+        match file_utils::download_file_to_string(&url1, false).await {
+            Ok(n) => n,
+            Err(err) => match file_utils::download_file_to_string(&url2, false).await {
+                Ok(n) => n,
+                Err(_) => Err(err)?,
+            },
+        }
+    } else {
+        download_file_to_string(
+            &format!("/versions/loader/{game_version}/{loader_version}/{implementation}/json"),
+            backend,
+        )
+        .await?
+    })
 }
 
 async fn migrate_index_file(instance_dir: &Path) -> Result<(), FabricInstallError> {
