@@ -27,6 +27,7 @@ const MAIN_CLASS_MANIFEST: &str = "net.fabricmc.loader.impl.launch.server.Fabric
 /// the library filenames contains invalid character encodings.
 pub async fn make_launch_jar(
     file: &Path,
+    base: &Path,
     launch_main_class: &str,
     library_files: &[PathBuf],
     shade_libraries: bool,
@@ -52,8 +53,8 @@ pub async fn make_launch_jar(
                 //   (real bug fixed in v0.4)
                 // - This makes the fabric server jar file cross-platform
                 library
-                    .parent()
-                    .and_then(|parent| library.strip_prefix(parent).ok())
+                    .strip_prefix(base)
+                    .ok()
                     .unwrap_or(library)
                     .to_string_lossy()
                     .to_string()

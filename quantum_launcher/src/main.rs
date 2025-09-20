@@ -318,7 +318,7 @@ fn do_migration() {
         if let Err(e) = std::fs::rename(&legacy_dir, &new_dir) {
             eprintln!("Migration failed: {}", e);
         } else if let Err(e) = ql_core::file_utils::create_symlink(&new_dir, &legacy_dir) {
-            eprintln!("Migration successful but couldnt create symlink to the legacy dir: {e}",);
+            eprintln!("Migration successful but couldn't create symlink to the legacy dir: {e}",);
         } else {
             info!("Migration successful!\nYour launcher files are now in ~./local/share/QuantumLauncher")
         }

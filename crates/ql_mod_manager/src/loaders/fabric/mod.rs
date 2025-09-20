@@ -51,7 +51,7 @@ pub async fn install_server(
     } else {
         "Fabric"
     };
-    info!("Installing {loader_name} for server");
+    info!("Installing {loader_name} (version {loader_version}) for server");
 
     if let Some(progress) = &progress {
         _ = progress.send(GenericProgress::default());
@@ -78,12 +78,10 @@ pub async fn install_server(
 
     let json: FabricJSON = serde_json::from_str(&json).json(json)?;
 
-    let number_of_libraries = json.libraries.len();
+    let number_of_libraries = json.libraries.len() + 1;
     let i = Mutex::new(0);
 
     let library_files = do_jobs(json.libraries.iter().map(|library| async {
-        send_progress(&i, library, progress, number_of_libraries);
-
         let library_path = libraries_dir.join(library.get_path());
 
         let library_parent_dir = library_path
@@ -94,6 +92,8 @@ pub async fn install_server(
             .path(library_parent_dir)?;
 
         file_utils::download_file_to_path(&library.get_url(), false, &library_path).await?;
+
+        send_progress(&i, library, progress, number_of_libraries);
         Ok::<_, FabricInstallError>(library_path.clone())
     }))
     .await?;
@@ -104,6 +104,7 @@ pub async fn install_server(
     info!("Making launch jar");
     make_launch_jar::make_launch_jar(
         &launch_jar,
+        &server_dir,
         &json.mainClass,
         &library_files,
         shade_libraries,
@@ -163,11 +164,27 @@ pub async fn install_client(
         include_str!("../../../../../assets/installers/cursed_legacy_fabric.json")
             .replace("INSERT_COMMIT", &get_latest_cursed_legacy_commit().await?)
     } else {
-        download_file_to_string(
+        match download_file_to_string(
             &format!("/versions/loader/{game_version}/{loader_version}/profile/json"),
             backend,
         )
-        .await?
+        .await
+        {
+            Ok(n) => n,
+            Err(err) => {
+                match download_file_to_string(
+                    &format!(
+                        "/versions/loader/{game_version}-client/{loader_version}/profile/json"
+                    ),
+                    backend,
+                )
+                .await
+                {
+                    Ok(n) => n,
+                    Err(_) => Err(err)?,
+                }
+            }
+        }
     };
     tokio::fs::write(&json_path, &json).await.path(json_path)?;
 

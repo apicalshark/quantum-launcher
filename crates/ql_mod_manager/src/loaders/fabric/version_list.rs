@@ -200,7 +200,16 @@ pub async fn get_list_of_versions(
         } else {
             let version_list =
                 download_file_to_string(&format!("/versions/loader/{version}"), backend).await?;
-            serde_json::from_str(&version_list).json(version_list)?
+            let list: List = serde_json::from_str(&version_list).json(version_list)?;
+            if list.is_empty() {
+                if let Ok(list) =
+                    download_file_to_string(&format!("/versions/loader/{version}-client"), backend)
+                        .await
+                {
+                    return Ok(serde_json::from_str(&list).json(list)?);
+                }
+            }
+            list
         };
         Ok(versions)
     }

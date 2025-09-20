@@ -7,7 +7,7 @@ use std::{
 use ql_core::{
     err, find_forge_shim_file, info,
     json::{InstanceConfigJson, VersionDetails},
-    no_window, GenericProgress, IntoIoError, LAUNCHER_DIR,
+    no_window, pt, GenericProgress, IntoIoError, LAUNCHER_DIR,
 };
 use ql_java_handler::{get_java_binary, JavaVersion};
 use tokio::process::{Child, Command};
@@ -107,6 +107,11 @@ pub async fn run(
 
     let child = command.spawn().path(server_jar_path)?;
     info!("Started server");
+    if let Some(id) = child.id() {
+        pt!("PID: {id}");
+    } else {
+        pt!("No ID found!");
+    }
     Ok((Arc::new(Mutex::new(child)), is_classic_server))
 }
 
