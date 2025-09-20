@@ -144,15 +144,7 @@ pub struct InstanceConfigJson {
     /// Extra game arguments.
     pub game_args: Option<Vec<String>>,
 
-<<<<<<< HEAD
-    /// DEPRECATED in v0.4.2
-    ///
-    /// This used to indicate whether a version
-    /// was downloaded from Omniarchive instead
-    /// of Mojang, in Quantum Launcher
-=======
     /// Previously used to indicate if a version was downloaded from Omniarchive
->>>>>>> b8b0617 (Dev: Add loader version metadata to instance config JSON)
     /// v0.3.1 - v0.4.1
     #[deprecated(since = "0.4.2", note = "migrated to BetterJSONs, so no longer needed")]
     pub omniarchive: Option<serde_json::Value>,
@@ -214,15 +206,8 @@ pub struct InstanceConfigJson {
 
     pub global_settings: Option<GlobalSettings>,
 
-<<<<<<< HEAD
-    /// Controls how this instance's Java arguments interact with global Java arguments.
-    /// See [`JavaArgsMode`] documentation for more info.
-    ///
-    /// **Default: `JavaArgsMode::Combine`**
-=======
     /// How this instance's Java arguments interact with global Java arguments.
     /// Default: `Combine`. See [`JavaArgsMode`] for more info.
->>>>>>> b8b0617 (Dev: Add loader version metadata to instance config JSON)
     pub java_args_mode: Option<JavaArgsMode>,
 
     /// Controls how this instance's pre-launch prefix commands interact with global pre-launch prefix.
@@ -230,7 +215,6 @@ pub struct InstanceConfigJson {
     ///
     /// **Default: `PreLaunchPrefixMode::CombineGlobalLocal`**
     pub pre_launch_prefix_mode: Option<PreLaunchPrefixMode>,
-<<<<<<< HEAD
     /// **Client and Server**
     ///
     /// Custom jar configuration for using alternative client/server jars.
@@ -245,10 +229,8 @@ pub struct InstanceConfigJson {
     ///
     /// **Default: `None`** (use official Minecraft jar)
     pub custom_jar: Option<CustomJarConfig>,
-=======
 
     pub version_info: Option<VersionInfo>,
->>>>>>> fdcef06 (Dev: add legacy fabric support to server)
 }
 
 impl InstanceConfigJson {

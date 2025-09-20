@@ -9,8 +9,11 @@ use std::{
 use thiserror::Error;
 
 use ql_core::{
-    constants::OS_NAME, do_jobs_with_limit, err, file_utils, info, pt, GenericProgress,
-    IntoIoError, IoError, JsonDownloadError, JsonError, RequestError, LAUNCHER_DIR,
+    constants::OS_NAME,
+    do_jobs_with_limit, err,
+    file_utils::{self, DirItem},
+    info, pt, GenericProgress, IntoIoError, IoError, JsonDownloadError, JsonError, RequestError,
+    LAUNCHER_DIR,
 };
 
 mod compression;
