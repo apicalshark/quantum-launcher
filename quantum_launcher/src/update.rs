@@ -283,11 +283,13 @@ impl Launcher {
             }
             Message::ServerCreateVersionsLoaded(Ok(vec)) => {
                 self.server_version_list_cache = Some(vec.clone());
-                self.state = State::ServerCreate(MenuServerCreate::Loaded {
-                    versions: Box::new(iced::widget::combo_box::State::new(vec)),
-                    selected_version: None,
-                    name: String::new(),
-                });
+                if let State::ServerCreate(_) = &self.state {
+                    self.state = State::ServerCreate(MenuServerCreate::Loaded {
+                        versions: Box::new(iced::widget::combo_box::State::new(vec)),
+                        selected_version: None,
+                        name: String::new(),
+                    });
+                }
             }
             Message::ServerManageStartServer(server) => {
                 self.server_logs.remove(&server);

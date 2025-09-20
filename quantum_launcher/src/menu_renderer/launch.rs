@@ -56,7 +56,8 @@ impl Launcher {
         let last_parts = widget::column![
             widget::horizontal_space(),
             widget::row![
-                // Server UI enabled
+                // Enable/Disable the below `widget::column![]` code to
+                // toggle the experimental server manager
                 widget::column![
                     widget::vertical_space(),
                     if menu.is_viewing_server {
