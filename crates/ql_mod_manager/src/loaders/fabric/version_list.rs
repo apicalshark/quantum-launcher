@@ -204,20 +204,24 @@ pub async fn get_list_of_versions(
                 },
             }]
         } else {
-            let version_list =
-                download_file_to_string(&format!("/versions/loader/{version}"), backend).await?;
-            let list: List = serde_json::from_str(&version_list).json(version_list)?;
+            // TODO: Add ornithe quilt support
+            let list = if let BackendType::OrnitheMC = backend {
+                let url1 =
+                    format!("https://meta.ornithemc.net/v3/versions/fabric-loader/{version}");
+                file_utils::download_file_to_json::<List>(&url1, false).await?
+            } else {
+                let list = download_file_to_string(&format!("/versions/loader/{version}"), backend)
+                    .await?;
+                serde_json::from_str(&list).json(list)?
+            };
+
             if list.is_empty() {
                 if let BackendType::OrnitheMC = backend {
-                    if let Ok(list) = file_utils::download_file_to_json::<List>(
-                        &format!(
-                            // TODO: Add ornithe quilt support
-                            "https://meta.ornithemc.net/v3/versions/fabric-loader/{version}-{}",
-                            if is_server { "server" } else { "client" }
-                        ),
-                        false,
-                    )
-                    .await
+                    let url2 = format!(
+                        "https://meta.ornithemc.net/v3/versions/fabric-loader/{version}-{}",
+                        if is_server { "server" } else { "client" }
+                    );
+                    if let Ok(list) = file_utils::download_file_to_json::<List>(&url2, false).await
                     {
                         return Ok(list);
                     }

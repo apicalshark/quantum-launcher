@@ -228,6 +228,7 @@ pub struct InstanceConfigJson {
     ///
     /// **Default: `PreLaunchPrefixMode::CombineGlobalLocal`**
     pub pre_launch_prefix_mode: Option<PreLaunchPrefixMode>,
+<<<<<<< HEAD
     /// **Client and Server**
     ///
     /// Custom jar configuration for using alternative client/server jars.
@@ -242,6 +243,10 @@ pub struct InstanceConfigJson {
     ///
     /// **Default: `None`** (use official Minecraft jar)
     pub custom_jar: Option<CustomJarConfig>,
+=======
+
+    pub version_info: Option<VersionInfo>,
+>>>>>>> fdcef06 (Dev: add legacy fabric support to server)
 }
 
 impl InstanceConfigJson {
@@ -450,4 +455,9 @@ pub struct GlobalSettings {
     /// This is an optional list of commands to prepend
     /// to the launch command (e.g., "prime-run" for NVIDIA GPU usage on Linux).
     pub pre_launch_prefix: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VersionInfo {
+    pub is_special_lwjgl3: bool,
 }

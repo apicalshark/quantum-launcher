@@ -31,8 +31,10 @@ use config::LauncherConfig;
 use iced::{futures::executor::block_on, Settings, Task};
 use state::{get_entries, Launcher, Message, ServerProcess};
 
-use ql_core::{err, err_no_log, file_utils, info, info_no_log, IntoStringError, JsonFileError};
-use ql_instances::OS_NAME;
+use ql_core::{
+    constants::OS_NAME, err, err_no_log, file_utils, info, info_no_log, IntoStringError,
+    JsonFileError,
+};
 use tokio::io::AsyncWriteExt;
 
 use crate::state::CustomJarState;

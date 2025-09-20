@@ -1,11 +1,11 @@
 use std::{
-    path::Path,
+    path::{Path, PathBuf},
     sync::{mpsc::Sender, Mutex},
 };
 
 use ql_core::{
     do_jobs, file_utils, info,
-    json::{instance_config::ModTypeInfo, FabricJSON, VersionDetails},
+    json::{instance_config::ModTypeInfo, FabricJSON, VersionDetails, V_1_12_2},
     pt, GenericProgress, InstanceSelection, IntoIoError, IntoJsonError, RequestError, LAUNCHER_DIR,
 };
 use version_compare::compare_versions;
@@ -27,7 +27,7 @@ pub use version_list::{
 };
 
 const CURSED_LEGACY_JSON: &str =
-    &include_str!("../../../../../assets/installers/cursed_legacy_fabric.json");
+    include_str!("../../../../../assets/installers/cursed_legacy_fabric.json");
 
 async fn download_file_to_string(url: &str, backend: BackendType) -> Result<String, RequestError> {
     file_utils::download_file_to_string(
@@ -47,57 +47,46 @@ pub async fn install_server(
     progress: Option<&Sender<GenericProgress>>,
     backend: BackendType,
 ) -> Result<(), FabricInstallError> {
-    let loader_name = if backend.is_quilt() {
-        "Quilt"
-    } else {
-        "Fabric"
-    };
-    info!("Installing {loader_name} (version {loader_version}) for server");
-
+    info!("Installing {backend} (version {loader_version}) for server");
     if let Some(progress) = &progress {
         _ = progress.send(GenericProgress::default());
     }
 
     let server_dir = LAUNCHER_DIR.join("servers").join(server_name);
-
     let libraries_dir = server_dir.join("libraries");
     tokio::fs::create_dir_all(&libraries_dir)
         .await
         .path(&libraries_dir)?;
 
-    let json = VersionDetails::load_from_path(&server_dir).await?;
-    let game_version = json.get_id();
-
-    let json = if let BackendType::CursedLegacy = backend {
-        CURSED_LEGACY_JSON.replace("INSERT_COMMIT", &get_latest_cursed_legacy_commit().await?)
-    } else {
-        get_fabric_json(&loader_version, backend, game_version, "server").await?
+    let version_json = VersionDetails::load_from_path(&server_dir).await?;
+    let json: FabricJSON = {
+        let json = if let BackendType::CursedLegacy = backend {
+            CURSED_LEGACY_JSON.replace("INSERT_COMMIT", &get_latest_cursed_legacy_commit().await?)
+        } else {
+            get_fabric_json(&loader_version, backend, version_json.get_id(), "server").await?
+        };
+        let json_path = server_dir.join("fabric.json");
+        tokio::fs::write(&json_path, &json).await.path(json_path)?;
+        serde_json::from_str(&json).json(json)?
     };
-
-    let json_path = server_dir.join("fabric.json");
-    tokio::fs::write(&json_path, &json).await.path(json_path)?;
-
-    let json: FabricJSON = serde_json::from_str(&json).json(json)?;
 
     let number_of_libraries = json.libraries.len() + 1;
     let i = Mutex::new(0);
 
-    let library_files = do_jobs(json.libraries.iter().map(|library| async {
-        let library_path = libraries_dir.join(library.get_path());
-
-        let library_parent_dir = library_path
-            .parent()
-            .ok_or(FabricInstallError::PathBufParentError(library_path.clone()))?;
-        tokio::fs::create_dir_all(&library_parent_dir)
-            .await
-            .path(library_parent_dir)?;
-
-        file_utils::download_file_to_path(&library.get_url(), false, &library_path).await?;
-
-        send_progress(&i, library, progress, number_of_libraries);
-        Ok::<_, FabricInstallError>(library_path.clone())
+    let library_files: Vec<PathBuf> = do_jobs(json.libraries.iter().map(|library| {
+        download_library(
+            library,
+            &libraries_dir,
+            &version_json,
+            &i,
+            number_of_libraries,
+            progress,
+        )
     }))
-    .await?;
+    .await?
+    .into_iter()
+    .flatten()
+    .collect();
 
     // TODO: Check if Legacy Fabric needs this
     let shade_libraries = (matches!(backend, BackendType::Fabric)
@@ -117,7 +106,12 @@ pub async fn install_server(
 
     change_instance_type(
         &server_dir,
-        loader_name.to_owned(),
+        if backend.is_quilt() {
+            "Quilt"
+        } else {
+            "Fabric"
+        }
+        .to_owned(),
         Some(ModTypeInfo {
             version: loader_version,
             backend_implementation: if let BackendType::Fabric | BackendType::Quilt = backend {
@@ -133,9 +127,55 @@ pub async fn install_server(
         _ = progress.send(GenericProgress::finished());
     }
 
-    info!("Finished installing {loader_name}");
+    info!("Finished installing {backend}");
 
     Ok(())
+}
+
+async fn download_library(
+    library: &ql_core::json::fabric::Library,
+    libraries_dir: &Path,
+    version_json: &VersionDetails,
+    i: &Mutex<usize>,
+    number_of_libraries: usize,
+    progress: Option<&Sender<GenericProgress>>,
+) -> Result<Option<PathBuf>, FabricInstallError> {
+    let version_lib = ql_core::json::version::Library {
+        downloads: None,
+        extract: None,
+        name: Some(library.name.clone()),
+        rules: library.rules.clone(),
+        natives: None,
+        url: library.url.clone(),
+    };
+    if !version_lib.is_allowed() {
+        return Ok(None);
+    }
+
+    if library
+        .name
+        .contains("org.lwjgl.lwjgl:lwjgl-platform:2.9.4")
+        && version_json.is_before_or_eq(V_1_12_2)
+    {
+        return Ok(None);
+    }
+
+    let library_path = libraries_dir.join(library.get_path());
+
+    let library_parent_dir = library_path
+        .parent()
+        .ok_or(FabricInstallError::PathBufParentError(library_path.clone()))?;
+    tokio::fs::create_dir_all(&library_parent_dir)
+        .await
+        .path(library_parent_dir)?;
+
+    let Some(url) = library.get_url() else {
+        return Ok(None);
+    };
+    file_utils::download_file_to_path(&url, false, &library_path).await?;
+
+    send_progress(i, library, progress, number_of_libraries);
+    Ok::<_, FabricInstallError>(Some(library_path.clone()))
 }
 
 pub async fn install_client(
@@ -144,41 +184,25 @@ pub async fn install_client(
     progress: Option<&Sender<GenericProgress>>,
     backend: BackendType,
 ) -> Result<(), FabricInstallError> {
-    let loader_name = if backend.is_quilt() {
-        "Quilt"
-    } else {
-        "Fabric"
-    };
-
     let instance_dir = LAUNCHER_DIR.join("instances").join(instance_name);
-
-    migrate_index_file(&instance_dir).await?;
-
-    let lock_path = instance_dir.join("fabric.lock");
-    tokio::fs::write(
-        &lock_path,
-        "If you see this, fabric/quilt was not installed correctly.",
-    )
-    .await
-    .path(&lock_path)?;
-
     let libraries_dir = instance_dir.join("libraries");
+    migrate_index_file(&instance_dir).await?;
 
     let version_json = VersionDetails::load_from_path(&instance_dir).await?;
     let game_version = version_json.get_id();
 
-    let json_path = instance_dir.join("fabric.json");
-    let json = if let BackendType::CursedLegacy = backend {
-        CURSED_LEGACY_JSON.replace("INSERT_COMMIT", &get_latest_cursed_legacy_commit().await?)
-    } else {
-        get_fabric_json(&loader_version, backend, game_version, "profile").await?
+    let json: FabricJSON = {
+        let json_path = instance_dir.join("fabric.json");
+        let json = if let BackendType::CursedLegacy = backend {
+            CURSED_LEGACY_JSON.replace("INSERT_COMMIT", &get_latest_cursed_legacy_commit().await?)
+        } else {
+            get_fabric_json(&loader_version, backend, game_version, "profile").await?
+        };
+        tokio::fs::write(&json_path, &json).await.path(json_path)?;
+        serde_json::from_str(&json).json(json)?
     };
-    tokio::fs::write(&json_path, &json).await.path(json_path)?;
 
-    let json: FabricJSON = serde_json::from_str(&json).json(json)?;
-
-    info!("Started installing {loader_name}: {game_version}, {loader_version}");
-
+    info!("Started installing {backend}: {game_version}, {loader_version}");
     if let Some(progress) = &progress {
         _ = progress.send(GenericProgress::default());
     }
@@ -186,26 +210,26 @@ pub async fn install_client(
     let number_of_libraries = json.libraries.len();
     let i = Mutex::new(0);
 
-    do_jobs(json.libraries.iter().map(|library| async {
-        let path = libraries_dir.join(library.get_path());
-        let url = library.get_url();
-
-        let parent_dir = path
-            .parent()
-            .ok_or(FabricInstallError::PathBufParentError(path.clone()))?;
-        tokio::fs::create_dir_all(parent_dir)
-            .await
-            .path(parent_dir)?;
-        file_utils::download_file_to_path(&url, false, &path).await?;
-
-        send_progress(&i, library, progress, number_of_libraries);
-        Ok::<_, FabricInstallError>(())
+    do_jobs(json.libraries.iter().map(|library| {
+        download_library(
+            library,
+            &libraries_dir,
+            &version_json,
+            &i,
+            number_of_libraries,
+            progress,
+        )
     }))
     .await?;
 
     change_instance_type(
         &instance_dir,
-        loader_name.to_owned(),
+        if backend.is_quilt() {
+            "Quilt"
+        } else {
+            "Fabric"
+        }
+        .to_owned(),
         Some(ModTypeInfo {
             version: loader_version,
             backend_implementation: if let BackendType::Fabric | BackendType::Quilt = backend {
@@ -220,10 +244,7 @@ pub async fn install_client(
     if let Some(progress) = &progress {
         _ = progress.send(GenericProgress::default());
     }
-
-    tokio::fs::remove_file(&lock_path).await.path(lock_path)?;
-
-    info!("Finished installing {loader_name}",);
+    info!("Finished installing {backend}",);
 
     Ok(())
 }

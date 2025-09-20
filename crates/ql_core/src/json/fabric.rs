@@ -2,6 +2,8 @@ use std::path::{MAIN_SEPARATOR, MAIN_SEPARATOR_STR};
 
 use serde::Deserialize;
 
+use crate::json::version::LibraryRule;
+
 #[derive(Deserialize, Debug)]
 #[allow(non_snake_case)]
 pub struct FabricJSON {
@@ -20,7 +22,8 @@ pub struct Arguments {
 #[derive(Debug, Clone, Deserialize)]
 pub struct Library {
     pub name: String,
-    pub url: String,
+    pub url: Option<String>,
+    pub rules: Option<Vec<LibraryRule>>,
 }
 
 impl Library {
@@ -39,14 +42,15 @@ impl Library {
     }
 
     #[must_use]
-    pub fn get_url(&self) -> String {
+    pub fn get_url(&self) -> Option<String> {
         let parts: Vec<&str> = self.name.split(':').collect();
-        format!(
-            "{}{}/{p1}/{p2}/{p1}-{p2}.jar",
-            self.url,
-            parts[0].replace('.', "/"),
-            p1 = parts[1],
-            p2 = parts[2],
-        )
+        self.url.as_deref().map(|url| {
+            format!(
+                "{url}{}/{p1}/{p2}/{p1}-{p2}.jar",
+                parts[0].replace('.', "/"),
+                p1 = parts[1],
+                p2 = parts[2],
+            )
+        })
     }
 }

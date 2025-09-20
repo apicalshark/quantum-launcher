@@ -683,7 +683,7 @@ impl GameLauncher {
             .version_json
             .libraries
             .iter()
-            .filter(|n| GameDownloader::download_libraries_library_is_allowed(n))
+            .filter(|n| n.is_allowed())
             .filter_map(|n| match (&n.name, n.downloads.as_ref()) {
                 (
                     Some(name),
