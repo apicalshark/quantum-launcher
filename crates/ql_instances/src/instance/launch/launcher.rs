@@ -516,9 +516,7 @@ impl GameLauncher {
         if optifine_json.is_some() {
             self.classpath_optifine(&mut class_path).await?;
         }
-        if !self.version_json.q_skip_fabric {
-            self.classpath_fabric_and_quilt(fabric_json, &mut class_path, &mut classpath_entries)?;
-        }
+        self.classpath_fabric_and_quilt(fabric_json, &mut class_path, &mut classpath_entries)?;
 
         // Vanilla libraries, have to load after everything else
         self.classpath_vanilla(&mut class_path, &mut classpath_entries, main_class)
@@ -559,6 +557,12 @@ impl GameLauncher {
             .as_ref()
             .is_some_and(|n| n.autoset_main_class)
             .then_some(main_class.to_owned())
+            .or_else(|| {
+                self.config_json
+                    .main_class_override
+                    .clone()
+                    .filter(|n| !n.is_empty())
+            })
     }
 
     fn classpath_fabric_and_quilt(
@@ -570,6 +574,13 @@ impl GameLauncher {
         if let Some(fabric_json) = fabric_json {
             for library in &fabric_json.libraries {
                 if let Some(name) = remove_version_from_library(&library.name) {
+                    if self
+                        .version_json
+                        .q_patch_overrides
+                        .contains(&name.replace(':', "."))
+                    {
+                        continue;
+                    }
                     if !classpath_entries.insert(name) {
                         continue;
                     }

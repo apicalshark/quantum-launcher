@@ -54,7 +54,7 @@ pub struct VersionDetails {
     pub r#type: String,
 
     #[serde(skip)]
-    pub q_skip_fabric: bool,
+    pub q_patch_overrides: Vec<String>,
 }
 
 impl VersionDetails {
@@ -127,9 +127,7 @@ impl VersionDetails {
         if let Some(libraries) = json.libraries {
             self.libraries.extend(libraries);
         }
-        if json.uid == "net.fabricmc.intermediary" {
-            self.q_skip_fabric = true;
-        }
+        self.q_patch_overrides.push(json.uid);
         // TODO: More fields in the future
     }
 
