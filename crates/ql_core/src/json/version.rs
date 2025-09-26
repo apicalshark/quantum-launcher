@@ -52,6 +52,9 @@ pub struct VersionDetails {
 
     /// Type of version, such as alpha, beta or release.
     pub r#type: String,
+
+    #[serde(skip)]
+    pub q_skip_fabric: bool,
 }
 
 impl VersionDetails {
@@ -124,6 +127,9 @@ impl VersionDetails {
         if let Some(libraries) = json.libraries {
             self.libraries.extend(libraries);
         }
+        if json.uid == "net.fabricmc.intermediary" {
+            self.q_skip_fabric = true;
+        }
         // TODO: More fields in the future
     }
 
@@ -181,6 +187,7 @@ impl VersionDetails {
 pub struct VersionDetailsPatch {
     pub libraries: Option<Vec<Library>>,
     pub minecraftArguments: Option<String>,
+    pub uid: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -318,7 +325,7 @@ impl Debug for LibraryDownloads {
 pub struct LibraryClassifier {
     // pub path: Option<String>,
     pub sha1: String,
-    pub size: usize,
+    pub size: serde_json::Number,
     pub url: String,
 }
 
@@ -354,7 +361,7 @@ impl Debug for LibraryRuleOS {
 pub struct LibraryDownloadArtifact {
     pub path: Option<String>,
     pub sha1: String,
-    pub size: usize,
+    pub size: serde_json::Number,
     pub url: String,
 }
 
