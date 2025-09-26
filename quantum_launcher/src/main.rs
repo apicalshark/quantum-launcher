@@ -89,10 +89,13 @@ impl Launcher {
         is_new_user: bool,
         config: Result<LauncherConfig, JsonFileError>,
     ) -> (Self, Task<Message>) {
+        #[cfg(feature = "auto_update")]
         let check_for_updates_command = Task::perform(
             async move { ql_instances::check_for_launcher_updates().await.strerr() },
             Message::UpdateCheckResult,
         );
+        #[cfg(not(feature = "auto_update"))]
+        let check_for_updates_command = Task::none();
 
         let get_entries_command = Task::perform(
             get_entries("instances".to_owned(), false),
@@ -107,6 +110,7 @@ impl Launcher {
             Launcher::load_new(None, is_new_user, config).unwrap_or_else(Launcher::with_error),
             Task::batch([check_for_updates_command, get_entries_command, log_cmd]),
         )
+
     }
 
     fn kill_selected_server(&mut self, server: &str) {
