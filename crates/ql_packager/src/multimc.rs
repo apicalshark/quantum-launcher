@@ -1,12 +1,13 @@
 use std::{
     path::Path,
-    sync::{mpsc::Sender, Arc},
+    sync::{mpsc::Sender, Arc, Mutex},
 };
 
 use crate::{import::pipe_progress, import::OUT_OF, InstancePackageError};
 use ql_core::{
-    err, file_utils, info, json::InstanceConfigJson, GenericProgress, InstanceSelection,
-    IntoIoError, IntoJsonError, ListEntry,
+    do_jobs, err, file_utils, info,
+    json::{FabricJSON, InstanceConfigJson, VersionDetails, V_OFFICIAL_FABRIC_SUPPORT},
+    pt, GenericProgress, InstanceSelection, IntoIoError, IntoJsonError, ListEntry,
 };
 use serde::{Deserialize, Serialize};
 use tokio::fs;
@@ -61,16 +62,7 @@ pub async fn import(
                 .await?;
             }
             name @ ("Fabric Loader" | "Quilt Loader") => {
-                if let Err(err) = ql_mod_manager::loaders::fabric::install(
-                    Some(component.cachedVersion.clone()),
-                    instance_selection.clone(),
-                    sender.as_deref(),
-                    name == "Quilt",
-                )
-                .await
-                {
-                    err!("while installing fabric/quilt:\n{err}");
-                }
+                install_fabric(sender.as_deref(), &instance_selection, component, name).await?;
             }
 
             "Intermediary Mappings" | "LWJGL 2" | "LWJGL 3" => {}
@@ -89,6 +81,93 @@ pub async fn import(
     config.save(&instance_selection).await?;
     info!("Finished importing MultiMC instance");
     Ok(instance_selection)
+}
+
+async fn install_fabric(
+    sender: Option<&Sender<GenericProgress>>,
+    instance_selection: &InstanceSelection,
+    component: &MmcPackComponent,
+    name: &str,
+) -> Result<(), InstancePackageError> {
+    let version_json = VersionDetails::load(instance_selection).await?;
+    if !version_json.is_before_or_eq(V_OFFICIAL_FABRIC_SUPPORT) {
+        ql_mod_manager::loaders::fabric::install(
+            Some(component.cachedVersion.clone()),
+            instance_selection.clone(),
+            sender,
+            name == "Quilt",
+        )
+        .await?;
+        return Ok(());
+    }
+
+    // Hack for versions below 1.14
+    let url = format!(
+        "https://{}/versions/loader/1.14.4/{}/profile/json",
+        if name == "Fabric Loader" {
+            "meta.fabricmc.net/v2"
+        } else {
+            "meta.quiltmc.org/v3"
+        },
+        component.cachedVersion
+    );
+    let fabric_json_text = file_utils::download_file_to_string(&url, false).await?;
+    let fabric_json: FabricJSON =
+        serde_json::from_str(&fabric_json_text).json(fabric_json_text.clone())?;
+
+    let instance_path = instance_selection.get_instance_path();
+    let libraries_dir = instance_path.join("libraries");
+
+    info!("Custom fabric implementation, installing libraries:");
+    let i = Mutex::new(0);
+    let len = fabric_json.libraries.len();
+    do_jobs(fabric_json.libraries.iter().map(|library| async {
+        if library.name.starts_with("net.fabricmc:intermediary") {
+            return Ok::<_, InstancePackageError>(());
+        }
+        let path_str = library.get_path();
+        let url = library.get_url();
+        let path = libraries_dir.join(&path_str);
+
+        let parent_dir = path
+            .parent()
+            .ok_or(InstancePackageError::PathBufParent(path.clone()))?;
+        tokio::fs::create_dir_all(parent_dir)
+            .await
+            .path(parent_dir)?;
+        file_utils::download_file_to_path(&url, false, &path).await?;
+
+        {
+            let mut i = i.lock().unwrap();
+            *i += 1;
+            pt!(
+                "({i}/{len}) {}\n    Path: {path_str}\n    Url: {url}",
+                library.name
+            );
+            if let Some(sender) = sender {
+                _ = sender.send(GenericProgress {
+                    done: *i,
+                    total: len,
+                    message: Some(format!("Installing fabric: library {}", library.name)),
+                    has_finished: false,
+                });
+            }
+        }
+
+        Ok(())
+    }))
+    .await?;
+
+    let mut config = InstanceConfigJson::read(instance_selection).await?;
+    config.main_class_override = Some(fabric_json.mainClass.clone());
+    config.mod_type = "Fabric".to_owned();
+    config.save(instance_selection).await?;
+
+    let fabric_json_path = instance_path.join("fabric.json");
+    tokio::fs::write(&fabric_json_path, &fabric_json_text)
+        .await
+        .path(&fabric_json_path)?;
+    Ok(())
 }
 
 async fn copy_files(
