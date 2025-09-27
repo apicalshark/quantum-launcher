@@ -112,7 +112,7 @@ impl ModListEntry {
 
     pub fn name(&self) -> &str {
         match self {
-            ModListEntry::Local { file_name } => &file_name,
+            ModListEntry::Local { file_name } => file_name,
             ModListEntry::Downloaded { config, .. } => &config.name,
         }
     }

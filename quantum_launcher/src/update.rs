@@ -88,10 +88,8 @@ impl Launcher {
             Message::InstallFabric(message) => return self.update_install_fabric(message),
             Message::CoreOpenLink(dir) => open_file_explorer(&dir),
             Message::CoreOpenPath(dir) => {
-                if !dir.exists() {
-                    if dir.to_string_lossy().contains("jarmods") {
-                        _ = std::fs::create_dir_all(&dir);
-                    }
+                if !dir.exists() && dir.to_string_lossy().contains("jarmods") {
+                    _ = std::fs::create_dir_all(&dir);
                 }
                 open_file_explorer(&dir)
             }

@@ -113,7 +113,7 @@ fn write_line(out: &mut String, style: Option<Style>, line: &str) {
     if let Some(style) = style {
         _ = write!(out, "{}", line.style(style));
     } else {
-        out.push_str(&line);
+        out.push_str(line);
     }
 }
 

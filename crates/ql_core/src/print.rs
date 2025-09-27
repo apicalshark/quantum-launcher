@@ -230,7 +230,8 @@ macro_rules! pt {
 
 /// Regex: ESC [ ... letters
 /// ESC = `\x1B` or `\u{1b}`
-const ANSI_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\x1B\[[0-9;]*[A-Za-z]").unwrap());
+static ANSI_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\x1B\[[0-9;]*[A-Za-z]").unwrap());
 
 /// Removes ANSI escape codes (colors, formatting, cursor moves) from a string.
 pub fn strip_ansi_codes(input: &str) -> String {

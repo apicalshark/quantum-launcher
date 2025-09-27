@@ -182,11 +182,11 @@ pub fn start_cli(is_dir_err: bool) {
         }
         match subcommand.0 {
             "list" | "list-instances" => {
-                let command = get_list_instance_subcommand(&subcommand.1);
+                let command = get_list_instance_subcommand(subcommand.1);
                 quit(command::list_instances(&command, false));
             }
             "list-servers" => {
-                let command = get_list_instance_subcommand(&subcommand.1);
+                let command = get_list_instance_subcommand(subcommand.1);
                 quit(command::list_instances(&command, true));
             }
             "list-available-versions" => {

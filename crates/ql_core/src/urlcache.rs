@@ -4,7 +4,7 @@ use tokio::{fs, io::AsyncWriteExt};
 use crate::{file_utils, DownloadFileError, IntoIoError, LAUNCHER_DIR};
 
 pub async fn url_cache_get(url: &str) -> Result<Vec<u8>, DownloadFileError> {
-    let hash = hash(&url);
+    let hash = hash(url);
 
     let cache_dir = LAUNCHER_DIR.join("downloads/cache");
     fs::create_dir_all(&cache_dir).await.path(&cache_dir)?;
@@ -16,7 +16,7 @@ pub async fn url_cache_get(url: &str) -> Result<Vec<u8>, DownloadFileError> {
         return Ok(fs::read(&cache_file).await.path(&cache_file)?);
     }
 
-    let bytes = match file_utils::download_file_to_bytes(&url, true).await {
+    let bytes = match file_utils::download_file_to_bytes(url, true).await {
         Ok(n) => n,
         Err(_) => {
             // WTF: Some pesky cloud provider might be
@@ -27,7 +27,7 @@ pub async fn url_cache_get(url: &str) -> Result<Vec<u8>, DownloadFileError> {
             // not malicious. We're just downloading some images :)
 
             file_utils::download_file_to_bytes_with_agent(
-                &url,
+                url,
                 "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
             )
             .await?

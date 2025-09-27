@@ -41,7 +41,7 @@ impl ImageState {
                 self.downloads_in_progress.insert(url.to_owned());
                 commands.push(Task::perform(
                     ql_mod_manager::store::download_image(url.to_owned(), *is_icon),
-                    |n| Message::CoreImageDownloaded(n),
+                    Message::CoreImageDownloaded,
                 ));
             }
         }
