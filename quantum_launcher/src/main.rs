@@ -35,6 +35,8 @@ use ql_core::{err, err_no_log, file_utils, info, info_no_log, IntoStringError, J
 use ql_instances::OS_NAME;
 use tokio::io::AsyncWriteExt;
 
+use crate::state::CustomJarState;
+
 /// The CLI interface of the launcher.
 mod cli;
 /// Launcher configuration (global).
@@ -98,7 +100,7 @@ impl Launcher {
         let check_for_updates_command = Task::none();
 
         let get_entries_command = Task::perform(
-            get_entries("instances".to_owned(), false),
+            get_entries(false),
             Message::CoreListLoaded,
         );
 
@@ -108,7 +110,12 @@ impl Launcher {
 
         (
             Launcher::load_new(None, is_new_user, config).unwrap_or_else(Launcher::with_error),
-            Task::batch([check_for_updates_command, get_entries_command, log_cmd]),
+            Task::batch([
+                check_for_updates_command,
+                get_entries_command,
+                log_cmd,
+                CustomJarState::load(),
+            ]),
         )
 
     }
@@ -320,9 +327,7 @@ fn do_migration() {
         if let Err(e) = std::fs::rename(&legacy_dir, &new_dir) {
             eprintln!("Migration failed: {}", e);
         } else if let Err(e) = ql_core::file_utils::create_symlink(&new_dir, &legacy_dir) {
-            eprintln!(
-                "Migration successful but couldnt create symlink to the legacy dir: {e}",
-            );
+            eprintln!("Migration successful but couldnt create symlink to the legacy dir: {e}",);
         } else {
             info!("Migration successful!\nYour launcher files are now in ~./local/share/QuantumLauncher")
         }

@@ -342,7 +342,7 @@ fn back_to_launch_screen(
 }
 
 impl<T: Progress> ProgressBar<T> {
-    pub fn view(&'_ self) -> Element<'_> {
+    pub fn view(&'_ self) -> widget::Column<'_, Message, LauncherTheme> {
         let total = T::total();
         if let Some(message) = &self.message {
             widget::column!(
@@ -353,7 +353,6 @@ impl<T: Progress> ProgressBar<T> {
             widget::column!(widget::progress_bar(0.0..=total, self.num),)
         }
         .spacing(10)
-        .into()
     }
 }
 
@@ -526,8 +525,8 @@ pub fn view_error(error: &'_ str) -> Element<'_> {
                     message: None,
                     clear_selection: true
                 }),
-                widget::button("Copy Error").on_press(Message::CoreErrorCopy),
-                widget::button("Copy Error + Log").on_press(Message::CoreErrorCopyLog),
+                widget::button("Copy Error").on_press(Message::CoreCopyError),
+                widget::button("Copy Error + Log").on_press(Message::CoreCopyLog),
                 widget::button("Join Discord for help")
                     .on_press(Message::CoreOpenLink(DISCORD.to_owned()))
             ]

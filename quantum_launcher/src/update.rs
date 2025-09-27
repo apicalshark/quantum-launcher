@@ -5,13 +5,13 @@ use ql_core::{
 };
 use ql_instances::UpdateCheckInfo;
 use ql_mod_manager::loaders;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Write};
 use tokio::io::AsyncWriteExt;
 
 use crate::state::{
-    InstanceLog, LaunchTabId, Launcher, ManageModsMessage, MenuExportInstance, MenuLaunch,
-    MenuLauncherUpdate, MenuLicense, MenuServerCreate, MenuWelcome, Message, ProgressBar,
-    ServerProcess, State,
+    CustomJarState, InstanceLog, LaunchTabId, Launcher, ManageModsMessage, MenuExportInstance,
+    MenuLaunch, MenuLauncherUpdate, MenuLicense, MenuServerCreate, MenuWelcome, Message,
+    ProgressBar, ServerProcess, State,
 };
 
 impl Launcher {
@@ -58,6 +58,7 @@ impl Launcher {
             Message::ManageMods(message) => return self.update_manage_mods(message),
             Message::ExportMods(message) => return self.update_export_mods(message),
             Message::ManageJarMods(message) => return self.update_manage_jar_mods(message),
+            Message::RecommendedMods(message) => return self.update_recommended_mods(message),
             Message::LaunchInstanceSelected { name, is_server } => {
                 self.selected_instance = Some(InstanceSelection::new(&name, is_server));
                 self.load_edit_instance(None);
@@ -87,12 +88,12 @@ impl Launcher {
             Message::InstallFabric(message) => return self.update_install_fabric(message),
             Message::CoreOpenLink(dir) => open_file_explorer(&dir),
             Message::CoreOpenPath(dir) => open_file_explorer(&dir),
-            Message::CoreErrorCopy => {
+            Message::CoreCopyError => {
                 if let State::Error { error } = &self.state {
                     return iced::clipboard::write(format!("(QuantumLauncher): {error}"));
                 }
             }
-            Message::CoreErrorCopyLog => {
+            Message::CoreCopyLog => {
                 let text = {
                     if let Some(logger) = LOGGER.as_ref() {
                         let logger = logger.lock().unwrap();
@@ -103,17 +104,27 @@ impl Launcher {
                 };
 
                 let mut log = String::new();
-                for (line, _) in text {
-                    log.push_str(&line);
+                for (line, kind) in text {
+                    _ = writeln!(log, "{kind} {line}");
                 }
                 return iced::clipboard::write(format!("QuantumLauncher Log:\n{log}"));
             }
             Message::CoreTick => {
                 self.tick_timer = self.tick_timer.wrapping_add(1);
-                let mut commands = self.get_imgs_to_load();
+                let mut tasks = self.get_imgs_to_load();
                 let command = self.tick();
-                commands.push(command);
-                return Task::batch(commands);
+                tasks.push(command);
+
+                if self
+                    .custom_jar
+                    .as_ref()
+                    .and_then(|n| n.recv.try_recv().ok())
+                    .is_some()
+                {
+                    tasks.push(CustomJarState::load());
+                }
+
+                return Task::batch(tasks);
             }
             Message::UninstallLoaderForgeStart => {
                 let instance = self.selected_instance.clone().unwrap();
@@ -145,7 +156,7 @@ impl Launcher {
                 return self.install_forge(is_neoforge);
             }
             Message::InstallForgeEnd(Ok(())) | Message::UninstallLoaderEnd(Ok(())) => {
-                return self.go_to_edit_mods_menu_without_update_check();
+                return self.go_to_edit_mods_menu(false);
             }
             Message::LaunchEndedLog(Ok((status, name))) => {
                 info!("Game exited with status: {status}");
@@ -357,7 +368,7 @@ impl Launcher {
                 if let Err(err) = result {
                     self.set_error(err);
                 } else {
-                    return self.go_to_edit_mods_menu_without_update_check();
+                    return self.go_to_edit_mods_menu(false);
                 }
             }
             Message::UninstallLoaderPaperStart => {
@@ -439,7 +450,7 @@ impl Launcher {
                     progress: None,
                 });
                 return Task::perform(
-                    ql_core::file_utils::read_filenames_from_dir_ext(
+                    ql_core::file_utils::read_filenames_from_dir(
                         self.selected_instance
                             .clone()
                             .unwrap()

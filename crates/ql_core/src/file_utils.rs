@@ -14,7 +14,7 @@ use thiserror::Error;
 use tokio::fs::DirEntry;
 use tokio_util::io::StreamReader;
 use walkdir::WalkDir;
-use zip::{write::FileOptions, ZipWriter};
+use zip::{write::FileOptions, ZipArchive, ZipWriter};
 
 use crate::{
     error::{DownloadFileError, IoError},
@@ -561,34 +561,13 @@ pub async fn copy_dir_recursive_ext(
 ///
 /// Additionally, this skips any file/folder names
 /// that has broken encoding (not UTF-8 or ASCII).
-pub async fn read_filenames_from_dir<P: AsRef<Path>>(dir: P) -> Result<Vec<String>, IoError> {
+pub async fn read_filenames_from_dir<P: AsRef<Path>>(dir: P) -> Result<Vec<DirItem>, IoError> {
     let dir: &Path = dir.as_ref();
-    let mut entries = tokio::fs::read_dir(dir).await.dir(dir)?;
-    let mut filenames = Vec::new();
-
-    while let Some(entry) = entries.next_entry().await.map_err(|n| IoError::ReadDir {
-        error: n.to_string(),
-        parent: dir.to_owned(),
-    })? {
-        if let Some(name) = entry.file_name().to_str() {
-            filenames.push(name.to_string());
-        }
+    if !dir.exists() {
+        tokio::fs::create_dir_all(dir).await.path(dir)?;
+        return Ok(Vec::new());
     }
 
-    Ok(filenames)
-}
-
-/// Reads all the entries from a directory into a `Vec<String>`.
-/// This includes both files and folders.
-///
-/// # Errors
-/// - `dir` doesn't exist
-/// - User doesn't have access to `dir`
-///
-/// Additionally, this skips any file/folder names
-/// that has broken encoding (not UTF-8 or ASCII).
-pub async fn read_filenames_from_dir_ext<P: AsRef<Path>>(dir: P) -> Result<Vec<DirItem>, IoError> {
-    let dir: &Path = dir.as_ref();
     let mut entries = tokio::fs::read_dir(dir).await.dir(dir)?;
     let mut filenames = Vec::new();
 
@@ -649,26 +628,35 @@ pub async fn find_item_in_dir<F: FnMut(&Path, &str) -> bool>(
 ///
 /// # Examples
 /// ```rust
-/// use std::io::Cursor;
-/// use ql_core::file_utils::extract_zip_archive;
-///
+/// # use ql_core::file_utils::extract_zip_archive;
+/// # use std::path::PathBuf;
+/// # async fn extract() -> Result<(), Box<dyn std::error::Error>> {
 /// let zip_data = vec![/* zip file bytes */];
-/// extract_zip_archive(Cursor::new(zip_data), "/path/to/extract", true)?;
+/// extract_zip_archive(std::io::Cursor::new(zip_data), &PathBuf::from("/path/to/extract"), true)?;
+/// # Ok(()) }
 /// ```
-pub fn extract_zip_archive<R: std::io::Read + std::io::Seek>(
+pub fn extract_zip_archive<R: std::io::Read + std::io::Seek, P: AsRef<Path>>(
     reader: R,
-    extract_to: &Path,
+    extract_to: P,
     strip_toplevel: bool,
 ) -> Result<(), zip::result::ZipError> {
-    use zip::ZipArchive;
-
     let mut archive = ZipArchive::new(reader)?;
 
     if strip_toplevel {
-        // Use the new extract_unwrapped_root_dir method when stripping top level
+        // Strip away the root directory.
+        // i.e:
+        //
+        // my_archive/test.txt
+        // my_archive/something/
+        // my_archive/something/e.png
+        //
+        // to
+        //
+        // test.txt
+        // something/
+        // something/e.png
         archive.extract_unwrapped_root_dir(extract_to, zip::read::root_dir_common_filter)?;
     } else {
-        // Use the standard extract method
         archive.extract(extract_to)?;
     }
 

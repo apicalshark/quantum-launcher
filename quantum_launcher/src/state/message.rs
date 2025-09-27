@@ -79,6 +79,10 @@ pub enum EditInstanceMessage {
     RenameApply,
     WindowWidthChanged(String),
     WindowHeightChanged(String),
+
+    CustomJarPathChanged(String),
+    CustomJarLoaded(Res<Vec<String>>),
+    AutoSetMainClassToggle(bool),
 }
 
 #[derive(Debug, Clone)]
@@ -106,6 +110,7 @@ pub enum ManageModsMessage {
     AddFile,
     AddFileDone(Res<HashSet<CurseforgeNotAllowed>>),
     ExportMenuOpen,
+    ToggleSubmenu1,
 }
 
 #[derive(Debug, Clone)]
@@ -160,18 +165,21 @@ pub enum InstallOptifineMessage {
 #[derive(Debug, Clone)]
 pub enum EditPresetsMessage {
     Open,
-    TabChange(String),
     ToggleCheckbox((String, ModId), bool),
     ToggleCheckboxLocal(String, bool),
     SelectAll,
     BuildYourOwn,
     BuildYourOwnEnd(Res<Vec<u8>>),
-    Load,
     LoadComplete(Res<HashSet<CurseforgeNotAllowed>>),
-    RecommendedModCheck(Res<Vec<RecommendedMod>>),
-    RecommendedToggle(usize, bool),
-    RecommendedDownload,
-    RecommendedDownloadEnd(Res<HashSet<CurseforgeNotAllowed>>),
+}
+
+#[derive(Debug, Clone)]
+pub enum RecommendedModMessage {
+    Open,
+    ModCheckResult(Res<Vec<RecommendedMod>>),
+    Toggle(usize, bool),
+    Download,
+    DownloadEnd(Res<HashSet<CurseforgeNotAllowed>>),
 }
 
 // FIXME: Look at the unused messages
@@ -251,8 +259,8 @@ pub enum LauncherSettingsMessage {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    #[allow(unused)]
     Nothing,
+    #[allow(unused)]
     Multiple(Vec<Message>),
 
     WelcomeContinueToTheme,
@@ -269,6 +277,7 @@ pub enum Message {
     InstallFabric(InstallFabricMessage),
     EditPresets(EditPresetsMessage),
     LauncherSettings(LauncherSettingsMessage),
+    RecommendedMods(RecommendedModMessage),
 
     LaunchInstanceSelected {
         name: String,
@@ -311,8 +320,8 @@ pub enum Message {
     ExportInstanceFinished(Res<Vec<u8>>),
     ExportInstanceLoaded(Res<Vec<DirItem>>),
 
-    CoreErrorCopy,
-    CoreErrorCopyLog,
+    CoreCopyError,
+    CoreCopyLog,
     CoreOpenLink(String),
     CoreOpenPath(PathBuf),
     CoreCopyText(String),
