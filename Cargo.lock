@@ -3641,6 +3641,7 @@ dependencies = [
 name = "ql_packager"
 version = "0.0.0"
 dependencies = [
+ "chrono",
  "owo-colors",
  "ql_core",
  "ql_instances",

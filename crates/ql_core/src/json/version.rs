@@ -9,6 +9,7 @@ use crate::{err, pt, InstanceSelection, IntoIoError, IntoJsonError, JsonFileErro
 pub const V_PRECLASSIC_LAST: &str = "2009-05-16T11:48:00+00:00";
 pub const V_OFFICIAL_FABRIC_SUPPORT: &str = "2018-10-24T10:52:16+00:00";
 pub const V_1_5_2: &str = "2013-04-25T15:45:00+00:00";
+pub const V_1_12_2: &str = "2017-09-18T08:39:46+00:00";
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
