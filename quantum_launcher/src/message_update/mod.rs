@@ -358,9 +358,18 @@ impl Launcher {
     pub fn update_install_optifine(&mut self, message: InstallOptifineMessage) -> Task<Message> {
         match message {
             InstallOptifineMessage::ScreenOpen => {
-                let optifine_unique_version = block_on(OptifineUniqueVersion::get(
-                    self.selected_instance.as_ref().unwrap(),
-                ));
+                let is_forge_installed = if let State::EditMods(menu) = &self.state {
+                    menu.config.mod_type == "Forge"
+                } else {
+                    false
+                };
+                let optifine_unique_version = if is_forge_installed {
+                    Some(OptifineUniqueVersion::Forge)
+                } else {
+                    block_on(OptifineUniqueVersion::get(
+                        self.selected_instance.as_ref().unwrap(),
+                    ))
+                };
 
                 if let Some(version @ OptifineUniqueVersion::B1_7_3) = optifine_unique_version {
                     self.state = State::InstallOptifine(MenuInstallOptifine::InstallingB173);
@@ -413,7 +422,16 @@ impl Launcher {
         let (j_sender, j_recv) = std::sync::mpsc::channel();
 
         let instance = self.selected_instance.as_ref().unwrap();
-        let optifine_unique_version = block_on(OptifineUniqueVersion::get(instance));
+        let optifine_unique_version =
+            if let State::InstallOptifine(MenuInstallOptifine::Choosing {
+                optifine_unique_version,
+                ..
+            }) = &self.state
+            {
+                optifine_unique_version.clone()
+            } else {
+                block_on(OptifineUniqueVersion::get(instance))
+            };
 
         let delete_installer = if let State::InstallOptifine(MenuInstallOptifine::Choosing {
             delete_installer,
@@ -448,7 +466,7 @@ impl Launcher {
                 installer_path.clone(),
                 Some(p_sender),
                 Some(j_sender),
-                optifine_unique_version.is_some(),
+                optifine_unique_version,
             ),
             |n| Message::InstallOptifine(InstallOptifineMessage::End(n.strerr())),
         )

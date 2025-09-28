@@ -93,8 +93,9 @@ pub async fn install(instance_name: String) -> Result<(), PaperInstallerError> {
         &server_dir,
         "Paper".to_owned(),
         version.map(|n| ModTypeInfo {
-            version: n,
+            version: Some(n),
             backend_implementation: None,
+            optifine_jar: None,
         }),
     )
     .await?;

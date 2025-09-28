@@ -434,6 +434,7 @@ pub enum OptifineUniqueVersion {
     V1_2_5,
     B1_7_3,
     B1_6_6,
+    Forge,
 }
 
 impl OptifineUniqueVersion {
@@ -458,6 +459,7 @@ impl OptifineUniqueVersion {
             OptifineUniqueVersion::V1_2_5 => ("https://optifine.net/adloadx?f=OptiFine_1.5.2_HD_U_D2.zip", false),
             OptifineUniqueVersion::B1_7_3 => ("https://b2.mcarchive.net/file/mcarchive/47df260a369eb2f79750ec24e4cfd9da93b9aac076f97a1332302974f19e6024/OptiFine_1_7_3_HD_G.zip", true),
             OptifineUniqueVersion::B1_6_6 => ("https://optifine.net/adloadx?f=beta_OptiFog_Optimine_1.6.6.zip", false),
+            OptifineUniqueVersion::Forge => unreachable!("There isn't a direct URL for Optifine+Forge"),
         }
     }
 }

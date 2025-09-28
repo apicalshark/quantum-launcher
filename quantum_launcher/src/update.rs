@@ -152,8 +152,8 @@ impl Launcher {
                     Message::UninstallLoaderEnd,
                 );
             }
-            Message::InstallForgeStart { is_neoforge } => {
-                return self.install_forge(is_neoforge);
+            Message::InstallForge(kind) => {
+                return self.install_forge(kind);
             }
             Message::InstallForgeEnd(Ok(())) | Message::UninstallLoaderEnd(Ok(())) => {
                 return self.go_to_edit_mods_menu(false);

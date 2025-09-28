@@ -2,6 +2,7 @@ use iced::widget::tooltip::Position;
 use iced::{widget, Length};
 use ql_core::{InstanceSelection, SelectedMod};
 
+use crate::message_handler::ForgeKind;
 use crate::stylesheet::styles::{BORDER_RADIUS, BORDER_WIDTH};
 use crate::{
     icon_manager,
@@ -174,10 +175,9 @@ impl MenuEditMods {
                     )
                     .spacing(5),
                     widget::row!(
-                        install_ldr("Forge")
-                            .on_press(Message::InstallForgeStart { is_neoforge: false }),
+                        install_ldr("Forge").on_press(Message::InstallForge(ForgeKind::Normal)),
                         install_ldr("NeoForge")
-                            .on_press(Message::InstallForgeStart { is_neoforge: true })
+                            .on_press(Message::InstallForge(ForgeKind::NeoForge))
                     )
                     .spacing(5),
                     install_ldr("OptiFine")
@@ -197,10 +197,9 @@ impl MenuEditMods {
                     )
                     .spacing(5),
                     widget::row!(
-                        install_ldr("Forge")
-                            .on_press(Message::InstallForgeStart { is_neoforge: false }),
+                        install_ldr("Forge").on_press(Message::InstallForge(ForgeKind::Normal)),
                         install_ldr("NeoForge")
-                            .on_press(Message::InstallForgeStart { is_neoforge: true })
+                            .on_press(Message::InstallForge(ForgeKind::NeoForge))
                     )
                     .spacing(5),
                     widget::row!(
@@ -214,25 +213,44 @@ impl MenuEditMods {
                 .into(),
             },
 
-            "Forge" => widget::column!(
-                tooltip(
-                    widget::button(widget::text("Install OptiFine with Forge").size(14)),
-                    "Coming in a future launcher version...",
-                    Position::Bottom
-                ),
-                Self::get_uninstall_panel(
-                    &self.config.mod_type,
-                    Message::UninstallLoaderForgeStart,
+            "Forge" => {
+                let optifine: Element = if let Some(optifine) = self
+                    .config
+                    .mod_type_info
+                    .as_ref()
+                    .and_then(|n| n.optifine_jar.as_deref())
+                {
+                    widget::button(
+                        widget::row![
+                            icon_manager::delete_with_size(14),
+                            widget::text("Uninstall OptiFine").size(14)
+                        ]
+                        .align_y(iced::alignment::Vertical::Center)
+                        .spacing(11)
+                        .padding(2),
+                    )
+                    .on_press_with(|| {
+                        Message::ManageMods(ManageModsMessage::DeleteOptiforge(optifine.to_owned()))
+                    })
+                    .into()
+                } else {
+                    widget::button(widget::text("Install OptiFine with Forge").size(14))
+                        .on_press(Message::InstallOptifine(InstallOptifineMessage::ScreenOpen))
+                        .into()
+                };
+                widget::column!(
+                    optifine,
+                    Self::get_uninstall_panel(
+                        &self.config.mod_type,
+                        Message::UninstallLoaderForgeStart,
+                    )
                 )
-            )
-            .spacing(5)
-            .into(),
+                .spacing(5)
+                .into()
+            }
             "OptiFine" => widget::column!(
-                tooltip(
-                    widget::button(widget::text("Install Forge with OptiFine").size(14)),
-                    "Coming in a future launcher version...",
-                    Position::Bottom
-                ),
+                widget::button(widget::text("Install Forge with OptiFine").size(14))
+                    .on_press(Message::InstallForge(ForgeKind::OptiFine)),
                 Self::get_uninstall_panel(
                     &self.config.mod_type,
                     Message::UninstallLoaderOptiFineStart,
@@ -243,13 +261,16 @@ impl MenuEditMods {
 
             "NeoForge" => {
                 Self::get_uninstall_panel(&self.config.mod_type, Message::UninstallLoaderForgeStart)
+                    .into()
             }
             "Fabric" | "Quilt" => Self::get_uninstall_panel(
                 &self.config.mod_type,
                 Message::UninstallLoaderFabricStart,
-            ),
+            )
+            .into(),
             "Paper" => {
                 Self::get_uninstall_panel(&self.config.mod_type, Message::UninstallLoaderPaperStart)
+                    .into()
             }
 
             _ => {
@@ -258,21 +279,23 @@ impl MenuEditMods {
         }
     }
 
-    fn get_uninstall_panel(mod_type: &'_ str, uninstall_loader_message: Message) -> Element<'_> {
+    fn get_uninstall_panel(
+        mod_type: &'_ str,
+        uninstall_loader_message: Message,
+    ) -> widget::Button<'_, Message, LauncherTheme> {
         widget::button(
             widget::row![
                 icon_manager::delete_with_size(14),
-                widget::text!("Uninstall {mod_type}").size(15)
+                widget::text!("Uninstall {mod_type}").size(14)
             ]
             .align_y(iced::alignment::Vertical::Center)
             .spacing(11)
-            .padding(3),
+            .padding(2),
         )
         .on_press(Message::UninstallLoaderConfirm(
             Box::new(uninstall_loader_message),
             mod_type.to_owned(),
         ))
-        .into()
     }
 
     fn open_mod_folder_button(selected_instance: &'_ InstanceSelection) -> Element<'_> {
@@ -434,8 +457,8 @@ impl MenuEditMods {
     }
 }
 
-fn install_ldr(fabric: &str) -> widget::Button<'_, Message, LauncherTheme> {
-    widget::button(fabric).width(97)
+fn install_ldr(loader: &str) -> widget::Button<'_, Message, LauncherTheme> {
+    widget::button(loader).width(97)
 }
 
 fn ctx_button(e: &'_ str) -> widget::Button<'_, Message, LauncherTheme> {

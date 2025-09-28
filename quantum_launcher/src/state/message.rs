@@ -22,6 +22,8 @@ use ql_mod_manager::{
 };
 use tokio::process::Child;
 
+use crate::message_handler::ForgeKind;
+
 use super::{LaunchTabId, LauncherSettingsTab, LicenseTab, Res};
 
 #[derive(Debug, Clone)]
@@ -95,6 +97,7 @@ pub enum ManageModsMessage {
     ToggleCheckboxLocal(String, bool),
 
     DeleteSelected,
+    DeleteOptiforge(String),
     DeleteFinished(Res<Vec<ModId>>),
     LocalDeleteFinished(Res),
     LocalIndexLoaded(HashSet<String>),
@@ -300,9 +303,7 @@ pub enum Message {
     DeleteInstanceMenu,
     DeleteInstance,
 
-    InstallForgeStart {
-        is_neoforge: bool,
-    },
+    InstallForge(ForgeKind),
     InstallForgeEnd(Res),
     InstallPaperStart,
     InstallPaperEnd(Res),

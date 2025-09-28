@@ -539,7 +539,11 @@ impl MenuInstallOptifine {
             ..
         } = self
         {
-            o.get_url().0
+            if let OptifineUniqueVersion::Forge = o {
+                OPTIFINE_DOWNLOADS
+            } else {
+                o.get_url().0
+            }
         } else {
             OPTIFINE_DOWNLOADS
         }

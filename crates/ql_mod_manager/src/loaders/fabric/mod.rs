@@ -113,12 +113,13 @@ pub async fn install_server(
         }
         .to_owned(),
         Some(ModTypeInfo {
-            version: loader_version,
+            version: Some(loader_version),
             backend_implementation: if let BackendType::Fabric | BackendType::Quilt = backend {
                 None
             } else {
                 Some(backend.to_string())
             },
+            optifine_jar: None,
         }),
     )
     .await?;
@@ -231,12 +232,13 @@ pub async fn install_client(
         }
         .to_owned(),
         Some(ModTypeInfo {
-            version: loader_version,
+            version: Some(loader_version),
             backend_implementation: if let BackendType::Fabric | BackendType::Quilt = backend {
                 None
             } else {
                 Some(backend.to_string())
             },
+            optifine_jar: None,
         }),
     )
     .await?;

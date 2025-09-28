@@ -74,8 +74,9 @@ pub async fn install(
         &instance_dir,
         "NeoForge".to_owned(),
         Some(ModTypeInfo {
-            version: neoforge_version,
+            version: Some(neoforge_version),
             backend_implementation: None,
+            optifine_jar: None,
         }),
     )
     .await?;

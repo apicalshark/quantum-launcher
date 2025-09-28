@@ -410,12 +410,13 @@ impl InstanceConfigJson {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct ModTypeInfo {
-    pub version: String,
+    pub version: Option<String>,
     /// If an unofficial implementation of the loader
     /// was used, which one (eg: Legacy Fabric).
     pub backend_implementation: Option<String>,
+    pub optifine_jar: Option<String>,
 }
 
 /// Settings that can both be set on a per-instance basis

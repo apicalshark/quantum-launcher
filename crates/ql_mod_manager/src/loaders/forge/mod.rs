@@ -613,8 +613,9 @@ pub async fn install_client(
         &installer.instance_dir,
         "Forge".to_owned(),
         Some(ModTypeInfo {
-            version: installer.version.clone(),
+            version: Some(installer.version.clone()),
             backend_implementation: None,
+            optifine_jar: None,
         }),
     )
     .await?;
