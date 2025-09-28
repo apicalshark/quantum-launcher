@@ -666,12 +666,12 @@ async fn copy_optifine_over(instance: &InstanceSelection) -> Result<(), String> 
     let new_path = mods_dir.join("optifine.jar");
     tokio::fs::copy(&installer_path, &new_path).await.strerr()?;
 
-    let mut config = InstanceConfigJson::read(&instance).await.strerr()?;
+    let mut config = InstanceConfigJson::read(instance).await.strerr()?;
     config
         .mod_type_info
         .get_or_insert_with(ModTypeInfo::default)
         .optifine_jar = Some("optifine.jar".to_owned());
-    config.save(&instance).await.strerr()?;
+    config.save(instance).await.strerr()?;
 
     Ok(())
 }

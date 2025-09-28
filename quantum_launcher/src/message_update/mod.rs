@@ -408,7 +408,7 @@ impl Launcher {
                 ..
             }) = &self.state
             {
-                optifine_unique_version.clone()
+                *optifine_unique_version
             } else {
                 block_on(OptifineUniqueVersion::get(instance))
             };
