@@ -4,6 +4,10 @@
 
 ## Loaders
 
+- You can now install OptiFine and Forge together!
+
+### Fabric
+
 Support for a few alternate implementations of Fabric were added:
 - Legacy Fabric (1.3 - 1.13)
 - OrnitheMC (b1.7 - 1.13)
@@ -16,13 +20,18 @@ If multiple are available you can choose between them.
 - Added extra Quilt support via OrnitheMC for older versions
 - Made fabric installer faster
 
+---
+
 ## UX
+
 - Presets and text exporting (explained below) are now grouped together
   under a hamburger menu for easier access
 - Disabled mods are now tinted darker
 - Mods in the list now have icons, better styling and shift multiple selection
 - Ctrl-A can now select all mods and jarmods
+
 ## Text export
+
 - You can now export your mods as a text list, making it easy to share with others.
 - The list includes mods, and can optionally include links and instance details.
 - Anyone can view the list and manually install mods, regardless of their launcher.
@@ -30,10 +39,12 @@ If multiple are available you can choose between them.
 # Other
 
 ## File location (linux)
+
 - Files moved from `~/.config` to `~/.local/share`
 - There will be auto-migration, and symbolic links so older launcher versions still work seamlessly
 
 # Fixes
+
 - CurseForge mods that don't specify a loader
   can now be installed
 - You can now open instances created in newer versions, in v0.4.1
