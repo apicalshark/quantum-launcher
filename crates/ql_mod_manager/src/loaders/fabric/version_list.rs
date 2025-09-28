@@ -213,7 +213,7 @@ pub async fn get_list_of_versions(
     result.map_err(FabricInstallError::from)
 }
 
-async fn try_backend(
+pub async fn get_list_of_versions_from_backend(
     version: &str,
     backend: BackendType,
     is_server: bool,
@@ -266,7 +266,7 @@ async fn get_list_of_versions_inner(
 ) -> Result<FabricVersionList, JsonDownloadError> {
     if is_quilt {
         let (versions, should_try_ornithe) =
-            match try_backend(version, BackendType::Quilt, is_server).await {
+            match get_list_of_versions_from_backend(version, BackendType::Quilt, is_server).await {
                 // If the list is empty or an error 404
                 // then try OrnitheMC backend, otherwise
                 // stick to official Quilt backend
@@ -281,7 +281,9 @@ async fn get_list_of_versions_inner(
             };
 
         return Ok(if should_try_ornithe {
-            let versions = try_backend(version, BackendType::OrnitheMCQuilt, is_server).await?;
+            let versions =
+                get_list_of_versions_from_backend(version, BackendType::OrnitheMCQuilt, is_server)
+                    .await?;
             if versions.is_empty() {
                 FabricVersionList::Unsupported
             } else {
@@ -292,16 +294,17 @@ async fn get_list_of_versions_inner(
         });
     }
 
-    let official_versions = try_backend(version, BackendType::Fabric, is_server).await?;
+    let official_versions =
+        get_list_of_versions_from_backend(version, BackendType::Fabric, is_server).await?;
     if !official_versions.is_empty() {
         return Ok(FabricVersionList::Fabric(official_versions));
     }
 
     if version == "b1.7.3" {
         let (ornithe_mc, cursed_legacy, babric) = tokio::try_join!(
-            try_backend(version, BackendType::OrnitheMCFabric, is_server),
-            try_backend(version, BackendType::CursedLegacy, is_server),
-            try_backend(version, BackendType::Babric, is_server),
+            get_list_of_versions_from_backend(version, BackendType::OrnitheMCFabric, is_server),
+            get_list_of_versions_from_backend(version, BackendType::CursedLegacy, is_server),
+            get_list_of_versions_from_backend(version, BackendType::Babric, is_server),
         )?;
 
         return Ok(FabricVersionList::Beta173 {
@@ -312,8 +315,8 @@ async fn get_list_of_versions_inner(
     }
 
     let (legacy_fabric, ornithe_mc) = tokio::try_join!(
-        try_backend(version, BackendType::LegacyFabric, is_server),
-        try_backend(version, BackendType::OrnitheMCFabric, is_server)
+        get_list_of_versions_from_backend(version, BackendType::LegacyFabric, is_server),
+        get_list_of_versions_from_backend(version, BackendType::OrnitheMCFabric, is_server)
     )?;
 
     Ok(match (legacy_fabric.is_empty(), ornithe_mc.is_empty()) {

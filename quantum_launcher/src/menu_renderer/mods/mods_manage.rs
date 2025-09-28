@@ -2,8 +2,8 @@ use iced::widget::tooltip::Position;
 use iced::{widget, Alignment, Length};
 use ql_core::{InstanceSelection, SelectedMod};
 
-use crate::message_handler::ForgeKind;
 use crate::menu_renderer::{select_box, subbutton_with_icon, FONT_MONO};
+use crate::message_handler::ForgeKind;
 use crate::state::ImageState;
 use crate::stylesheet::styles::{BORDER_RADIUS, BORDER_WIDTH};
 use crate::{

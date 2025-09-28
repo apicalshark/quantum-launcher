@@ -709,22 +709,25 @@ impl GameLauncher {
                 (Some(name), None, Some(url)) => {
                     let flib = ql_core::json::fabric::Library {
                         name: name.clone(),
-                        url: if url.ends_with('/') {
+                        url: Some(if url.ends_with('/') {
                             url.clone()
                         } else {
                             format!("{url}/")
-                        },
+                        }),
+                        rules: None,
                     };
-                    Some((
-                        n,
-                        name,
-                        LibraryDownloadArtifact {
-                            path: Some(flib.get_path()),
-                            sha1: String::new(),
-                            size: serde_json::Number::from_u128(0).unwrap(),
-                            url: flib.get_url(),
-                        },
-                    ))
+                    flib.get_url().map(|url| {
+                        (
+                            n,
+                            name,
+                            LibraryDownloadArtifact {
+                                path: Some(flib.get_path()),
+                                sha1: String::new(),
+                                size: serde_json::Number::from_u128(0).unwrap(),
+                                url,
+                            },
+                        )
+                    })
                 }
                 _ => None,
             })

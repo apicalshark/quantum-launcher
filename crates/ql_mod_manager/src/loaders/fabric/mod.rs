@@ -23,7 +23,8 @@ mod version_compare;
 mod version_list;
 
 pub use version_list::{
-    get_list_of_versions, BackendType, FabricVersion, FabricVersionList, FabricVersionListItem,
+    get_list_of_versions, get_list_of_versions_from_backend, BackendType, FabricVersion,
+    FabricVersionList, FabricVersionListItem,
 };
 
 const CURSED_LEGACY_JSON: &str =
