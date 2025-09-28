@@ -213,6 +213,7 @@ impl Launcher {
                     };
                 }
             },
+            #[cfg(feature = "auto_update")]
             Message::UpdateCheckResult(Ok(info)) => match info {
                 UpdateCheckInfo::UpToDate => {
                     info_no_log!("Launcher is latest version. No new updates");
@@ -224,7 +225,11 @@ impl Launcher {
                     });
                 }
             },
+            #[cfg(feature = "auto_update")]
             Message::UpdateDownloadStart => return self.update_download_start(),
+            #[cfg(not(feature = "auto_update"))]
+            Message::UpdateDownloadStart | Message::UpdateCheckResult(_) => return Task::none(),
+
             Message::LauncherSettings(msg) => return self.update_launcher_settings(msg),
 
             Message::InstallOptifine(msg) => return self.update_install_optifine(msg),
