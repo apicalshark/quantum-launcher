@@ -93,8 +93,7 @@ pub enum ManageModsMessage {
     ScreenOpen,
     ScreenOpenWithoutUpdate,
 
-    ToggleCheckbox((String, ModId), bool),
-    ToggleCheckboxLocal(String, bool),
+    ToggleCheckbox(String, Option<ModId>),
 
     DeleteSelected,
     DeleteOptiforge(String),
@@ -111,10 +110,14 @@ pub enum ManageModsMessage {
     UpdateCheckToggle(usize, bool),
 
     SelectAll,
-    AddFile,
+    /// Add a mod, preset or modpack to the current instance.
+    /// The field represents whether to delete the file after importing it.
+    AddFile(bool),
     AddFileDone(Res<HashSet<CurseforgeNotAllowed>>),
     ExportMenuOpen,
     ToggleSubmenu1,
+
+    CurseforgeManualToggleDelete(bool),
 }
 
 #[derive(Debug, Clone)]
@@ -144,7 +147,6 @@ pub enum InstallModsMessage {
     SearchResult(Res<SearchResult>),
     Open,
     SearchInput(String),
-    ImageDownloaded(Res<ImageResult>),
     Click(usize),
     BackToMainScreen,
     LoadData(Res<(ModId, String)>),
@@ -333,7 +335,9 @@ pub enum Message {
     CoreOpenChangeLog,
     CoreOpenIntro,
     CoreEvent(iced::Event, iced::event::Status),
-    CoreLogCleanComplete(Res),
+    CoreCleanComplete(Res),
+
+    CoreImageDownloaded(Res<ImageResult>),
 
     CoreLogToggle,
     CoreLogScroll(isize),

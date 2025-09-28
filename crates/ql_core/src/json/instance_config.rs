@@ -229,8 +229,12 @@ pub struct InstanceConfigJson {
     ///
     /// **Default: `None`** (use official Minecraft jar)
     pub custom_jar: Option<CustomJarConfig>,
-
+    /// Information related to the currently-installed
+    /// version of the game
     pub version_info: Option<VersionInfo>,
+    /// An override for the main class when launching the game.
+    /// Mainly only used for debugging purposes.
+    pub main_class_override: Option<String>,
 }
 
 impl InstanceConfigJson {

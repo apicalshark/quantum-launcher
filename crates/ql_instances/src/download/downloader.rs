@@ -28,8 +28,8 @@ pub enum DownloadError {
     Request(#[from] RequestError),
     #[error("{DOWNLOAD_ERR_PREFIX}{0}")]
     Io(#[from] IoError),
-    #[error("an instance with that name already exists!")]
-    InstanceAlreadyExists,
+    #[error("an instance with that name already exists: {0}")]
+    InstanceAlreadyExists(String),
     #[error("{DOWNLOAD_ERR_PREFIX}version not found in manifest.json: {0}")]
     VersionNotFoundInManifest(String),
     #[error("{DOWNLOAD_ERR_PREFIX}in assets JSON, field not found: \"{0}\"")]
@@ -68,7 +68,9 @@ impl GameDownloader {
         sender: Option<Sender<DownloadProgress>>,
     ) -> Result<GameDownloader, DownloadError> {
         let Some(instance_dir) = GameDownloader::new_get_instance_dir(instance_name).await? else {
-            return Err(DownloadError::InstanceAlreadyExists);
+            return Err(DownloadError::InstanceAlreadyExists(
+                instance_name.to_owned(),
+            ));
         };
         let version_json =
             GameDownloader::new_download_version_json(version, sender.as_ref()).await?;
@@ -330,6 +332,7 @@ impl GameDownloader {
             version_info: Some(VersionInfo {
                 is_special_lwjgl3: self.version_json.id.ends_with("-lwjgl3"),
             }),
+            main_class_override: None,
         };
         let config_json = serde_json::to_string(&config_json).json_to()?;
 

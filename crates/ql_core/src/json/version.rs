@@ -17,6 +17,7 @@ use crate::{
 };
 
 pub const V_PRECLASSIC_LAST: &str = "2009-05-16T11:48:00+00:00";
+pub const V_OFFICIAL_FABRIC_SUPPORT: &str = "2018-10-24T10:52:16+00:00";
 pub const V_1_5_2: &str = "2013-04-25T15:45:00+00:00";
 pub const V_1_12_2: &str = "2017-09-18T08:39:46+00:00";
 
@@ -61,6 +62,9 @@ pub struct VersionDetails {
 
     /// Type of version, such as alpha, beta or release.
     pub r#type: String,
+
+    #[serde(skip)]
+    pub q_patch_overrides: Vec<String>,
 }
 
 impl VersionDetails {
@@ -133,6 +137,7 @@ impl VersionDetails {
         if let Some(libraries) = json.libraries {
             self.libraries.extend(libraries);
         }
+        self.q_patch_overrides.push(json.uid);
         // TODO: More fields in the future
     }
 
@@ -190,6 +195,7 @@ impl VersionDetails {
 pub struct VersionDetailsPatch {
     pub libraries: Option<Vec<Library>>,
     pub minecraftArguments: Option<String>,
+    pub uid: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -395,7 +401,7 @@ impl Debug for LibraryDownloads {
 pub struct LibraryClassifier {
     // pub path: Option<String>,
     pub sha1: String,
-    pub size: usize,
+    pub size: serde_json::Number,
     pub url: String,
 }
 
@@ -431,7 +437,7 @@ impl Debug for LibraryRuleOS {
 pub struct LibraryDownloadArtifact {
     pub path: Option<String>,
     pub sha1: String,
-    pub size: usize,
+    pub size: serde_json::Number,
     pub url: String,
 }
 
