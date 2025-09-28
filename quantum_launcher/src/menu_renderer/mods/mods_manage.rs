@@ -214,7 +214,7 @@ impl MenuEditMods {
             },
 
             "Forge" => {
-                let optifine: Element = if let Some(optifine) = self
+                let optifine = if let Some(optifine) = self
                     .config
                     .mod_type_info
                     .as_ref()
@@ -230,13 +230,16 @@ impl MenuEditMods {
                         .padding(2),
                     )
                     .on_press_with(|| {
-                        Message::ManageMods(ManageModsMessage::DeleteOptiforge(optifine.to_owned()))
+                        Message::UninstallLoaderConfirm(
+                            Box::new(Message::ManageMods(ManageModsMessage::DeleteOptiforge(
+                                optifine.to_owned(),
+                            ))),
+                            "OptiFine".to_owned(),
+                        )
                     })
-                    .into()
                 } else {
                     widget::button(widget::text("Install OptiFine with Forge").size(14))
                         .on_press(Message::InstallOptifine(InstallOptifineMessage::ScreenOpen))
-                        .into()
                 };
                 widget::column!(
                     optifine,
