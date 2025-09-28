@@ -128,8 +128,9 @@ impl Launcher {
             }
             Message::UninstallLoaderForgeStart => {
                 let instance = self.selected_instance.clone().unwrap();
+
                 return Task::perform(
-                    async move { loaders::forge::uninstall(instance).await.strerr() },
+                    loaders::forge::uninstall(instance),
                     Message::UninstallLoaderEnd,
                 );
             }
@@ -141,7 +142,11 @@ impl Launcher {
                     .get_name()
                     .to_owned();
                 return Task::perform(
-                    async { loaders::optifine::uninstall(instance_name).await.strerr() },
+                    async {
+                        loaders::optifine::uninstall(instance_name, true)
+                            .await
+                            .strerr()
+                    },
                     Message::UninstallLoaderEnd,
                 );
             }
@@ -401,9 +406,15 @@ impl Launcher {
                 self.state = State::ConfirmAction {
                     msg1: format!("uninstall {name}"),
                     msg2: "This should be fine, you can always reinstall it later".to_owned(),
-                    yes: (*msg).clone(),
+                    yes: Message::Multiple(vec![
+                        Message::ShowScreen("Uninstalling...".to_owned()),
+                        (*msg).clone(),
+                    ]),
                     no: Message::ManageMods(ManageModsMessage::ScreenOpenWithoutUpdate),
                 }
+            }
+            Message::ShowScreen(msg) => {
+                self.state = State::GenericMessage(msg);
             }
             Message::CoreEvent(event, status) => return self.iced_event(event, status),
             Message::LaunchChangeTab(launch_tab_id) => {

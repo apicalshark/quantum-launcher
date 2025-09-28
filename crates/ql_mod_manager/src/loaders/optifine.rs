@@ -187,7 +187,7 @@ fn send_progress(
     }
 }
 
-pub async fn uninstall(instance_name: String) -> Result<(), OptifineError> {
+pub async fn uninstall(instance_name: String, change_type: bool) -> Result<(), OptifineError> {
     let instance_path = LAUNCHER_DIR.join("instances").join(&instance_name);
 
     let optifine_path = instance_path.join("optifine");
@@ -197,7 +197,9 @@ pub async fn uninstall(instance_name: String) -> Result<(), OptifineError> {
             .path(optifine_path)?;
     }
 
-    change_instance_type(&instance_path, "Vanilla".to_owned(), None).await?;
+    if change_type {
+        change_instance_type(&instance_path, "Vanilla".to_owned(), None).await?;
+    }
 
     let dot_minecraft_path = instance_path.join(".minecraft");
     let libraries_path = dot_minecraft_path.join("libraries");

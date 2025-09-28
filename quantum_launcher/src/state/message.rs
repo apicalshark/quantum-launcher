@@ -264,8 +264,8 @@ pub enum LauncherSettingsMessage {
 #[derive(Debug, Clone)]
 pub enum Message {
     Nothing,
-    #[allow(unused)]
     Multiple(Vec<Message>),
+    ShowScreen(String),
 
     WelcomeContinueToTheme,
     WelcomeContinueToAuth,

@@ -330,9 +330,12 @@ impl Launcher {
                 }
                 .strerr()?;
                 if matches!(kind, ForgeKind::OptiFine) {
-                    copy_optifine_over(instance_selection)
+                    copy_optifine_over(&instance_selection)
                         .await
                         .map_err(|n| format!("Couldn't install OptiFine with Forge:\n{n}"))?;
+                    loaders::optifine::uninstall(instance_selection.get_name().to_owned(), false)
+                        .await
+                        .strerr()?;
                 }
                 Ok(())
             },
@@ -635,7 +638,7 @@ pub enum ForgeKind {
     OptiFine,
 }
 
-async fn copy_optifine_over(instance: InstanceSelection) -> Result<(), String> {
+async fn copy_optifine_over(instance: &InstanceSelection) -> Result<(), String> {
     let instance_dir = instance.get_instance_path();
     let installer_path = instance_dir.join("optifine/OptiFine.jar");
     let mods_dir = instance_dir.join(".minecraft/mods");
