@@ -225,7 +225,7 @@ where
     result
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum InstanceSelection {
     Instance(String),
     Server(String),

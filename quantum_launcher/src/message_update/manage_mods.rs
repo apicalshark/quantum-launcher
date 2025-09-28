@@ -83,8 +83,19 @@ impl Launcher {
                     .pick_files()
                 {
                     let (sender, receiver) = std::sync::mpsc::channel();
+                    let selected_instance = self.selected_instance.as_ref().unwrap();
 
                     self.state = State::ImportModpack(ProgressBar::with_recv(receiver));
+                    self.mod_updates_checked.remove(selected_instance);
+
+                    // Modpacks being imported
+                    if paths
+                        .iter()
+                        .filter_map(|n| n.extension())
+                        .any(|n| n.to_ascii_lowercase() != "jar")
+                    {
+                        self.mod_updates_checked.remove(selected_instance);
+                    }
 
                     let files_task = Task::perform(
                         ql_mod_manager::add_files(
@@ -221,16 +232,12 @@ impl Launcher {
                 if let Err(err) = result {
                     self.set_error(err);
                 } else {
+                    self.mod_updates_checked
+                        .insert(self.selected_instance.clone().unwrap(), Vec::new());
                     self.update_mod_index();
                     if let State::EditMods(menu) = &mut self.state {
                         menu.available_updates.clear();
                     }
-                    return Task::perform(
-                        ql_mod_manager::store::check_for_updates(
-                            self.selected_instance.clone().unwrap(),
-                        ),
-                        |n| Message::ManageMods(ManageModsMessage::UpdateCheckResult(n.strerr())),
-                    );
                 }
             }
             ManageModsMessage::UpdateCheckResult(updates) => {
@@ -238,8 +245,13 @@ impl Launcher {
                     menu.update_check_handle = None;
                     match updates {
                         Ok(updates) => {
-                            menu.available_updates =
+                            let available_updates: Vec<(ModId, String, bool)> =
                                 updates.into_iter().map(|(a, b)| (a, b, true)).collect();
+                            self.mod_updates_checked.insert(
+                                self.selected_instance.clone().unwrap(),
+                                available_updates.clone(),
+                            );
+                            menu.available_updates = available_updates;
                         }
                         Err(err) => {
                             err_no_log!("Could not check for updates: {err}");

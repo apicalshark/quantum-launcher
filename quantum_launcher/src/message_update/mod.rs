@@ -206,9 +206,7 @@ impl Launcher {
                 }
             }
             InstallModsMessage::Download(index) => {
-                if let Some(value) = self.mod_download(index) {
-                    return value;
-                }
+                return self.mod_download(index);
             }
             InstallModsMessage::DownloadComplete(Ok((id, not_allowed))) => {
                 let task = if let State::ModsDownload(menu) = &mut self.state {
@@ -260,6 +258,7 @@ impl Launcher {
                 self.state = State::ImportModpack(ProgressBar::with_recv(receiver));
 
                 let selected_instance = self.selected_instance.clone().unwrap();
+                self.mod_updates_checked.remove(&selected_instance);
 
                 return Task::perform(
                     async move {
@@ -274,18 +273,20 @@ impl Launcher {
         Task::none()
     }
 
-    fn mod_download(&mut self, index: usize) -> Option<Task<Message>> {
-        let selected_instance = self.selected_instance.clone()?;
+    fn mod_download(&mut self, index: usize) -> Task<Message> {
+        let Some(selected_instance) = self.selected_instance.clone() else {
+            return Task::none();
+        };
         let State::ModsDownload(menu) = &mut self.state else {
-            return None;
+            return Task::none();
         };
         let Some(results) = &menu.results else {
             err!("Couldn't download mod: Search results empty");
-            return None;
+            return Task::none();
         };
         let Some(hit) = results.mods.get(index) else {
             err!("Couldn't download mod: Not present in results");
-            return None;
+            return Task::none();
         };
 
         menu.mods_download_in_progress
@@ -303,16 +304,16 @@ impl Launcher {
                 yes: Message::InstallMods(InstallModsMessage::InstallModpack(id)),
                 no: Message::InstallMods(InstallModsMessage::Open),
             };
-            None
+            Task::none()
         } else {
-            Some(Task::perform(
+            Task::perform(
                 async move {
                     ql_mod_manager::store::download_mod(&id, &selected_instance, None)
                         .await
                         .map(|not_allowed| (ModId::Modrinth(project_id), not_allowed))
                 },
                 |n| Message::InstallMods(InstallModsMessage::DownloadComplete(n.strerr())),
-            ))
+            )
         }
     }
 
