@@ -44,7 +44,7 @@
 //! # Future support
 //!
 //! ## Linux
-//! - Risc-V
+//! - RISC-V
 //! - PowerPC
 //! - Iaarch64
 //! - Alpha
