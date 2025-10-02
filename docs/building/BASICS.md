@@ -37,7 +37,7 @@ it's not strictly necessary.
 Using Git allows you to easily manage the source code,
 fetch updates, and contribute to the project.
 
-1. **Open the terminal** and navigate to your desired directory (maybe a projects' folder)
+1. **Open the terminal** and navigate to your desired directory (maybe your projects folder)
 
 ```sh
 cd path/to/folder
