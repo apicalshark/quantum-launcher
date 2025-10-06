@@ -105,10 +105,10 @@ impl Launcher {
             Task::batch([
                 check_for_updates_command,
                 get_entries_command,
-                Task::perform(file_utils::clean_dir("logs"), |n| {
+                Task::perform(ql_core::clean::dir("logs"), |n| {
                     Message::CoreCleanComplete(n.strerr())
                 }),
-                Task::perform(file_utils::clean_dir("downloads/cache"), |n| {
+                Task::perform(ql_core::clean::dir("downloads/cache"), |n| {
                     Message::CoreCleanComplete(n.strerr())
                 }),
                 CustomJarState::load(),

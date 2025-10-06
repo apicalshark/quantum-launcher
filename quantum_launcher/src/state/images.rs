@@ -35,6 +35,7 @@ impl ImageState {
         let mut commands = Vec::new();
 
         let mut images_to_load = self.to_load.lock().unwrap();
+        images_to_load.retain(|n, _| !n.is_empty());
 
         for (url, is_icon) in images_to_load.iter() {
             if !self.downloads_in_progress.contains(url) {
