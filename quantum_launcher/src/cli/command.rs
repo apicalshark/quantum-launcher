@@ -2,8 +2,7 @@ use owo_colors::{OwoColorize, Style};
 use ql_core::{
     err, info,
     json::{InstanceConfigJson, VersionDetails},
-    InstanceSelection, IntoIoError, IntoJsonError, IntoStringError, ListEntry, Loader,
-    LAUNCHER_DIR,
+    InstanceSelection, IntoStringError, ListEntry, Loader, LAUNCHER_DIR,
 };
 use ql_instances::auth::{self, AccountType};
 use std::process::exit;
@@ -39,6 +38,14 @@ pub fn list_instances(
 ) -> Result<(), Box<dyn std::error::Error>> {
     use std::fmt::Write;
 
+    let runtime = tokio::runtime::Runtime::new()?;
+
+    let cmds = if cmds.is_empty() {
+        &[PrintCmd::Name]
+    } else {
+        cmds
+    };
+
     let dirname = if is_server { "servers" } else { "instances" };
     let (instances, _) = tokio::runtime::Runtime::new()?.block_on(get_entries(is_server))?;
 
@@ -54,21 +61,27 @@ pub fn list_instances(
                 }
                 PrintCmd::Version => {
                     let instance_dir = LAUNCHER_DIR.join(dirname).join(&instance);
-
-                    let path = instance_dir.join("details.json");
-                    let json = std::fs::read_to_string(&path).path(path)?;
-                    let mut json: VersionDetails = serde_json::from_str(&json).json(json)?;
-                    json.fix();
-
-                    cmds_version.push_str(&json.id);
+                    match runtime.block_on(VersionDetails::load_from_path(&instance_dir)) {
+                        Ok(json) => {
+                            cmds_version.push_str(&json.id);
+                        }
+                        Err(err) => {
+                            err!("{err}");
+                        }
+                    }
                     cmds_version.push('\n');
                 }
                 PrintCmd::Loader => {
                     let instance_dir = LAUNCHER_DIR.join(dirname).join(&instance);
-                    let path = instance_dir.join("config.json");
-                    let config_json = std::fs::read_to_string(&path).path(path)?;
-                    let config_json: InstanceConfigJson =
-                        serde_json::from_str(&config_json).json(config_json)?;
+                    let config_json =
+                        match runtime.block_on(InstanceConfigJson::read_from_dir(&instance_dir)) {
+                            Ok(json) => json,
+                            Err(err) => {
+                                err!("{err}");
+                                cmds_loader.push('\n');
+                                continue;
+                            }
+                        };
                     let m = config_json.mod_type;
 
                     match Loader::try_from(m.as_str()) {
@@ -121,12 +134,10 @@ pub fn list_instances(
 }
 
 pub fn create_instance(
-    subcommand: (&str, &clap::ArgMatches),
+    instance_name: String,
+    version: String,
+    skip_assets: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let instance_name: &String = subcommand.1.get_one("instance_name").unwrap();
-    let version: &String = subcommand.1.get_one("version").unwrap();
-    let skip_assets: bool = *subcommand.1.get_one("--skip-assets").unwrap();
-
     let runtime = tokio::runtime::Runtime::new()?;
     runtime.block_on(ql_instances::create_instance(
         instance_name.clone(),
@@ -142,11 +153,9 @@ pub fn create_instance(
 }
 
 pub fn delete_instance(
-    subcommand: (&str, &clap::ArgMatches),
+    instance_name: String,
+    force: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let instance_name: &String = subcommand.1.get_one("instance_name").unwrap();
-    let force: bool = *subcommand.1.get_one("--force").unwrap();
-
     if !force {
         println!(
             "{} {instance_name}?",
@@ -193,19 +202,17 @@ fn confirm_action() -> bool {
 }
 
 pub fn launch_instance(
-    subcommand: (&str, &clap::ArgMatches),
+    instance_name: String,
+    username: String,
+    use_account: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let instance_name: &String = subcommand.1.get_one("instance_name").unwrap();
-    let username: &String = subcommand.1.get_one("username").unwrap();
-    let use_account: bool = *subcommand.1.get_one("--use-account").unwrap();
-
     let runtime = tokio::runtime::Runtime::new()?;
 
-    let account = refresh_account(username, use_account, &runtime)?;
+    let account = refresh_account(&username, use_account, &runtime)?;
 
     let child = runtime.block_on(ql_instances::launch(
         instance_name.clone(),
-        username.clone(),
+        username,
         None,
         account.clone(),
         // No global defaults in CLI mode
@@ -227,7 +234,7 @@ pub fn launch_instance(
             stderr,
             child,
             None,
-            instance_name.clone(),
+            instance_name,
             censors,
         )) {
             Ok((s, _)) => {
