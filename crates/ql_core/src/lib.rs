@@ -13,8 +13,8 @@
 //! - And much more
 
 #![allow(clippy::cast_precision_loss)]
-#![allow(clippy::missing_errors_doc)]
-
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::cast_sign_loss)]
 use crate::read_log::{read_logs, LogLine, ReadError};
 use futures::StreamExt;
 use json::VersionDetails;

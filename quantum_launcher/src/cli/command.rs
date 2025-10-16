@@ -44,7 +44,7 @@ pub fn list_instances(
 
     let mut cmds: Vec<PrintCmd> = properties
         .unwrap_or_default()
-        .into_iter()
+        .iter()
         .filter_map(|n| match n.as_str() {
             "name" => Some(PrintCmd::Name),
             "version" => Some(PrintCmd::Version),

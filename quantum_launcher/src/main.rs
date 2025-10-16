@@ -18,9 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #![doc = include_str!("../../README.md")]
 #![windows_subsystem = "windows"]
-#![allow(clippy::doc_nested_refdefs)]
 #![allow(clippy::doc_markdown)]
-#![allow(clippy::missing_errors_doc)]
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::cast_precision_loss)]

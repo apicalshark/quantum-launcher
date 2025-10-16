@@ -46,7 +46,7 @@
 //! It's designed to cope with real world conditions,
 //! but may not be ideal. Feel free to report bugs if found.
 
-#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::cast_precision_loss)]
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::cast_sign_loss)]
 
