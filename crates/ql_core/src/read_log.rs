@@ -157,13 +157,15 @@ fn xml_parse(
         _ => &xml,
     };
 
-    if let Ok(log_event) = quick_xml::de::from_str(text) {
+    if let Ok(mut log_event) = quick_xml::de::from_str::<LogEvent>(text) {
+        log_event.fix_tabs();
         send(sender, LogLine::Info(log_event));
         xml_cache.clear();
     } else {
         let no_unicode = any_ascii::any_ascii(text);
-        match quick_xml::de::from_str(&no_unicode) {
-            Ok(log_event) => {
+        match quick_xml::de::from_str::<LogEvent>(&no_unicode) {
+            Ok(mut log_event) => {
+                log_event.fix_tabs();
                 send(sender, LogLine::Info(log_event));
                 xml_cache.clear();
             }
@@ -314,6 +316,12 @@ impl LogEvent {
             _ = writeln!(out, "\nCaused by {throwable}");
         }
         out
+    }
+
+    pub fn fix_tabs(&mut self) {
+        if let Some(message) = &mut self.message {
+            *message = message.replace('\t', "\n\t");
+        }
     }
 }
 
