@@ -37,7 +37,6 @@ mod iced_event;
 
 impl Launcher {
     pub fn launch_game(&mut self, account_data: Option<AccountData>) -> Task<Message> {
-        let selected_instance = self.selected_instance.as_ref().unwrap();
         let username = if let Some(account_data) = &account_data {
             // Logged in account
             account_data.nice_username.clone()
@@ -52,7 +51,7 @@ impl Launcher {
         let global_settings = self.config.global_settings.clone();
         let extra_java_args = self.config.extra_java_args.clone().unwrap_or_default();
 
-        let instance_name = selected_instance.get_name().to_owned();
+        let instance_name = self.instance().get_name().to_owned();
         Task::perform(
             async move {
                 ql_instances::launch(
@@ -122,7 +121,7 @@ impl Launcher {
 
     pub fn delete_instance_confirm(&mut self) -> Task<Message> {
         if let State::ConfirmAction { .. } = &self.state {
-            let selected_instance = self.selected_instance.as_ref().unwrap();
+            let selected_instance = self.instance();
             let deleted_instance_dir = selected_instance.get_instance_path();
             if let Err(err) = std::fs::remove_dir_all(&deleted_instance_dir) {
                 self.set_error(err);
@@ -373,7 +372,7 @@ impl Launcher {
     }
 
     fn load_jar_from_path(&mut self, path: &Path, filename: &str) {
-        let selected_instance = self.selected_instance.as_ref().unwrap();
+        let selected_instance = self.instance();
         let new_path = selected_instance
             .get_dot_minecraft_path()
             .join("mods")
@@ -495,10 +494,7 @@ impl Launcher {
 
     pub fn go_to_delete_instance_menu(&mut self) {
         self.state = State::ConfirmAction {
-            msg1: format!(
-                "delete the instance {}",
-                self.selected_instance.as_ref().unwrap().get_name()
-            ),
+            msg1: format!("delete the instance {}", self.instance().get_name()),
             msg2: "All your data, including worlds, will be lost".to_owned(),
             yes: Message::DeleteInstance,
             no: Message::LaunchScreenOpen {

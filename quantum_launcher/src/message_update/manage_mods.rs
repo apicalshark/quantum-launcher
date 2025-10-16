@@ -656,9 +656,7 @@ impl Launcher {
         {
             if let Some(filename) = path.file_name() {
                 let dest = self
-                    .selected_instance
-                    .as_ref()
-                    .unwrap()
+                    .instance()
                     .get_instance_path()
                     .join("jarmods")
                     .join(filename);

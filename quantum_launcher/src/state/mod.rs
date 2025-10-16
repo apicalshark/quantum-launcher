@@ -268,6 +268,10 @@ impl Launcher {
         }
     }
 
+    pub fn instance(&self) -> &InstanceSelection {
+        self.selected_instance.as_ref().unwrap()
+    }
+
     #[allow(clippy::needless_pass_by_value)]
     pub fn set_error(&mut self, error: impl ToString) {
         let error = error.to_string().replace(CLIENT_ID, "[CLIENT ID]");

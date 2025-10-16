@@ -86,7 +86,9 @@ impl Launcher {
                     return self.go_to_main_menu_with_message(Some("Installed Java"));
                 }
             }
-            State::ModsDownload(menu) => return menu.tick(self.selected_instance.clone().unwrap()),
+            State::ModsDownload(_) => {
+                return MenuModsDownload::tick(self.selected_instance.clone().unwrap())
+            }
             State::LauncherSettings(_) => {
                 let launcher_config = self.config.clone();
                 return Task::perform(
@@ -259,7 +261,7 @@ impl Launcher {
 }
 
 impl MenuModsDownload {
-    pub fn tick(&mut self, selected_instance: InstanceSelection) -> Task<Message> {
+    pub fn tick(selected_instance: InstanceSelection) -> Task<Message> {
         Task::perform(
             async move { ModIndex::load(&selected_instance).await },
             |n| Message::InstallMods(InstallModsMessage::IndexUpdated(n.strerr())),

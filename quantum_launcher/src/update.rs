@@ -158,12 +158,7 @@ impl Launcher {
                 );
             }
             Message::UninstallLoaderOptiFineStart => {
-                let instance_name = self
-                    .selected_instance
-                    .as_ref()
-                    .unwrap()
-                    .get_name()
-                    .to_owned();
+                let instance_name = self.instance().get_name().to_owned();
                 return Task::perform(
                     async {
                         loaders::optifine::uninstall(instance_name, true)
@@ -191,7 +186,7 @@ impl Launcher {
             }
             Message::LaunchKill => return self.kill_selected_instance(),
             Message::LaunchCopyLog => {
-                let instance = self.selected_instance.as_ref().unwrap();
+                let instance = self.instance();
                 if let Some(log) = self.logs.get(instance) {
                     return iced::clipboard::write(log.log.join(""));
                 }
@@ -201,7 +196,7 @@ impl Launcher {
                     menu.is_uploading_mclogs = true;
                 }
 
-                let instance = self.selected_instance.as_ref().unwrap();
+                let instance = self.instance();
 
                 if let Some(log) = self.logs.get(instance) {
                     let log_content = log.log.join("");
@@ -344,12 +339,7 @@ impl Launcher {
                 }
             }
             Message::UninstallLoaderPaperStart => {
-                let get_name = self
-                    .selected_instance
-                    .as_ref()
-                    .unwrap()
-                    .get_name()
-                    .to_owned();
+                let get_name = self.instance().get_name().to_owned();
                 return Task::perform(
                     async move { loaders::paper::uninstall(get_name).await.strerr() },
                     Message::UninstallLoaderEnd,

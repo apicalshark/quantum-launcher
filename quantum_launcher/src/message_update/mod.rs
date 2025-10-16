@@ -347,9 +347,7 @@ impl Launcher {
                 let optifine_unique_version = if is_forge_installed {
                     Some(OptifineUniqueVersion::Forge)
                 } else {
-                    block_on(OptifineUniqueVersion::get(
-                        self.selected_instance.as_ref().unwrap(),
-                    ))
+                    block_on(OptifineUniqueVersion::get(self.instance()))
                 };
 
                 if let Some(version @ OptifineUniqueVersion::B1_7_3) = optifine_unique_version {
@@ -402,7 +400,9 @@ impl Launcher {
         let (p_sender, p_recv) = std::sync::mpsc::channel();
         let (j_sender, j_recv) = std::sync::mpsc::channel();
 
-        let instance = self.selected_instance.as_ref().unwrap();
+        let instance = self.instance();
+        let get_name = instance.get_name().to_owned();
+
         let optifine_unique_version =
             if let State::InstallOptifine(MenuInstallOptifine::Choosing {
                 optifine_unique_version,
@@ -429,13 +429,6 @@ impl Launcher {
             java_install_progress: Some(ProgressBar::with_recv(j_recv)),
             is_java_being_installed: false,
         });
-
-        let get_name = self
-            .selected_instance
-            .as_ref()
-            .unwrap()
-            .get_name()
-            .to_owned();
 
         let installer_path = installer_path.to_owned();
 
@@ -651,12 +644,7 @@ impl Launcher {
                 }
             }
             InstallPaperMessage::ButtonClicked => {
-                let instance_name = self
-                    .selected_instance
-                    .as_ref()
-                    .unwrap()
-                    .get_name()
-                    .to_owned();
+                let instance_name = self.instance().get_name().to_owned();
                 let version =
                     if let State::InstallPaper(MenuInstallPaper::Loaded { version, .. }) =
                         &self.state
