@@ -154,9 +154,8 @@ async fn download_library(
         return Ok(None);
     }
 
-    if library
-        .name
-        .contains("org.lwjgl.lwjgl:lwjgl-platform:2.9.4")
+    if library.name.contains("org.lwjgl.lwjgl:")
+        && library.name.contains(":2.")
         && version_json.is_before_or_eq(V_1_12_2)
     {
         return Ok(None);

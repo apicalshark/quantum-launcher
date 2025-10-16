@@ -3,7 +3,7 @@ use crate::{
     download::GameDownloader,
     jarmod,
 };
-use ql_core::json::{GlobalSettings, V_1_5_2, V_PRECLASSIC_LAST};
+use ql_core::json::{GlobalSettings, V_1_12_2, V_1_5_2, V_PRECLASSIC_LAST};
 use ql_core::{
     err, file_utils, info,
     json::{
@@ -573,6 +573,12 @@ impl GameLauncher {
     ) -> Result<(), GameLaunchError> {
         if let Some(fabric_json) = fabric_json {
             for library in &fabric_json.libraries {
+                if library.name.contains("org.lwjgl.lwjgl:")
+                    && library.name.contains(":2.")
+                    && self.version_json.is_before_or_eq(V_1_12_2)
+                {
+                    continue;
+                }
                 if let Some(name) = remove_version_from_library(&library.name) {
                     if self
                         .version_json
