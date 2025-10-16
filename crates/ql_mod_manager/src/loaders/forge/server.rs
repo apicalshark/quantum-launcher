@@ -36,6 +36,11 @@ pub async fn install_server(
     installer.delete("ForgeInstaller.java").await?;
     installer.delete("ForgeInstaller.class").await?;
 
+    installer.delete("README.txt").await?;
+    installer.delete("run.bat").await?;
+    installer.delete("run.sh").await?;
+    installer.delete("user_jvm_args.txt").await?;
+
     change_instance_type(
         &installer.instance_dir,
         "Forge".to_owned(),

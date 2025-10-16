@@ -42,6 +42,9 @@ pub async fn run(
     let config_json = InstanceConfigJson::read_from_dir(&server_dir).await?;
     let version_json = VersionDetails::load_from_path(&server_dir).await?;
 
+    let is_neoforge = config_json.mod_type == "NeoForge";
+    let is_classic_server = config_json.is_classic_server.unwrap_or(false);
+
     let server_jar_path = if let Some(custom_jar) = &config_json.custom_jar {
         // Should I prioritise Fabric/Forge/Paper over a custom JAR?
         PathBuf::from(&custom_jar.name)
@@ -83,19 +86,47 @@ pub async fn run(
             // Caused by: java.lang.RuntimeException: net.fabricmc.loader.api.VersionParsingException: Could not parse version number component 'server'!
 
             if info == "Fabric (Cursed Legacy)" {
-                java_args.push(format!("-Dfabric.gameVersion={}", version_json.id));
+                java_args.push(format!("-Dfabric.gameVersion={}", version_json.get_id()));
             }
         }
+    } else if is_neoforge {
+        #[cfg(target_family = "unix")]
+        const FILENAME: &str = "unix_args.txt";
+        #[cfg(target_os = "windows")]
+        const FILENAME: &str = "win_args.txt";
+        #[cfg(not(any(target_family = "unix", target_os = "windows")))]
+        const FILENAME: &str = "YOUR_OS_IS_UNSUPPORTED";
+
+        let mut args_path = server_dir.join("libraries/net/neoforged/neoforge");
+        if let Some(ver) = config_json
+            .mod_type_info
+            .as_ref()
+            .and_then(|n| n.version.as_deref())
+        {
+            args_path = args_path.join(ver);
+        }
+        let args_path = args_path.join(FILENAME);
+
+        let args = tokio::fs::read_to_string(&args_path)
+            .await
+            .path(args_path)?;
+        java_args.extend(
+            args.lines()
+                .flat_map(str::split_whitespace)
+                .filter(|l| !l.is_empty())
+                .map(|n| n.to_owned()),
+        );
     }
 
-    let is_classic_server = config_json.is_classic_server.unwrap_or(false);
-    java_args.push(if is_classic_server { "-cp" } else { "-jar" }.to_owned());
-    java_args.push(
-        server_jar_path
-            .to_str()
-            .ok_or(ServerError::PathBufToStr(server_jar_path.clone()))?
-            .to_owned(),
-    );
+    if !is_neoforge {
+        java_args.push(if is_classic_server { "-cp" } else { "-jar" }.to_owned());
+        java_args.push(
+            server_jar_path
+                .to_str()
+                .ok_or(ServerError::PathBufToStr(server_jar_path.clone()))?
+                .to_owned(),
+        );
+    }
 
     if is_classic_server {
         java_args.push("com.mojang.minecraft.server.MinecraftServer".to_owned());
@@ -104,8 +135,9 @@ pub async fn run(
     let mut game_args = config_json.game_args.clone().unwrap_or_default();
     game_args.push("nogui".to_owned());
 
+    info!("Java: {java_path:?}\n");
     info!("Java args: {java_args:?}\n");
-    info!("Game args: {game_args:?}\n");
+    info!("Server args: {game_args:?}\n");
 
     let mut command = Command::new(java_path);
     command
@@ -122,7 +154,6 @@ pub async fn run(
     }
 
     let child = command.spawn().path(server_jar_path)?;
-    info!("Started server");
     if let Some(id) = child.id() {
         pt!("PID: {id}");
     } else {

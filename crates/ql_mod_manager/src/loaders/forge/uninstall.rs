@@ -84,6 +84,12 @@ pub async fn uninstall_server(instance: &str) -> Result<(), ForgeInstallError> {
             .await
             .path(libraries_dir)?;
     }
+    let forge_dir = instance_dir.join("forge");
+    if forge_dir.is_dir() {
+        tokio::fs::remove_dir_all(&forge_dir)
+            .await
+            .path(forge_dir)?;
+    }
 
     delete_file(&instance_dir.join("run.sh")).await?;
     delete_file(&instance_dir.join("run.bat")).await?;
@@ -93,11 +99,9 @@ pub async fn uninstall_server(instance: &str) -> Result<(), ForgeInstallError> {
     Ok(())
 }
 
-async fn delete_file(run_sh_path: &Path) -> Result<(), ForgeInstallError> {
-    if run_sh_path.exists() {
-        tokio::fs::remove_file(&run_sh_path)
-            .await
-            .path(run_sh_path)?;
+async fn delete_file(file: &Path) -> Result<(), ForgeInstallError> {
+    if file.is_file() {
+        tokio::fs::remove_file(&file).await.path(file)?;
     }
     Ok(())
 }

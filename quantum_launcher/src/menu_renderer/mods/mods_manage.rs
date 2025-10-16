@@ -212,44 +212,17 @@ impl MenuEditMods {
                 .into(),
             },
 
-            "Forge" => {
-                let optifine = if let Some(optifine) = self
-                    .config
-                    .mod_type_info
-                    .as_ref()
-                    .and_then(|n| n.optifine_jar.as_deref())
-                {
-                    widget::button(
-                        widget::row![
-                            icon_manager::delete_with_size(14),
-                            widget::text("Uninstall OptiFine").size(14)
-                        ]
-                        .align_y(iced::alignment::Vertical::Center)
-                        .spacing(11)
-                        .padding(2),
-                    )
-                    .on_press_with(|| {
-                        Message::UninstallLoaderConfirm(
-                            Box::new(Message::ManageMods(ManageModsMessage::DeleteOptiforge(
-                                optifine.to_owned(),
-                            ))),
-                            "OptiFine".to_owned(),
-                        )
-                    })
-                } else {
-                    widget::button(widget::text("Install OptiFine with Forge").size(14))
-                        .on_press(Message::InstallOptifine(InstallOptifineMessage::ScreenOpen))
-                };
-                widget::column!(
-                    optifine,
-                    Self::get_uninstall_panel(
-                        &self.config.mod_type,
-                        Message::UninstallLoaderForgeStart,
-                    )
+            "Forge" => widget::Column::new()
+                .push_maybe(
+                    (!selected_instance.is_server())
+                        .then(|| Self::get_optifine_install_button(&self.config)),
                 )
+                .push(Self::get_uninstall_panel(
+                    &self.config.mod_type,
+                    Message::UninstallLoaderForgeStart,
+                ))
                 .spacing(5)
-                .into()
-            }
+                .into(),
             "OptiFine" => widget::column!(
                 widget::button(widget::text("Install Forge with OptiFine").size(14))
                     .on_press(Message::InstallForge(ForgeKind::OptiFine)),
@@ -278,6 +251,37 @@ impl MenuEditMods {
             _ => {
                 widget::column!(widget::text!("Unknown mod type: {}", self.config.mod_type)).into()
             }
+        }
+    }
+
+    fn get_optifine_install_button(
+        config: &InstanceConfigJson,
+    ) -> widget::Button<'_, Message, LauncherTheme> {
+        if let Some(optifine) = config
+            .mod_type_info
+            .as_ref()
+            .and_then(|n| n.optifine_jar.as_deref())
+        {
+            widget::button(
+                widget::row![
+                    icon_manager::delete_with_size(14),
+                    widget::text("Uninstall OptiFine").size(14)
+                ]
+                .align_y(iced::alignment::Vertical::Center)
+                .spacing(11)
+                .padding(2),
+            )
+            .on_press_with(|| {
+                Message::UninstallLoaderConfirm(
+                    Box::new(Message::ManageMods(ManageModsMessage::DeleteOptiforge(
+                        optifine.to_owned(),
+                    ))),
+                    "OptiFine".to_owned(),
+                )
+            })
+        } else {
+            widget::button(widget::text("Install OptiFine with Forge").size(14))
+                .on_press(Message::InstallOptifine(InstallOptifineMessage::ScreenOpen))
         }
     }
 
