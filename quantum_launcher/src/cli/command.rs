@@ -336,6 +336,25 @@ pub fn loader(
                 }
             }
         }
+        QLoader::Install {
+            instance,
+            loader,
+            version,
+        } => {
+            if loader.eq_ignore_ascii_case("vanilla") {
+                err!("Vanilla refers to the base game.\n    Maybe you meant `./quantum_launcher loader uninstall ...`?");
+                exit(1);
+            }
+            let Ok(loader) = Loader::try_from(loader.as_str()) else {
+                exit(1)
+            };
+            runtime.block_on(ql_mod_manager::loaders::install_specified_loader(
+                InstanceSelection::new(&instance, servers),
+                loader,
+                None,
+                version,
+            ))?;
+        }
     }
     Ok(())
 }

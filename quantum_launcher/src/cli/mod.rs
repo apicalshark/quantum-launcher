@@ -69,7 +69,15 @@ enum QSubCommand {
 #[derive(Subcommand)]
 #[command(about = "Manages mod loaders")]
 enum QLoader {
-    Info { instance: String },
+    Info {
+        instance: String,
+    },
+    Install {
+        instance: String,
+        loader: String,
+        #[arg(long)]
+        version: Option<String>,
+    },
 }
 
 fn long_about() -> String {
