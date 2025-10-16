@@ -5,6 +5,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use crate::message_handler::ForgeKind;
 use iced::widget;
 use ql_core::{
     file_utils::DirItem, jarmod::JarMods, InstanceSelection, ListEntry, ModId, StoreBackendType,
@@ -17,12 +18,10 @@ use ql_instances::{
     UpdateCheckInfo,
 };
 use ql_mod_manager::{
-    loaders::fabric,
+    loaders::{fabric, paper::PaperVersion},
     store::{CurseforgeNotAllowed, ImageResult, ModIndex, QueryType, RecommendedMod, SearchResult},
 };
 use tokio::process::Child;
-
-use crate::message_handler::ForgeKind;
 
 use super::{LaunchTabId, LauncherSettingsTab, LicenseTab, Res};
 
@@ -34,6 +33,15 @@ pub enum InstallFabricMessage {
     ButtonClicked,
     ScreenOpen { is_quilt: bool },
     ChangeBackend(fabric::BackendType),
+}
+
+#[derive(Debug, Clone)]
+pub enum InstallPaperMessage {
+    End(Res),
+    VersionSelected(PaperVersion),
+    VersionsLoaded(Res<Vec<ql_mod_manager::loaders::paper::PaperVersion>>),
+    ButtonClicked,
+    ScreenOpen,
 }
 
 #[derive(Debug, Clone)]
@@ -188,7 +196,6 @@ pub enum RecommendedModMessage {
     DownloadEnd(Res<HashSet<CurseforgeNotAllowed>>),
 }
 
-// FIXME: Look at the unused messages
 #[allow(unused)]
 #[derive(Debug, Clone)]
 pub enum AccountMessage {
@@ -307,8 +314,7 @@ pub enum Message {
 
     InstallForge(ForgeKind),
     InstallForgeEnd(Res),
-    InstallPaperStart,
-    InstallPaperEnd(Res),
+    InstallPaper(InstallPaperMessage),
 
     UninstallLoaderConfirm(Box<Message>, String),
     UninstallLoaderFabricStart,

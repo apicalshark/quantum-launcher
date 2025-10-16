@@ -3,8 +3,8 @@ use crate::message_update::MSG_RESIZE;
 use crate::state::{
     Launcher, LauncherSettingsMessage, LauncherSettingsTab, MenuCreateInstance, MenuEditJarMods,
     MenuEditMods, MenuEditPresets, MenuExportInstance, MenuInstallFabric, MenuInstallOptifine,
-    MenuLaunch, MenuLauncherSettings, MenuLauncherUpdate, MenuLoginAlternate, MenuLoginMS,
-    MenuRecommendedMods, MenuServerCreate, Message, State,
+    MenuInstallPaper, MenuLaunch, MenuLauncherSettings, MenuLauncherUpdate, MenuLoginAlternate,
+    MenuLoginMS, MenuRecommendedMods, MenuServerCreate, Message, State,
 };
 use iced::{
     keyboard::{self, key::Named, Key},
@@ -348,6 +348,9 @@ impl Launcher {
                 MenuRecommendedMods::Loaded { .. }
                 | MenuRecommendedMods::InstallALoader
                 | MenuRecommendedMods::NotSupported,
+            )
+            | State::InstallPaper(
+                MenuInstallPaper::Loading { .. } | MenuInstallPaper::Loaded { .. },
             ) => {
                 should_return_to_mods_screen = true;
             }
@@ -357,7 +360,7 @@ impl Launcher {
             State::ModsDownload(menu) if menu.mods_download_in_progress.is_empty() => {
                 should_return_to_mods_screen = true;
             }
-            State::InstallPaper
+            State::InstallPaper(_)
             | State::ExportInstance(_)
             | State::InstallForge(_)
             | State::InstallJava

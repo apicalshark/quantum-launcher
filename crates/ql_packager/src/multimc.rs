@@ -205,6 +205,7 @@ async fn install_fabric(
         if let Some(version) = version.clone() {
             version
         } else {
+            // Using 1.14.4 just to get the overall list of versions.
             get_list_of_versions_from_backend("1.14.4", backend, false)
                 .await?
                 .first()

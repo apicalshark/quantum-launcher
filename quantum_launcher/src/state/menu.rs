@@ -15,7 +15,7 @@ use ql_mod_manager::{
     loaders::{self, forge::ForgeInstallProgress, optifine::OptifineInstallProgress},
     store::{CurseforgeNotAllowed, ModConfig, ModIndex, QueryType, RecommendedMod, SearchResult},
 };
-
+use ql_mod_manager::loaders::paper::PaperVersion;
 use crate::{config::SIDEBAR_WIDTH_DEFAULT, message_handler::get_locally_installed_mods};
 
 use super::{ManageModsMessage, Message, ProgressBar};
@@ -284,6 +284,17 @@ impl MenuInstallFabric {
     }
 }
 
+pub enum MenuInstallPaper {
+    Loading {
+        _handle: iced::task::Handle,
+    },
+    Loaded {
+        version: PaperVersion,
+        versions: Vec<PaperVersion>,
+    },
+    Installing,
+}
+
 pub struct MenuInstallForge {
     pub forge_progress: ProgressBar<ForgeInstallProgress>,
     pub java_progress: ProgressBar<GenericProgress>,
@@ -455,7 +466,7 @@ pub enum State {
     LoginMS(MenuLoginMS),
     LoginAlternate(MenuLoginAlternate),
 
-    InstallPaper,
+    InstallPaper(MenuInstallPaper),
     InstallFabric(MenuInstallFabric),
     InstallForge(MenuInstallForge),
     InstallOptifine(MenuInstallOptifine),

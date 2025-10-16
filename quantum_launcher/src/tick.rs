@@ -156,7 +156,7 @@ impl Launcher {
             | State::GenericMessage(_)
             | State::CurseforgeManualDownload(_)
             | State::LogUploadResult { .. }
-            | State::InstallPaper
+            | State::InstallPaper(_)
             | State::ExportMods(_) => {}
         }
 

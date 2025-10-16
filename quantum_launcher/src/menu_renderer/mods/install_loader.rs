@@ -2,6 +2,7 @@ use iced::{widget, Alignment, Length};
 use ql_core::InstanceSelection;
 use ql_mod_manager::loaders::fabric::{self, FabricVersionList, FabricVersionListItem};
 
+use crate::state::{InstallPaperMessage, MenuInstallPaper};
 use crate::{
     icon_manager,
     menu_renderer::{back_button, button_with_icon, Element},
@@ -274,5 +275,48 @@ impl MenuInstallForge {
         .padding(20)
         .spacing(10)
         .into()
+    }
+}
+
+impl MenuInstallPaper {
+    pub fn view(&'_ self, tick_timer: usize) -> Element<'_> {
+        let dots = ".".repeat((tick_timer % 3) + 1);
+        match self {
+            MenuInstallPaper::Loading { .. } => widget::column![
+                back_button().on_press(Message::ManageMods(
+                    ManageModsMessage::ScreenOpenWithoutUpdate
+                )),
+                widget::text!("Loading{dots}").size(20),
+            ]
+            .padding(10)
+            .spacing(10)
+            .into(),
+            MenuInstallPaper::Loaded { version, versions } => widget::column![
+                back_button().on_press(Message::ManageMods(
+                    ManageModsMessage::ScreenOpenWithoutUpdate
+                )),
+                widget::text!("Select Version").size(20),
+                widget::row![widget::pick_list(versions.clone(), Some(version), |v| {
+                    Message::InstallPaper(InstallPaperMessage::VersionSelected(v))
+                })]
+                .push_maybe(
+                    versions
+                        .first()
+                        .is_some_and(|n| n == version)
+                        .then_some("(latest, recommended)"),
+                )
+                .align_y(Alignment::Center),
+                button_with_icon(icon_manager::download(), "Install", 16)
+                    .on_press(Message::InstallPaper(InstallPaperMessage::ButtonClicked)),
+            ]
+            .padding(10)
+            .spacing(10)
+            .into(),
+            MenuInstallPaper::Installing => {
+                widget::column![widget::text!("Installing Paper{dots}").size(20),]
+                    .padding(10)
+                    .into()
+            }
+        }
     }
 }

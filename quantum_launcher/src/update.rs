@@ -9,9 +9,9 @@ use std::{collections::HashMap, fmt::Write};
 use tokio::io::AsyncWriteExt;
 
 use crate::state::{
-    CustomJarState, InstanceLog, LaunchTabId, Launcher, ManageModsMessage, MenuExportInstance,
-    MenuLaunch, MenuLauncherUpdate, MenuLicense, MenuServerCreate, MenuWelcome, Message,
-    ProgressBar, ServerProcess, State,
+    CustomJarState, InstanceLog, LaunchTabId, Launcher, ManageModsMessage,
+    MenuExportInstance, MenuLaunch, MenuLauncherUpdate, MenuLicense,
+    MenuServerCreate, MenuWelcome, Message, ProgressBar, ServerProcess, State,
 };
 
 impl Launcher {
@@ -63,6 +63,10 @@ impl Launcher {
                 self.selected_instance = Some(InstanceSelection::new(&name, is_server));
                 self.load_edit_instance(None);
             }
+            Message::LauncherSettings(msg) => return self.update_launcher_settings(msg),
+            Message::InstallOptifine(msg) => return self.update_install_optifine(msg),
+            Message::InstallPaper(msg) => return self.update_install_paper(msg),
+            
             Message::LaunchUsernameSet(username) => {
                 self.config.username = username;
             }
@@ -234,10 +238,7 @@ impl Launcher {
             Message::UpdateDownloadStart => return self.update_download_start(),
             #[cfg(not(feature = "auto_update"))]
             Message::UpdateDownloadStart | Message::UpdateCheckResult(_) => return Task::none(),
-
-            Message::LauncherSettings(msg) => return self.update_launcher_settings(msg),
-
-            Message::InstallOptifine(msg) => return self.update_install_optifine(msg),
+            
             Message::ServerManageOpen {
                 selected_server,
                 message,
@@ -368,26 +369,6 @@ impl Launcher {
 
                     log.command.clear();
                     _ = block_on(future);
-                }
-            }
-            Message::InstallPaperStart => {
-                self.state = State::InstallPaper;
-                let instance_name = self
-                    .selected_instance
-                    .as_ref()
-                    .unwrap()
-                    .get_name()
-                    .to_owned();
-                return Task::perform(
-                    async move { loaders::paper::install(instance_name).await.strerr() },
-                    Message::InstallPaperEnd,
-                );
-            }
-            Message::InstallPaperEnd(result) => {
-                if let Err(err) = result {
-                    self.set_error(err);
-                } else {
-                    return self.go_to_edit_mods_menu(false);
                 }
             }
             Message::UninstallLoaderPaperStart => {

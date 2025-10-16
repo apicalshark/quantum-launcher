@@ -1,10 +1,6 @@
-use iced::widget::tooltip::Position;
-use iced::{widget, Alignment, Length};
-use ql_core::{InstanceSelection, SelectedMod};
-
 use crate::menu_renderer::{select_box, subbutton_with_icon, FONT_MONO};
 use crate::message_handler::ForgeKind;
-use crate::state::ImageState;
+use crate::state::{ImageState, InstallPaperMessage};
 use crate::stylesheet::styles::{BORDER_RADIUS, BORDER_WIDTH};
 use crate::{
     icon_manager,
@@ -16,6 +12,10 @@ use crate::{
     },
     stylesheet::{color::Color, styles::LauncherTheme},
 };
+use iced::widget::tooltip::Position;
+use iced::{widget, Alignment, Length};
+use ql_core::json::InstanceConfigJson;
+use ql_core::{InstanceSelection, SelectedMod};
 
 pub const MODS_SIDEBAR_WIDTH: u16 = 190;
 
@@ -205,7 +205,8 @@ impl MenuEditMods {
                         widget::button("Spigot").width(97)
                     )
                     .spacing(5),
-                    install_ldr("Paper").on_press(Message::InstallPaperStart),
+                    install_ldr("Paper")
+                        .on_press(Message::InstallPaper(InstallPaperMessage::ScreenOpen)),
                 )
                 .spacing(5)
                 .into(),
@@ -501,12 +502,7 @@ impl MenuEditMods {
                     if is_enabled {
                         checkbox.into()
                     } else {
-                        tooltip(
-                            checkbox,
-                            "Disabled",
-                            widget::tooltip::Position::FollowCursor,
-                        )
-                        .into()
+                        tooltip(checkbox, "Disabled", Position::FollowCursor).into()
                     }
                 } else {
                     widget::row![
@@ -556,12 +552,7 @@ impl MenuEditMods {
                 if is_enabled {
                     checkbox.into()
                 } else {
-                    tooltip(
-                        checkbox,
-                        "Disabled",
-                        widget::tooltip::Position::FollowCursor,
-                    )
-                    .into()
+                    tooltip(checkbox, "Disabled", Position::FollowCursor).into()
                 }
             }
         }

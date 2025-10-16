@@ -6,6 +6,7 @@ use std::{
     },
 };
 
+use crate::loaders::paper::PaperVer;
 use forge::ForgeInstallProgress;
 use ql_core::{
     json::{instance_config::ModTypeInfo, InstanceConfigJson},
@@ -101,10 +102,16 @@ pub async fn install_specified_loader(
 
         Loader::Paper => {
             debug_assert!(instance.is_server());
-            // TODO: Specified version
-            paper::install(instance.get_name().to_owned())
-                .await
-                .strerr()?;
+            paper::install(
+                instance.get_name().to_owned(),
+                if let Some(s) = specified_version {
+                    PaperVer::Id(s)
+                } else {
+                    PaperVer::None
+                },
+            )
+            .await
+            .strerr()?;
         }
 
         Loader::OptiFine => return Ok(LoaderInstallResult::NeedsOptifine),

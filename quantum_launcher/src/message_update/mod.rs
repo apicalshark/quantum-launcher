@@ -16,6 +16,7 @@ mod manage_mods;
 mod presets;
 mod recommended;
 
+use crate::state::{InstallPaperMessage, MenuInstallPaper};
 use crate::{
     state::{
         self, InstallFabricMessage, InstallModsMessage, InstallOptifineMessage, Launcher,
@@ -614,6 +615,71 @@ impl Launcher {
             temp_scale: self.config.ui_scale.unwrap_or(1.0),
             selected_tab: state::LauncherSettingsTab::UserInterface,
         });
+    }
+
+    pub fn update_install_paper(&mut self, msg: InstallPaperMessage) -> Task<Message> {
+        match msg {
+            InstallPaperMessage::VersionSelected(v) => {
+                if let State::InstallPaper(MenuInstallPaper::Loaded { version, .. }) =
+                    &mut self.state
+                {
+                    *version = v;
+                }
+            }
+            InstallPaperMessage::VersionsLoaded(res) => match res {
+                Ok(list) => {
+                    let Some(version) = list.first().cloned() else {
+                        self.set_error("No compatible Paper versions found");
+                        return Task::none();
+                    };
+                    self.state = State::InstallPaper(MenuInstallPaper::Loaded {
+                        version,
+                        versions: list,
+                    });
+                }
+                Err(err) => self.set_error(err),
+            },
+            InstallPaperMessage::ScreenOpen => {
+                if let State::EditMods(menu) = &self.state {
+                    let (task, handle) = Task::perform(
+                        loaders::paper::get_list_of_versions(menu.version_json.get_id().to_owned()),
+                        |n| Message::InstallPaper(InstallPaperMessage::VersionsLoaded(n.strerr())),
+                    )
+                    .abortable();
+                    self.state = State::InstallPaper(MenuInstallPaper::Loading { _handle: handle });
+                    return task;
+                }
+            }
+            InstallPaperMessage::ButtonClicked => {
+                let instance_name = self
+                    .selected_instance
+                    .as_ref()
+                    .unwrap()
+                    .get_name()
+                    .to_owned();
+                let version =
+                    if let State::InstallPaper(MenuInstallPaper::Loaded { version, .. }) =
+                        &self.state
+                    {
+                        Some(version.clone())
+                    } else {
+                        None
+                    };
+                self.state = State::InstallPaper(MenuInstallPaper::Installing);
+                return Task::perform(
+                    loaders::paper::install(instance_name, version.into()),
+                    |n| Message::InstallPaper(InstallPaperMessage::End(n.strerr())),
+                );
+            }
+            InstallPaperMessage::End(res) => {
+                if let Err(err) = res {
+                    self.set_error(err);
+                } else {
+                    return self.go_to_edit_mods_menu(false);
+                }
+            }
+        }
+        Task::none()
     }
 }
 

@@ -123,13 +123,7 @@ impl Launcher {
             // It's not needed right now, but could be in the future.
             State::ModsDownload(menu) => menu.view(&self.images, self.window_size, self.tick_timer),
             State::LauncherSettings(menu) => menu.view(&self.config, self.window_size),
-            State::InstallPaper => {
-                let dots = ".".repeat((self.tick_timer % 3) + 1);
-                widget::column!(widget::text!("Installing Paper{dots}").size(20))
-                    .padding(10)
-                    .spacing(10)
-                    .into()
-            }
+            State::InstallPaper(menu) => menu.view(self.tick_timer),
             State::ChangeLog => {
                 let back_msg = Message::LaunchScreenOpen {
                     message: None,
