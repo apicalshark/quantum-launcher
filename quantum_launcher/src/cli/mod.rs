@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 use owo_colors::{OwoColorize, Style};
 use ql_core::{err, LAUNCHER_VERSION_NAME, WEBSITE};
+use ql_instances::ARG_REDACT_SECTIONS;
 
 use crate::{
     cli::helpers::render_row,

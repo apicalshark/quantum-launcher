@@ -15,6 +15,7 @@
 #![allow(clippy::cast_precision_loss)]
 #![allow(clippy::missing_errors_doc)]
 
+pub mod clean;
 pub mod constants;
 mod error;
 /// Common utilities for working with files.
