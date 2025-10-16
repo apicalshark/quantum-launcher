@@ -45,7 +45,6 @@ pub async fn create_server(
     sender: Option<&Sender<GenericProgress>>,
 ) -> Result<String, ServerError> {
     info!("Creating server");
-    pt!("Downloading Manifest");
     progress_manifest(sender);
     let manifest = Manifest::download().await?;
 
@@ -57,7 +56,6 @@ pub async fn create_server(
     let version_manifest = manifest
         .find_name(&version.name)
         .ok_or(ServerError::VersionNotFoundInManifest(version.name.clone()))?;
-    pt!("Downloading version JSON");
     progress_json(sender);
 
     let version_json: VersionDetails =
@@ -66,7 +64,6 @@ pub async fn create_server(
         return Err(ServerError::NoServerDownload);
     };
 
-    pt!("Downloading server jar");
     progress_server_jar(sender);
     if version.is_classic_server {
         is_classic_server = true;
@@ -154,6 +151,7 @@ async fn get_server_dir(name: &str) -> Result<std::path::PathBuf, ServerError> {
 }
 
 fn progress_manifest(sender: Option<&Sender<GenericProgress>>) {
+    pt!("Downloading Manifest");
     if let Some(sender) = sender {
         sender
             .send(GenericProgress {
@@ -189,6 +187,7 @@ async fn write_json(
 }
 
 fn progress_server_jar(sender: Option<&Sender<GenericProgress>>) {
+    pt!("Downloading server jar");
     if let Some(sender) = sender {
         sender
             .send(GenericProgress {
@@ -202,6 +201,7 @@ fn progress_server_jar(sender: Option<&Sender<GenericProgress>>) {
 }
 
 fn progress_json(sender: Option<&Sender<GenericProgress>>) {
+    pt!("Downloading version JSON");
     if let Some(sender) = sender {
         sender
             .send(GenericProgress {

@@ -1,36 +1,33 @@
-use crate::state::MenuInstallOptifine;
+use crate::state::{GameProcess, MenuInstallOptifine};
 use crate::tick::sort_dependencies;
 use crate::{
     get_entries,
     state::{
-        ClientProcess, EditPresetsMessage, ManageModsMessage, MenuEditInstance, MenuEditMods,
-        MenuInstallForge, MenuLaunch, MenuLauncherUpdate, ProgressBar, SelectedState, State,
-        OFFLINE_ACCOUNT_NAME,
+        EditPresetsMessage, ManageModsMessage, MenuEditInstance, MenuEditMods, MenuInstallForge,
+        MenuLaunch, MenuLauncherUpdate, ProgressBar, SelectedState, State, OFFLINE_ACCOUNT_NAME,
     },
-    Launcher, Message, ServerProcess,
+    Launcher, Message,
 };
 use iced::futures::executor::block_on;
 use iced::Task;
 use ql_core::json::instance_config::ModTypeInfo;
 use ql_core::json::VersionDetails;
+use ql_core::read_log::ReadError;
 use ql_core::{
     err, json::instance_config::InstanceConfigJson, GenericProgress, InstanceSelection,
     IntoIoError, IntoJsonError, IntoStringError, JsonFileError,
 };
-use ql_instances::{auth::AccountData, ReadError};
+use ql_core::{info, LaunchedProcess};
+use ql_instances::auth::AccountData;
 use ql_mod_manager::{loaders, store::ModIndex};
 use std::{
     collections::HashSet,
     ffi::OsStr,
     path::{Path, PathBuf},
     process::ExitStatus,
-    sync::{
-        mpsc::{Receiver, Sender},
-        Arc, Mutex,
-    },
+    sync::mpsc::{Receiver, Sender},
 };
 use tokio::io::AsyncWriteExt;
-use tokio::process::Child;
 
 pub const SIDEBAR_DRAG_LEEWAY: f32 = 10.0;
 pub const SIDEBAR_LIMIT_RIGHT: u16 = 120;
@@ -40,7 +37,7 @@ mod iced_event;
 
 impl Launcher {
     pub fn launch_game(&mut self, account_data: Option<AccountData>) -> Task<Message> {
-        let selected_instance = self.selected_instance.as_ref().unwrap().get_name();
+        let selected_instance = self.selected_instance.as_ref().unwrap();
         let username = if let Some(account_data) = &account_data {
             // Logged in account
             account_data.nice_username.clone()
@@ -52,12 +49,10 @@ impl Launcher {
         let (sender, receiver) = std::sync::mpsc::channel();
         self.java_recv = Some(ProgressBar::with_recv(receiver));
 
-        self.client_logs.remove(selected_instance);
-
         let global_settings = self.config.global_settings.clone();
         let extra_java_args = self.config.extra_java_args.clone().unwrap_or_default();
 
-        let instance_name = selected_instance.to_owned();
+        let instance_name = selected_instance.get_name().to_owned();
         Task::perform(
             async move {
                 ql_instances::launch(
@@ -75,49 +70,36 @@ impl Launcher {
         )
     }
 
-    pub fn finish_launching(&mut self, result: Result<Arc<Mutex<Child>>, String>) -> Task<Message> {
+    pub fn finish_launching(&mut self, result: Result<LaunchedProcess, String>) -> Task<Message> {
         self.java_recv = None;
         self.is_launching_game = false;
         match result {
             Ok(child) => {
-                let Some(InstanceSelection::Instance(selected_instance)) =
-                    self.selected_instance.clone()
-                else {
-                    err!("Game Launched, but unknown instance!\n          This is a bug, please report it if found.");
-                    return Task::none();
-                };
-                if let (Some(stdout), Some(stderr)) = {
-                    let mut child = child.lock().unwrap();
-                    (child.stdout.take(), child.stderr.take())
-                } {
-                    let (sender, receiver) = std::sync::mpsc::channel();
+                let selected_instance = child.instance.clone();
 
-                    self.client_processes.insert(
-                        selected_instance.clone(),
-                        ClientProcess {
-                            child: child.clone(),
-                            receiver: Some(receiver),
-                        },
-                    );
+                let server_input = child.child.lock().unwrap().stdin.take().map(|n| (n, false));
 
-                    let mut censors = Vec::new();
-                    for account in self.accounts.values() {
-                        if let Some(token) = &account.access_token {
-                            censors.push(token.clone());
-                        }
+                let (sender, receiver) = std::sync::mpsc::channel();
+                self.processes.insert(
+                    selected_instance.clone(),
+                    GameProcess {
+                        child: child.clone(),
+                        receiver: Some(receiver),
+                        server_input,
+                    },
+                );
+
+                let mut censors = Vec::new();
+                for account in self.accounts.values() {
+                    if let Some(token) = &account.access_token {
+                        censors.push(token.clone());
                     }
+                }
 
+                if let Some(f) = child.read_logs(censors, Some(sender)) {
                     return Task::perform(
                         async move {
-                            let result = ql_instances::read_logs(
-                                stdout,
-                                stderr,
-                                child,
-                                Some(sender),
-                                selected_instance.clone(),
-                                censors,
-                            )
-                            .await;
+                            let result = f.await;
 
                             match result {
                                 Err(ReadError::Io(io))
@@ -129,16 +111,9 @@ impl Launcher {
                                 _ => result.strerr(),
                             }
                         },
-                        Message::LaunchEndedLog,
+                        Message::LaunchGameExited,
                     );
                 }
-                self.client_processes.insert(
-                    selected_instance.clone(),
-                    ClientProcess {
-                        child: child.clone(),
-                        receiver: None,
-                    },
-                );
             }
             Err(err) => self.set_error(err),
         }
@@ -254,14 +229,21 @@ impl Launcher {
         }
     }
 
-    pub fn set_game_crashed(&mut self, status: ExitStatus, name: &str) {
+    pub fn set_game_exited(&mut self, status: ExitStatus, instance: &InstanceSelection) {
+        let kind = if instance.is_server() {
+            "Server"
+        } else {
+            "Game"
+        };
+        info!("Game exited with status: {status}");
+
         if let State::Launch(MenuLaunch { message, .. }) = &mut self.state {
             let has_crashed = !status.success();
             if has_crashed {
                 *message =
-                    format!("Game Crashed with code: {status}\nCheck Logs for more information");
+                    format!("{kind} crashed with code: {status}\nCheck Logs for more information");
             }
-            if let Some(log) = self.client_logs.get_mut(name) {
+            if let Some(log) = self.logs.get_mut(instance) {
                 log.has_crashed = has_crashed;
             }
         }
@@ -358,56 +340,6 @@ impl Launcher {
             is_java_getting_installed: false,
         });
         command
-    }
-
-    pub fn add_server_to_processes(
-        &mut self,
-        child: Arc<Mutex<Child>>,
-        is_classic_server: bool,
-    ) -> Task<Message> {
-        let Some(InstanceSelection::Server(selected_server)) = &self.selected_instance else {
-            err!("Launched server but can't identify which one! This is a bug, please report it");
-            return Task::none();
-        };
-        if let (Some(stdout), Some(stderr), Some(stdin)) = {
-            let mut child = child.lock().unwrap();
-            (child.stdout.take(), child.stderr.take(), child.stdin.take())
-        } {
-            let (sender, receiver) = std::sync::mpsc::channel();
-
-            self.server_processes.insert(
-                selected_server.clone(),
-                ServerProcess {
-                    child: child.clone(),
-                    receiver: Some(receiver),
-                    stdin: Some(stdin),
-                    is_classic_server,
-                    has_issued_stop_command: false,
-                },
-            );
-
-            let selected_server = selected_server.clone();
-            return Task::perform(
-                async move {
-                    ql_servers::read_logs(stdout, stderr, child, sender, selected_server)
-                        .await
-                        .strerr()
-                },
-                Message::ServerStopped,
-            );
-        }
-
-        self.server_processes.insert(
-            selected_server.clone(),
-            ServerProcess {
-                child: child.clone(),
-                receiver: None,
-                stdin: None,
-                is_classic_server,
-                has_issued_stop_command: false,
-            },
-        );
-        Task::none()
     }
 
     pub fn go_to_main_menu_with_message(
@@ -531,35 +463,26 @@ impl Launcher {
     }
 
     pub fn kill_selected_instance(&mut self) -> Task<Message> {
-        let Some(selected_instance) = &self.selected_instance else {
+        let Some(instance) = &self.selected_instance else {
             return Task::none();
         };
-        match selected_instance {
-            InstanceSelection::Instance(n) => {
-                if let Some(process) = self.client_processes.remove(n) {
-                    return Task::perform(
-                        async move {
-                            let mut child = process.child.lock().unwrap();
-                            child.start_kill().strerr()
-                        },
-                        Message::LaunchKillEnd,
-                    );
+        match instance {
+            InstanceSelection::Instance(_) => {
+                if let Some(process) = self.processes.remove(instance) {
+                    let mut child = process.child.child.lock().unwrap();
+                    _ = child.start_kill();
                 }
             }
-            InstanceSelection::Server(n) => {
-                if let Some(ServerProcess {
-                    stdin: Some(stdin),
-                    is_classic_server,
+            InstanceSelection::Server(_) => {
+                if let Some(GameProcess {
+                    server_input: Some((stdin, has_issued_stop_command)),
                     child,
-                    has_issued_stop_command,
                     ..
-                }) = self.server_processes.get_mut(n)
+                }) = self.processes.get_mut(instance)
                 {
                     *has_issued_stop_command = true;
-                    if *is_classic_server {
-                        if let Err(err) = child.lock().unwrap().start_kill() {
-                            err!("Could not kill classic server: {err}");
-                        }
+                    if child.is_classic_server {
+                        _ = child.child.lock().unwrap().start_kill();
                     } else {
                         let future = stdin.write_all("stop\n".as_bytes());
                         _ = block_on(future);
@@ -589,19 +512,19 @@ impl Launcher {
         let Some(selected_instance) = &self.selected_instance else {
             return Task::none();
         };
+        if self.processes.contains_key(selected_instance) {
+            return Task::none();
+        }
+        self.logs.remove(selected_instance);
 
         match selected_instance {
-            InstanceSelection::Instance(name) => {
+            InstanceSelection::Instance(_) => {
                 if let Some(account) = &self.accounts_selected {
                     if account == OFFLINE_ACCOUNT_NAME
                         && (self.config.username.is_empty() || self.config.username.contains(' '))
                     {
                         return Task::none();
                     }
-                }
-
-                if self.client_processes.contains_key(name) {
-                    return Task::none();
                 }
 
                 self.is_launching_game = true;
@@ -618,20 +541,14 @@ impl Launcher {
                 self.launch_game(account_data)
             }
             InstanceSelection::Server(server) => {
-                self.server_logs.remove(server);
                 let (sender, receiver) = std::sync::mpsc::channel();
                 self.java_recv = Some(ProgressBar::with_recv(receiver));
 
-                if self.server_processes.contains_key(server) {
-                    err!("Server is already running");
-                    Task::none()
-                } else {
-                    let server = server.clone();
-                    Task::perform(
-                        async move { ql_servers::run(server, sender).await.strerr() },
-                        Message::ServerStartFinish,
-                    )
-                }
+                let server = server.clone();
+                Task::perform(
+                    async move { ql_servers::run(server, Some(sender)).await.strerr() },
+                    Message::LaunchEnd,
+                )
             }
         }
     }

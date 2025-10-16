@@ -29,7 +29,7 @@ use std::{borrow::Cow, time::Duration};
 
 use config::LauncherConfig;
 use iced::{Settings, Task};
-use state::{get_entries, Launcher, Message, ServerProcess};
+use state::{get_entries, Launcher, Message};
 
 use ql_core::{
     constants::OS_NAME, err, err_no_log, file_utils, info, info_no_log, IntoStringError,

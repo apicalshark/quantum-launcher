@@ -25,3 +25,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 sha2 = "0.10"
+
+quick-xml = { version = "0.37", features = ["encoding", "serialize"] }
+# Removing UNICODE characters from XML log
+any_ascii = "0.3"

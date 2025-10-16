@@ -3574,10 +3574,12 @@ checksum = "3eb8486b569e12e2c32ad3e204dbaba5e4b5b216e9367044f25f1dba42341773"
 name = "ql_core"
 version = "0.0.0"
 dependencies = [
+ "any_ascii",
  "chrono",
  "dirs",
  "futures",
  "owo-colors",
+ "quick-xml",
  "regex",
  "reqwest",
  "serde",
@@ -3594,14 +3596,12 @@ dependencies = [
 name = "ql_instances"
 version = "0.0.0"
 dependencies = [
- "any_ascii",
  "chrono",
  "indicatif",
  "keyring",
  "owo-colors",
  "ql_core",
  "ql_java_handler",
- "quick-xml",
  "reqwest",
  "semver",
  "serde",

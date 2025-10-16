@@ -15,6 +15,21 @@
 #![allow(clippy::cast_precision_loss)]
 #![allow(clippy::missing_errors_doc)]
 
+use crate::read_log::{read_logs, LogLine, ReadError};
+use futures::StreamExt;
+use json::VersionDetails;
+use regex::Regex;
+use std::{
+    ffi::OsStr,
+    fmt::{Debug, Display},
+    future::Future,
+    path::{Path, PathBuf},
+    pin::Pin,
+    process::ExitStatus,
+    sync::{mpsc::Sender, Arc, LazyLock, Mutex},
+};
+use tokio::process::Child;
+
 pub mod clean;
 pub mod constants;
 mod error;
@@ -27,34 +42,25 @@ mod loader;
 /// Logging macros.
 pub mod print;
 mod progress;
+pub mod read_log;
 mod urlcache;
-
-use std::{
-    ffi::OsStr,
-    fmt::{Debug, Display},
-    future::Future,
-    path::{Path, PathBuf},
-    sync::LazyLock,
-};
 
 pub use error::{
     DownloadFileError, IntoIoError, IntoJsonError, IntoStringError, IoError, JsonDownloadError,
     JsonError, JsonFileError,
 };
 pub use file_utils::{RequestError, LAUNCHER_DIR};
-use futures::StreamExt;
-use json::VersionDetails;
 pub use loader::Loader;
 pub use print::{logger_finish, LogType, LoggingState, LOGGER};
 pub use progress::{DownloadProgress, GenericProgress, Progress};
 pub use urlcache::url_cache_get;
 
-use regex::Regex;
-
 pub static REGEX_SNAPSHOT: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\d{2}w\d*[a-zA-Z]+").unwrap());
 
 pub const CLASSPATH_SEPARATOR: char = if cfg!(unix) { ':' } else { ';' };
+
+pub static REDACT_SENSITIVE_INFO: LazyLock<Mutex<bool>> = LazyLock::new(|| Mutex::new(true));
 
 pub const WEBSITE: &str = "https://mrmayman.github.io/quantumlauncher";
 
@@ -525,4 +531,35 @@ pub async fn find_forge_shim_file(dir: &Path) -> Option<PathBuf> {
     .await
     .ok()
     .flatten()
+}
+
+#[derive(Debug, Clone)]
+pub struct LaunchedProcess {
+    pub child: Arc<Mutex<Child>>,
+    pub instance: InstanceSelection,
+    pub is_classic_server: bool,
+}
+
+impl LaunchedProcess {
+    pub fn read_logs(
+        &self,
+        censors: Vec<String>,
+        sender: Option<Sender<LogLine>>,
+    ) -> Option<
+        Pin<Box<dyn Future<Output = Result<(ExitStatus, InstanceSelection), ReadError>> + Send>>,
+    > {
+        let mut c = self.child.lock().unwrap();
+        let (Some(stdout), Some(stderr)) = (c.stdout.take(), c.stderr.take()) else {
+            return None;
+        };
+
+        Some(Box::pin(read_logs(
+            stdout,
+            stderr,
+            self.child.clone(),
+            sender,
+            self.instance.clone(),
+            censors,
+        )))
+    }
 }

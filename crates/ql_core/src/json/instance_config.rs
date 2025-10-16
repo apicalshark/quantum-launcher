@@ -129,6 +129,7 @@ pub struct InstanceConfigJson {
     /// - `"OptiFine"`
     /// - `"Quilt"`
     /// - `"NeoForge"`
+    /// - `"Paper"` (for servers)
     pub mod_type: String,
     pub mod_type_info: Option<ModTypeInfo>,
 

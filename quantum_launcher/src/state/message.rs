@@ -1,14 +1,10 @@
-use std::{
-    collections::HashSet,
-    path::PathBuf,
-    process::ExitStatus,
-    sync::{Arc, Mutex},
-};
+use std::{collections::HashSet, path::PathBuf, process::ExitStatus};
 
 use crate::message_handler::ForgeKind;
 use iced::widget;
 use ql_core::{
-    file_utils::DirItem, jarmod::JarMods, InstanceSelection, ListEntry, ModId, StoreBackendType,
+    file_utils::DirItem, jarmod::JarMods, InstanceSelection, LaunchedProcess, ListEntry, ModId,
+    StoreBackendType,
 };
 use ql_instances::{
     auth::{
@@ -21,7 +17,6 @@ use ql_mod_manager::{
     loaders::{fabric, paper::PaperVersion},
     store::{CurseforgeNotAllowed, ImageResult, ModIndex, QueryType, RecommendedMod, SearchResult},
 };
-use tokio::process::Child;
 
 use super::{LaunchTabId, LauncherSettingsTab, LicenseTab, Res};
 
@@ -302,9 +297,8 @@ pub enum Message {
         message: Option<String>,
         clear_selection: bool,
     },
-    LaunchEnd(Res<Arc<Mutex<Child>>>),
+    LaunchEnd(Res<LaunchedProcess>),
     LaunchKill,
-    LaunchKillEnd(Res),
     LaunchChangeTab(LaunchTabId),
 
     LaunchScrollSidebar(f32),
@@ -352,7 +346,7 @@ pub enum Message {
 
     LaunchLogScroll(isize),
     LaunchLogScrollAbsolute(isize),
-    LaunchEndedLog(Res<(ExitStatus, String)>),
+    LaunchGameExited(Res<(ExitStatus, InstanceSelection)>),
     LaunchCopyLog,
     LaunchUploadLog,
     LaunchUploadLogResult(Res<String>),
@@ -365,10 +359,8 @@ pub enum Message {
         selected_server: Option<String>,
         message: Option<String>,
     },
-    ServerStartFinish(Res<(Arc<Mutex<Child>>, bool)>),
-    ServerStopped(Res<(ExitStatus, String)>),
-    ServerCommandEdit(String, String),
-    ServerCommandSubmit(String),
+    ServerCommandEdit(String),
+    ServerCommandSubmit,
 
     ServerCreateScreenOpen,
     ServerCreateVersionsLoaded(Res<Vec<ListEntry>>),

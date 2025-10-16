@@ -1,7 +1,6 @@
 use clap::{Parser, Subcommand};
 use owo_colors::{OwoColorize, Style};
-use ql_core::{err, LAUNCHER_VERSION_NAME, WEBSITE};
-use ql_instances::ARG_REDACT_SECTIONS;
+use ql_core::{err, LAUNCHER_VERSION_NAME, REDACT_SENSITIVE_INFO, WEBSITE};
 
 use crate::{
     cli::helpers::render_row,
@@ -21,22 +20,28 @@ struct Cli {
     #[clap(subcommand)]
     command: Option<QSubCommand>,
     /// Some systems mistakenly pass this. It's unused though.
-    #[arg(short, long, hide = true)]
+    #[arg(long, hide = true)]
     no_sandbox: Option<bool>,
+    #[arg(long)]
+    no_redact_info: bool,
+    #[arg(short, long)]
+    #[arg(help = "Manage servers, instead of instances")]
+    #[arg(hide = true)]
+    server: bool,
 }
 
 #[derive(Subcommand)]
 enum QSubCommand {
-    #[command(about = "Creates a new installation (instance) of Minecraft")]
+    #[command(about = "Creates a new Minecraft instance")]
     Create {
         instance_name: String,
         #[arg(help = "Version of Minecraft to download")]
         version: String,
-        #[arg(short, long, short_alias = 's')]
+        #[arg(short, long)]
         #[arg(help = "Skips downloading game assets (sound/music) to speed up downloads")]
         skip_assets: bool,
     },
-    #[command(about = "Launches the specified instance")]
+    #[command(about = "Launches an instance")]
     Launch {
         instance_name: String,
         #[arg(help = "Username to play with")]
@@ -45,27 +50,26 @@ enum QSubCommand {
         #[arg(help = "Whether to use a logged in account of the given username (if any)")]
         use_account: bool,
     },
-    #[command(
-        about = "Lists all downloadable versions, downloading a list from Mojang/Omniarchive",
-        short_flag = 'a'
-    )]
-    ListAvailableVersions,
+    #[command(aliases = ["list", "list-instances"], short_flag = 'l')]
+    #[command(about = "Lists installed instances")]
+    ListInstalled { properties: Option<Vec<String>> },
     #[command(about = "Deletes the specified instance")]
     Delete {
         instance_name: String,
-        #[arg(short, long, short_alias = 'f')]
+        #[arg(short, long)]
         #[arg(help = "Forces deletion without confirmation. DANGEROUS")]
         force: bool,
     },
-    #[command(aliases = ["list", "list-instances"], short_flag = 'l')]
-    #[command(about = "Lists installed instances")]
-    ListInstalled {
-        #[arg(short, long, short_alias = 's')]
-        #[arg(help = "List servers instead of instances")]
-        #[arg(hide = true)]
-        servers: bool,
-        properties: Option<Vec<String>>,
-    },
+    #[clap(subcommand)]
+    Loader(QLoader),
+    #[command(about = "Lists downloadable versions", short_flag = 'a')]
+    ListAvailableVersions,
+}
+
+#[derive(Subcommand)]
+#[command(about = "Manages mod loaders")]
+enum QLoader {
+    Info { instance: String },
 }
 
 fn long_about() -> String {
@@ -148,10 +152,13 @@ fn get_right_text() -> String {
 
 pub fn start_cli(is_dir_err: bool) {
     let cli = Cli::parse();
+    *REDACT_SENSITIVE_INFO.lock().unwrap() = !cli.no_redact_info;
     if let Some(subcommand) = cli.command {
         if is_dir_err {
             std::process::exit(1);
         }
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+
         match subcommand {
             QSubCommand::Create {
                 instance_name,
@@ -162,6 +169,8 @@ pub fn start_cli(is_dir_err: bool) {
                     instance_name,
                     version,
                     skip_assets,
+                    &runtime,
+                    cli.server,
                 ));
             }
             QSubCommand::Launch {
@@ -173,6 +182,8 @@ pub fn start_cli(is_dir_err: bool) {
                     instance_name,
                     username,
                     use_account,
+                    &runtime,
+                    cli.server,
                 ));
             }
             QSubCommand::ListAvailableVersions => {
@@ -183,21 +194,11 @@ pub fn start_cli(is_dir_err: bool) {
                 instance_name,
                 force,
             } => quit(command::delete_instance(instance_name, force)),
-            QSubCommand::ListInstalled {
-                servers,
-                properties,
-            } => {
-                let command: Vec<PrintCmd> = properties
-                    .unwrap_or_default()
-                    .into_iter()
-                    .filter_map(|n| match n.as_str() {
-                        "name" => Some(PrintCmd::Name),
-                        "version" => Some(PrintCmd::Version),
-                        "loader" => Some(PrintCmd::Loader),
-                        _ => None,
-                    })
-                    .collect();
-                quit(command::list_instances(&command, servers))
+            QSubCommand::ListInstalled { properties } => {
+                quit(command::list_instances(properties.as_deref(), cli.server))
+            }
+            QSubCommand::Loader(cmd) => {
+                quit(command::loader(cmd, &runtime, cli.server));
             }
         }
     } else {
