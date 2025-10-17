@@ -79,7 +79,7 @@ pub async fn create_server(
         file_utils::download_file_to_path(&server.url, false, &server_jar_path).await?;
     }
 
-    write_json(&server_dir, &version_json).await?;
+    version_json.save_to_dir(&server_dir).await?;
     write_eula(&server_dir).await?;
     write_config(is_classic_server, &server_dir, &version_json).await?;
 
@@ -169,20 +169,6 @@ async fn write_eula(server_dir: &std::path::Path) -> Result<(), ServerError> {
     tokio::fs::write(&eula_path, "eula=true\n")
         .await
         .path(eula_path)?;
-    Ok(())
-}
-
-async fn write_json(
-    server_dir: &std::path::Path,
-    version_json: &VersionDetails,
-) -> Result<(), ServerError> {
-    let version_json_path = server_dir.join("details.json");
-    tokio::fs::write(
-        &version_json_path,
-        serde_json::to_string(version_json).json_to()?,
-    )
-    .await
-    .path(version_json_path)?;
     Ok(())
 }
 

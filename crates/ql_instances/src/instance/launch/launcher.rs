@@ -762,6 +762,9 @@ impl GameLauncher {
         library: &Library,
         main_class: &str,
     ) -> Result<(), GameLaunchError> {
+        if !library.is_allowed() {
+            return Ok(());
+        }
         if let Some(name) = remove_version_from_library(name) {
             if classpath_entries.contains(&name) {
                 return Ok(());

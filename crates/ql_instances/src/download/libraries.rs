@@ -66,7 +66,7 @@ impl GameDownloader {
         library_len: usize,
     ) -> Result<(), DownloadError> {
         if !library.is_allowed() {
-            info!("Skipping library:\n{library:#?}\n",);
+            info!("Skipping library:\n{library:#?}\n");
             return Ok(());
         }
 

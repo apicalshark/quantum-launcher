@@ -298,18 +298,6 @@ impl GameDownloader {
         Ok(())
     }
 
-    pub async fn create_version_json(&self) -> Result<(), DownloadError> {
-        let json_file_path = self.instance_dir.join("details.json");
-
-        tokio::fs::write(
-            &json_file_path,
-            serde_json::to_string(&self.version_json).json_to()?,
-        )
-        .await
-        .path(json_file_path)?;
-        Ok(())
-    }
-
     pub async fn create_config_json(&self) -> Result<(), DownloadError> {
         #[allow(deprecated)]
         let config_json = InstanceConfigJson {

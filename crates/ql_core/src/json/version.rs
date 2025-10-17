@@ -94,6 +94,23 @@ impl VersionDetails {
         Ok(version_json)
     }
 
+    /// Saves the Minecraft instance JSON to disk
+    /// to a specific [`InstanceSelection`] (Minecraft installation).
+    pub async fn save(&self, instance: &InstanceSelection) -> Result<(), JsonFileError> {
+        self.save_to_dir(&instance.get_instance_path()).await
+    }
+
+    /// Saves the Minecraft instance JSON to disk
+    /// to a `details.json` inside a `dir`.
+    pub async fn save_to_dir(&self, dir: &Path) -> Result<(), JsonFileError> {
+        debug_assert!(self.q_patch_overrides.is_empty());
+
+        let text = serde_json::to_string(self).json_to()?;
+        let path = dir.join("details.json");
+        tokio::fs::write(&path, text).await.path(path)?;
+        Ok(())
+    }
+
     pub async fn apply_tweaks(
         &mut self,
         instance: &InstanceSelection,
@@ -134,8 +151,11 @@ impl VersionDetails {
         if let Some(args) = json.minecraftArguments {
             self.minecraftArguments = Some(args);
         }
-        if let Some(libraries) = json.libraries {
+        if let Some(mut libraries) = json.libraries {
+            libraries.reverse();
+            self.libraries.reverse();
             self.libraries.extend(libraries);
+            self.libraries.reverse();
         }
         self.q_patch_overrides.push(json.uid);
         // TODO: More fields in the future
