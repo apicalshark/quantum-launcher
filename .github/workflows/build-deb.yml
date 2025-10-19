@@ -21,13 +21,13 @@ jobs:
         build: [x86_64-linux, aarch64-linux]
         include:
           - build: x86_64-linux
-            os: ubuntu-22.04
+            os: ubuntu-latest
             rust: stable
             target: x86_64-unknown-linux-gnu
             cross: false
             arch: x86_64
           - build: aarch64-linux
-            os: ubuntu-22.04
+            os: ubuntu-24.04-arm
             rust: stable
             target: aarch64-unknown-linux-gnu
             cross: true
@@ -56,33 +56,14 @@ jobs:
             cargo build --release --target ${{ matrix.target }}
           fi
 
-      - name: Strip release binary
-        if: matrix.build == 'x86_64-linux'
-        run: |
-          strip --strip-all "target/${{ matrix.target }}/release/$BIN_NAME"
-          mv "target/${{ matrix.target }}/release/$BIN_NAME" "assets/freedesktop/quantum-launcher"
-
-      - name: Strip release binary (arm)
-        if: matrix.build == 'aarch64-linux'
-        run: |
-          docker run --rm -v \
-          "$PWD/target:/target:Z" \
-          rustembedded/cross:${{ matrix.target }} \
-          aarch64-linux-gnu-strip \
-          /target/${{ matrix.target }}/release/$BIN_NAME
-          mv "target/${{ matrix.target }}/release/$BIN_NAME" "assets/freedesktop/quantum-launcher"
-
       - name: Build DEB
         run: |
           sudo apt-get install fakeroot
           mkdir dist
           cd assets/freedesktop
-
-          mkdir -v -p {etc,usr/{bin,share/{applications,metainfo,pixmaps}}}
-
-          cp -pdf "quantum-launcher.desktop" "usr/share/applications/quantum-launcher.desktop"
-          cp -pdf "quantum-launcher.metainfo.xml" "usr/share/metainfo/quantum-launcher.metainfo.xml"
-          cp -pdf "../icon/ql_logo.png" "usr/share/pixmaps/io.github.Mrmayman.QuantumLauncher.png"
+          install -D "quantum-launcher.desktop" "usr/share/applications/quantum-launcher.desktop"
+          install -D "quantum-launcher.metainfo.xml" "usr/share/metainfo/quantum-launcher.metainfo.xml"
+          install -D "../icon/256x256/ql_logo.png" "usr/share/icons/hicolor/256x256/apps/io.github.Mrmayman.QuantumLauncher.png"
           mv debian DEBIAN
           fakeroot dpkg-deb --build . ../../dist/$PROJECT_NAME-${{ matrix.build }}.deb
 
