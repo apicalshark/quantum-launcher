@@ -48,22 +48,22 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.cross }}" == "true" ]; then
-            cross build --release --target ${{ matrix.target }}
+            cross build --target ${{ matrix.target }}
           else
-            cargo build --release --target ${{ matrix.target }}
+            cargo build --target ${{ matrix.target }}
           fi
 
       - name: Build DEB
         run: |
           sudo apt-get install fakeroot
-          mkdir dist build
+          mkdir -p dist assets/freedesktop/build
           cd assets/freedesktop/build
           install -D "../quantum-launcher.desktop" "usr/share/applications/quantum-launcher.desktop"
           install -D "../quantum-launcher.metainfo.xml" "usr/share/metainfo/quantum-launcher.metainfo.xml"
           install -D "../../icon/256x256/ql_logo.png" "usr/share/icons/hicolor/256x256/apps/io.github.Mrmayman.QuantumLauncher.png"
           install -D "../../../target/${{ matrix.target }}/release/${{ env.BIN_NAME }}" "usr/bin/${{ env.BIN_NAME }}"
           mv debian DEBIAN
-          fakeroot dpkg-deb --build . ../../dist/$PROJECT_NAME-${{ matrix.build }}.deb
+          fakeroot dpkg-deb --build . ../../../dist/$PROJECT_NAME-${{ matrix.build }}.deb
 
       - uses: actions/upload-artifact@v4
         with:
