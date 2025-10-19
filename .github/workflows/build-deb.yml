@@ -61,7 +61,7 @@ jobs:
           install -D "assets/freedesktop/quantum-launcher.desktop" "build/usr/share/applications/quantum-launcher.desktop"
           install -D "assets/freedesktop/quantum-launcher.metainfo.xml" "build/usr/share/metainfo/quantum-launcher.metainfo.xml"
           install -D "assets/icon/256x256/ql_logo.png" "build/usr/share/icons/hicolor/256x256/apps/io.github.Mrmayman.QuantumLauncher.png"
-          install -D "target/${{ matrix.target }}/release/${{ env.BIN_NAME }}" "build/usr/bin/${{ env.BIN_NAME }}"
+          install -D "target/${{ matrix.target }}/release/${{ env.BIN_NAME }}" "build/usr/bin/quantum-launcher"
           mv "assets/freedesktop/debian" "build/DEBIAN"
           fakeroot dpkg-deb --build build dist/$PROJECT_NAME-${{ matrix.build }}.deb
 
