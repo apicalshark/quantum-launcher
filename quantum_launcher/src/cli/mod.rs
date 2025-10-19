@@ -67,7 +67,13 @@ enum QSubCommand {
 }
 
 #[derive(Subcommand)]
-#[command(about = "Manages mod loaders")]
+#[command(
+    about = "Manages mod loaders",
+    long_about = r"Install, uninstall and look up mod loaders.
+
+Supported loaders: Fabric, Forge, Quilt, NeoForge, Paper, OptiFine
+(case-insensitive)"
+)]
 enum QLoader {
     Info {
         instance: String,
@@ -75,6 +81,7 @@ enum QLoader {
     Install {
         instance: String,
         loader: String,
+        more: Option<String>,
         #[arg(long)]
         version: Option<String>,
     },
@@ -206,7 +213,7 @@ pub fn start_cli(is_dir_err: bool) {
                 quit(command::list_instances(properties.as_deref(), cli.server))
             }
             QSubCommand::Loader(cmd) => {
-                quit(command::loader(cmd, &runtime, cli.server));
+                quit(runtime.block_on(command::loader(cmd, cli.server)));
             }
         }
     } else {

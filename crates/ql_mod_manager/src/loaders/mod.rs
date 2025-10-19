@@ -104,7 +104,9 @@ pub async fn install_specified_loader(
         }
 
         Loader::Paper => {
-            debug_assert!(instance.is_server());
+            if !instance.is_server() {
+                return Ok(LoaderInstallResult::Unsupported);
+            }
             paper::install(
                 instance.get_name().to_owned(),
                 if let Some(s) = specified_version {
@@ -117,7 +119,13 @@ pub async fn install_specified_loader(
             .strerr()?;
         }
 
-        Loader::OptiFine => return Ok(LoaderInstallResult::NeedsOptifine),
+        Loader::OptiFine => {
+            return Ok(if instance.is_server() {
+                LoaderInstallResult::Unsupported
+            } else {
+                LoaderInstallResult::NeedsOptifine
+            })
+        }
 
         Loader::Liteloader | Loader::Modloader | Loader::Rift => {
             return Ok(LoaderInstallResult::Unsupported)

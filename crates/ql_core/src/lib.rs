@@ -464,13 +464,17 @@ impl OptifineUniqueVersion {
         VersionDetails::load(instance)
             .await
             .ok()
-            .and_then(|n| match n.get_id() {
-                "1.5.2" => Some(OptifineUniqueVersion::V1_5_2),
-                "1.2.5" => Some(OptifineUniqueVersion::V1_2_5),
-                "b1.7.3" => Some(OptifineUniqueVersion::B1_7_3),
-                "b1.6.6" => Some(OptifineUniqueVersion::B1_6_6),
-                _ => None,
-            })
+            .and_then(|n| Self::from_version(n.get_id()))
+    }
+
+    pub fn from_version(version: &str) -> Option<Self> {
+        match version {
+            "1.5.2" => Some(OptifineUniqueVersion::V1_5_2),
+            "1.2.5" => Some(OptifineUniqueVersion::V1_2_5),
+            "b1.7.3" => Some(OptifineUniqueVersion::B1_7_3),
+            "b1.6.6" => Some(OptifineUniqueVersion::B1_6_6),
+            _ => None,
+        }
     }
 
     #[must_use]

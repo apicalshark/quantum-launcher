@@ -2,10 +2,11 @@ use owo_colors::{OwoColorize, Style};
 use ql_core::{
     err, info,
     json::{InstanceConfigJson, VersionDetails},
-    InstanceSelection, IntoStringError, ListEntry, Loader, LAUNCHER_DIR,
+    InstanceSelection, IntoStringError, ListEntry, Loader, OptifineUniqueVersion, LAUNCHER_DIR,
 };
 use ql_instances::auth::{self, AccountType};
-use std::process::exit;
+use ql_mod_manager::loaders::LoaderInstallResult;
+use std::{path::PathBuf, process::exit};
 
 use crate::{
     cli::{helpers::render_row, QLoader},
@@ -313,16 +314,11 @@ fn refresh_account(
     })
 }
 
-pub fn loader(
-    cmd: QLoader,
-    runtime: &tokio::runtime::Runtime,
-    servers: bool,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn loader(cmd: QLoader, servers: bool) -> Result<(), Box<dyn std::error::Error>> {
     match cmd {
         QLoader::Info { instance } => {
-            let json = runtime.block_on(InstanceConfigJson::read(&InstanceSelection::new(
-                &instance, servers,
-            )))?;
+            let json =
+                InstanceConfigJson::read(&InstanceSelection::new(&instance, servers)).await?;
             println!("Kind: {}", json.mod_type);
             if let Some(info) = json.mod_type_info {
                 if let Some(version) = info.version {
@@ -339,22 +335,86 @@ pub fn loader(
         QLoader::Install {
             instance,
             loader,
+            more,
             version,
         } => {
             if loader.eq_ignore_ascii_case("vanilla") {
-                err!("Vanilla refers to the base game.\n    Maybe you meant `./quantum_launcher loader uninstall ...`?");
+                err!("Vanilla refers to the base game.\n    Maybe you meant `./quantum_launcher loader uninstall ...`");
                 exit(1);
             }
             let Ok(loader) = Loader::try_from(loader.as_str()) else {
                 exit(1)
             };
-            runtime.block_on(ql_mod_manager::loaders::install_specified_loader(
-                InstanceSelection::new(&instance, servers),
+
+            let instance = InstanceSelection::new(&instance, servers);
+            let mt = InstanceConfigJson::read(&instance).await?.mod_type;
+
+            if Loader::try_from(mt.as_str()).is_ok_and(|n| n == loader) {
+                err!("{mt} is already installed!");
+                exit(0);
+            }
+            if !(mt == "Vanilla"
+                || (mt == "Forge" && matches!(loader, Loader::OptiFine))
+                || (mt == "OptiFine" && matches!(loader, Loader::Forge)))
+            {
+                err!(
+                    r"You can't install a loader on top of another loader!
+    Did you mean to uninstall the other one first: `./quantum_launcher loader uninstall ...`"
+                );
+                exit(1);
+            }
+
+            match ql_mod_manager::loaders::install_specified_loader(
+                instance.clone(),
                 loader,
                 None,
                 version,
-            ))?;
+            )
+            .await?
+            {
+                LoaderInstallResult::Ok => {}
+                LoaderInstallResult::NeedsOptifine => {
+                    install_optifine(more, instance).await?;
+                }
+                LoaderInstallResult::Unsupported => {
+                    err!("This loader is unsupported!");
+                    exit(1);
+                }
+            }
         }
     }
+    Ok(())
+}
+
+async fn install_optifine(
+    more: Option<String>,
+    instance: InstanceSelection,
+) -> Result<(), Box<dyn std::error::Error + 'static>> {
+    let details = VersionDetails::load(&instance).await?;
+    if details.get_id() == "b1.7.3" {
+        ql_mod_manager::loaders::optifine::install_b173(
+            instance,
+            OptifineUniqueVersion::B1_7_3.get_url().0,
+        )
+        .await?;
+        return Ok(());
+    }
+
+    let Some(more) = more else {
+        err!(
+            r"Please download the OptiFine installer at: https://optifine.net/downloads
+    and pass the path via: `quantum_launcher loader install optifine path/to/installer.jar`"
+        );
+        exit(1);
+    };
+
+    ql_mod_manager::loaders::optifine::install(
+        instance.get_name().to_owned(),
+        PathBuf::from(more),
+        None,
+        None,
+        OptifineUniqueVersion::from_version(details.get_id()),
+    )
+    .await?;
     Ok(())
 }
