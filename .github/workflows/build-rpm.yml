@@ -38,7 +38,7 @@ jobs:
 
       - name: Build release package
         run: |
-          cd quantum-launcher
+          cd quantumlauncher
           sudo dnf5 builddep -y quantum_launcher.spec
           mkdir ~/rpmlocal && rpkg local --outdir ~/rpmlocal
           rm -f ~/rpmlocal/${{ matrix.arch }}/*debug*
