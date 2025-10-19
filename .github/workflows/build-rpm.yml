@@ -26,11 +26,6 @@ jobs:
             os: fedora
             arch: x86_64
             altarch: amd64
-          - docker: fedora-41
-            version: 41
-            os: fedora
-            arch: x86_64
-            altarch: amd64
 
     steps:
       - name: Install Build Dependencies
