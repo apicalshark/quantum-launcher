@@ -72,7 +72,7 @@ jobs:
             cargo build --release --target ${{ matrix.target }}
           fi
 
-      - name: Prepare AppDir
+      - name: Prepare AppDir and Build AppImage
         run: |
           mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/256x256/apps
           cp target/${{ matrix.target }}/release/${{ env.BIN_NAME }} AppDir/usr/bin/quantum-launcher
