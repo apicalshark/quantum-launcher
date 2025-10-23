@@ -280,8 +280,7 @@ impl ForgeInstaller {
         &self,
         installer_file: &[u8],
     ) -> Result<(JsonDetails, String), ForgeInstallError> {
-        let mut zip =
-            zip::ZipArchive::new(Cursor::new(installer_file)).map_err(ForgeInstallError::Zip)?;
+        let mut zip = zip::ZipArchive::new(Cursor::new(installer_file))?;
 
         if let Ok(mut file) = zip.by_name("version.json") {
             let forge_json = std::io::read_to_string(&mut file);

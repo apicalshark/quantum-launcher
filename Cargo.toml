@@ -25,7 +25,7 @@ reqwest = { version = "0.12", default-features = false, features = [
 ] }
 
 tokio = { version = "1", features = ["fs", "macros", "process"] }
-futures = { version = "0.3", default-features = false }
+futures = { version = "0.3", default-features = false, features = ["executor"] }
 
 owo-colors = "3"
 chrono = "0.4"
@@ -35,7 +35,9 @@ rfd = { version = "0.15", default-features = false, features = [
     "tokio",
 ] }
 
-zip = { version = "4", default-features = false, features = ["deflate"] }
+# Note: 5.1 not used because of MSRV
+zip = { version = "5.0.1", default-features = false, features = ["deflate"] }
+
 walkdir = "2.3"
 image = { version = "0.24", default-features = false, features = [
     # Web formats are enough

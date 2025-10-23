@@ -210,30 +210,23 @@ async fn get_version_json(
     neoforge_dir: &Path,
     json: &VersionDetails,
 ) -> Result<ql_core::json::forge::JsonDetails, ForgeInstallError> {
-    let mut zip =
-        zip::ZipArchive::new(Cursor::new(installer_bytes)).map_err(ForgeInstallError::Zip)?;
+    let mut zip = zip::ZipArchive::new(Cursor::new(installer_bytes))?;
 
-    for i in 0..zip.len() {
-        let mut file = zip.by_index(i).map_err(ForgeInstallError::Zip)?;
-        let name = file.name().to_owned();
+    let mut file = zip
+        .by_name("version.json")
+        .map_err(|_| ForgeInstallError::NoInstallJson(json.get_id().to_owned()))?;
+    let forge_json = std::io::read_to_string(&mut file)
+        .map_err(|n| ForgeInstallError::ZipIoError(n, "version.json".to_owned()))?;
 
-        if name == "version.json" {
-            let forge_json = std::io::read_to_string(&mut file)
-                .map_err(|n| ForgeInstallError::ZipIoError(n, name.clone()))?;
+    let out_jar_version_path = neoforge_dir.join("details.json");
+    fs::write(&out_jar_version_path, &forge_json)
+        .await
+        .path(&out_jar_version_path)?;
 
-            let out_jar_version_path = neoforge_dir.join("details.json");
-            fs::write(&out_jar_version_path, &forge_json)
-                .await
-                .path(&out_jar_version_path)?;
+    let jar_version_json: ql_core::json::forge::JsonDetails =
+        serde_json::from_str(&forge_json).json(forge_json)?;
 
-            let jar_version_json: ql_core::json::forge::JsonDetails =
-                serde_json::from_str(&forge_json).json(forge_json)?;
-
-            return Ok(jar_version_json);
-        }
-    }
-
-    Err(ForgeInstallError::NoInstallJson(json.get_id().to_owned()))
+    Ok(jar_version_json)
 }
 
 fn send_progress(f_progress: Option<&Sender<ForgeInstallProgress>>, message: ForgeInstallProgress) {
