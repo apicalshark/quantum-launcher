@@ -139,3 +139,23 @@ fn pipe_progress(rec: Receiver<ForgeInstallProgress>, snd: &Sender<GenericProgre
         _ = snd.send(item.into_generic());
     }
 }
+
+pub async fn uninstall_loader(instance: InstanceSelection) -> Result<(), String> {
+    let loader = InstanceConfigJson::read(&instance).await.strerr()?.mod_type;
+    let Ok(loader) = Loader::try_from(loader.as_str()) else {
+        return Ok(());
+    };
+
+    match loader {
+        Loader::Fabric | Loader::Quilt => fabric::uninstall(instance).await.strerr(),
+        Loader::Forge | Loader::Neoforge => forge::uninstall(instance).await.strerr(),
+        Loader::OptiFine => optifine::uninstall(instance.get_name().to_owned(), true)
+            .await
+            .strerr(),
+        Loader::Paper => paper::uninstall(instance.get_name().to_owned())
+            .await
+            .strerr(),
+        // Not yet supported
+        Loader::Liteloader | Loader::Modloader | Loader::Rift => Ok(()),
+    }
+}

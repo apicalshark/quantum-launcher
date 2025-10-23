@@ -382,6 +382,10 @@ pub async fn loader(cmd: QLoader, servers: bool) -> Result<(), Box<dyn std::erro
                 }
             }
         }
+        QLoader::Uninstall { instance } => {
+            let instance = InstanceSelection::new(&instance, servers);
+            ql_mod_manager::loaders::uninstall_loader(instance).await?;
+        }
     }
     Ok(())
 }

@@ -4,7 +4,6 @@ use ql_core::{
     IntoIoError, IntoStringError, LOGGER,
 };
 use ql_instances::UpdateCheckInfo;
-use ql_mod_manager::loaders;
 use std::fmt::Write;
 use tokio::io::AsyncWriteExt;
 
@@ -149,29 +148,10 @@ impl Launcher {
 
                 return Task::batch(tasks);
             }
-            Message::UninstallLoaderForgeStart => {
-                let instance = self.selected_instance.clone().unwrap();
-
+            Message::UninstallLoaderStart => {
+                let instance = self.instance().clone();
                 return Task::perform(
-                    loaders::forge::uninstall(instance),
-                    Message::UninstallLoaderEnd,
-                );
-            }
-            Message::UninstallLoaderOptiFineStart => {
-                let instance_name = self.instance().get_name().to_owned();
-                return Task::perform(
-                    async {
-                        loaders::optifine::uninstall(instance_name, true)
-                            .await
-                            .strerr()
-                    },
-                    Message::UninstallLoaderEnd,
-                );
-            }
-            Message::UninstallLoaderFabricStart => {
-                let instance_name = self.selected_instance.clone().unwrap();
-                return Task::perform(
-                    async move { loaders::fabric::uninstall(instance_name).await.strerr() },
+                    ql_mod_manager::loaders::uninstall_loader(instance),
                     Message::UninstallLoaderEnd,
                 );
             }
@@ -337,13 +317,6 @@ impl Launcher {
                     log.command.clear();
                     _ = block_on(future);
                 }
-            }
-            Message::UninstallLoaderPaperStart => {
-                let get_name = self.instance().get_name().to_owned();
-                return Task::perform(
-                    async move { loaders::paper::uninstall(get_name).await.strerr() },
-                    Message::UninstallLoaderEnd,
-                );
             }
             Message::CoreListLoaded(Ok((list, is_server))) => {
                 if is_server {

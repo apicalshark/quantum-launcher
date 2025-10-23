@@ -311,10 +311,7 @@ pub enum Message {
     InstallPaper(InstallPaperMessage),
 
     UninstallLoaderConfirm(Box<Message>, String),
-    UninstallLoaderFabricStart,
-    UninstallLoaderForgeStart,
-    UninstallLoaderOptiFineStart,
-    UninstallLoaderPaperStart,
+    UninstallLoaderStart,
     UninstallLoaderEnd(Res),
 
     #[allow(unused)]

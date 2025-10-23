@@ -75,15 +75,24 @@ Supported loaders: Fabric, Forge, Quilt, NeoForge, Paper, OptiFine
 (case-insensitive)"
 )]
 enum QLoader {
-    Info {
-        instance: String,
-    },
+    #[command(long_about = r"
+Installs the specified loader
+
+Supported loaders: Fabric, Forge, Quilt, NeoForge, Paper, OptiFine
+(case-insensitive)")]
     Install {
         instance: String,
         loader: String,
         more: Option<String>,
         #[arg(long)]
         version: Option<String>,
+    },
+    Uninstall {
+        instance: String,
+    },
+    #[command(about = "Info about the currently-installed loader")]
+    Info {
+        instance: String,
     },
 }
 

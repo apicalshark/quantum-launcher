@@ -18,7 +18,7 @@ mod error;
 pub use error::FabricInstallError;
 mod make_launch_jar;
 mod uninstall;
-pub use uninstall::{uninstall, uninstall_client, uninstall_server};
+pub use uninstall::uninstall;
 mod version_compare;
 mod version_list;
 

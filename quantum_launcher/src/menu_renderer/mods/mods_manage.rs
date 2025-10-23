@@ -217,35 +217,19 @@ impl MenuEditMods {
                     (!selected_instance.is_server())
                         .then(|| Self::get_optifine_install_button(&self.config)),
                 )
-                .push(Self::get_uninstall_panel(
-                    &self.config.mod_type,
-                    Message::UninstallLoaderForgeStart,
-                ))
+                .push(Self::get_uninstall_panel(&self.config.mod_type))
                 .spacing(5)
                 .into(),
             "OptiFine" => widget::column!(
                 widget::button(widget::text("Install Forge with OptiFine").size(14))
                     .on_press(Message::InstallForge(ForgeKind::OptiFine)),
-                Self::get_uninstall_panel(
-                    &self.config.mod_type,
-                    Message::UninstallLoaderOptiFineStart,
-                ),
+                Self::get_uninstall_panel(&self.config.mod_type,),
             )
             .spacing(5)
             .into(),
 
-            "NeoForge" => {
-                Self::get_uninstall_panel(&self.config.mod_type, Message::UninstallLoaderForgeStart)
-                    .into()
-            }
-            "Fabric" | "Quilt" => Self::get_uninstall_panel(
-                &self.config.mod_type,
-                Message::UninstallLoaderFabricStart,
-            )
-            .into(),
-            "Paper" => {
-                Self::get_uninstall_panel(&self.config.mod_type, Message::UninstallLoaderPaperStart)
-                    .into()
+            "NeoForge" | "Fabric" | "Quilt" | "Paper" => {
+                Self::get_uninstall_panel(&self.config.mod_type).into()
             }
 
             _ => {
@@ -285,10 +269,7 @@ impl MenuEditMods {
         }
     }
 
-    fn get_uninstall_panel(
-        mod_type: &'_ str,
-        uninstall_loader_message: Message,
-    ) -> widget::Button<'_, Message, LauncherTheme> {
+    fn get_uninstall_panel(mod_type: &'_ str) -> widget::Button<'_, Message, LauncherTheme> {
         widget::button(
             widget::row![
                 icon_manager::delete_with_size(14),
@@ -299,7 +280,7 @@ impl MenuEditMods {
             .padding(2),
         )
         .on_press(Message::UninstallLoaderConfirm(
-            Box::new(uninstall_loader_message),
+            Box::new(Message::UninstallLoaderStart),
             mod_type.to_owned(),
         ))
     }

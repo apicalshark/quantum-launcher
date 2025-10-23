@@ -28,7 +28,7 @@ pub use server::install_server;
 mod uninstall;
 
 pub use error::ForgeInstallError;
-pub use uninstall::{uninstall, uninstall_client, uninstall_server};
+pub use uninstall::uninstall;
 
 struct ForgeInstaller {
     f_progress: Option<Sender<ForgeInstallProgress>>,

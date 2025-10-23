@@ -16,7 +16,7 @@ pub async fn uninstall(instance: InstanceSelection) -> Result<(), String> {
     }
 }
 
-pub async fn uninstall_client(instance: &str) -> Result<(), String> {
+async fn uninstall_client(instance: &str) -> Result<(), String> {
     let instance_dir = LAUNCHER_DIR.join("instances").join(instance);
 
     let forge_dir = instance_dir.join("forge");
@@ -68,7 +68,7 @@ pub async fn uninstall_client(instance: &str) -> Result<(), String> {
     Ok(())
 }
 
-pub async fn uninstall_server(instance: &str) -> Result<(), ForgeInstallError> {
+async fn uninstall_server(instance: &str) -> Result<(), ForgeInstallError> {
     let instance_dir = LAUNCHER_DIR.join("servers").join(instance);
     change_instance_type(&instance_dir, "Vanilla".to_owned(), None).await?;
 
