@@ -142,22 +142,8 @@ async fn download_library(
     number_of_libraries: usize,
     progress: Option<&Sender<GenericProgress>>,
 ) -> Result<Option<PathBuf>, FabricInstallError> {
-    let version_lib = ql_core::json::version::Library {
-        downloads: None,
-        extract: None,
-        name: Some(library.name.clone()),
-        rules: library.rules.clone(),
-        natives: None,
-        url: library.url.clone(),
-    };
-    if !version_lib.is_allowed() {
-        return Ok(None);
-    }
-
-    if library.name.contains("org.lwjgl.lwjgl:")
-        && library.name.contains(":2.")
-        && version_json.is_before_or_eq(V_1_12_2)
-    {
+    if !library.is_allowed() || (library.is_lwjgl2() && version_json.is_before_or_eq(V_1_12_2)) {
+        pt!("Skipping {}", library.name);
         return Ok(None);
     }
 
@@ -171,6 +157,7 @@ async fn download_library(
         .path(library_parent_dir)?;
 
     let Some(url) = library.get_url() else {
+        pt!("Skipping (no url): {}", library.name);
         return Ok(None);
     };
     file_utils::download_file_to_path(&url, false, &library_path).await?;

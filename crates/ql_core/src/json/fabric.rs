@@ -53,4 +53,20 @@ impl Library {
             )
         })
     }
+
+    pub fn is_allowed(&self) -> bool {
+        crate::json::version::Library {
+            downloads: None,
+            extract: None,
+            name: Some(self.name.clone()),
+            rules: self.rules.clone(),
+            natives: None,
+            url: self.url.clone(),
+        }
+        .is_allowed()
+    }
+
+    pub fn is_lwjgl2(&self) -> bool {
+        self.name.contains("org.lwjgl.lwjgl:") && self.name.contains(":2.")
+    }
 }

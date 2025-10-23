@@ -61,6 +61,7 @@ enum QSubCommand {
         force: bool,
     },
     #[clap(subcommand)]
+    #[clap(alias = "loaders")]
     Loader(QLoader),
     #[command(about = "Lists downloadable versions", short_flag = 'a')]
     ListAvailableVersions,

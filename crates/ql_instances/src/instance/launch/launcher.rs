@@ -573,10 +573,10 @@ impl GameLauncher {
     ) -> Result<(), GameLaunchError> {
         if let Some(fabric_json) = fabric_json {
             for library in &fabric_json.libraries {
-                if library.name.contains("org.lwjgl.lwjgl:")
-                    && library.name.contains(":2.")
-                    && self.version_json.is_before_or_eq(V_1_12_2)
-                {
+                if !library.is_allowed() {
+                    continue;
+                }
+                if library.is_lwjgl2() && self.version_json.is_before_or_eq(V_1_12_2) {
                     continue;
                 }
                 if let Some(name) = remove_version_from_library(&library.name) {
@@ -593,7 +593,10 @@ impl GameLauncher {
                 }
 
                 let library_path = self.instance_dir.join("libraries").join(library.get_path());
-                debug_assert!(library_path.is_file());
+                debug_assert!(
+                    library_path.is_file(),
+                    "Couldn't find library {library_path:?}"
+                );
                 class_path.push_str(
                     library_path
                         .to_str()
