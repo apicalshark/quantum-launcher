@@ -1,6 +1,6 @@
 use crate::err;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Loader {
     Fabric,
     Quilt,

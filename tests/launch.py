@@ -140,7 +140,7 @@ if sys.platform.startswith("win"):
         return True
 
 
-def _close_window_unix(result: list[bytes], pid: PID, name: str) -> None:
+def _close_window_unix(result: bytes, pid: PID, name: str) -> None:
     window_ids: list[str] = result.decode().strip().splitlines()
     print(
         f"\r✅ {name} passed {'(by name)' if len(window_ids) == 0 else ''}            "

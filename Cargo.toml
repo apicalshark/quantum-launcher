@@ -7,7 +7,9 @@ members = [
     "crates/ql_servers",
     "crates/ql_java_handler",
     "crates/ql_packager",
+    "tests",
 ]
+default-members = ["quantum_launcher"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -34,6 +36,7 @@ rfd = { version = "0.15", default-features = false, features = [
     "xdg-portal",
     "tokio",
 ] }
+clap = { version = "4", features = ["help", "derive"] }
 
 # Note: 5.1 not used because of MSRV
 zip = { version = "5.0.1", default-features = false, features = ["deflate"] }
