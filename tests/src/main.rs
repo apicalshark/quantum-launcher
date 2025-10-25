@@ -1,7 +1,7 @@
 use std::{fmt::Display, path::PathBuf, process::exit};
 
 use clap::Parser;
-use ql_core::{do_jobs, err, print::LogConfig, InstanceSelection, ListEntry};
+use ql_core::{do_jobs, print::LogConfig, InstanceSelection, ListEntry};
 use ql_instances::DownloadError;
 
 use crate::version::{Version, VERSIONS_LWJGL2, VERSIONS_LWJGL3};
@@ -43,7 +43,7 @@ fn attempt<T, E: Display>(r: Result<T, E>) -> T {
     match r {
         Ok(n) => n,
         Err(err) => {
-            err!("{err}");
+            eprintln!("\nERROR: {err}");
             exit(1);
         }
     }
@@ -70,12 +70,11 @@ async fn main() {
     for Version(name, loaders) in cli.get_versions() {
         let instance = InstanceSelection::new(name, false);
         attempt(ql_mod_manager::loaders::uninstall_loader(instance.clone()).await);
-
+        set_terminal(cli.verbose);
         if !launch::launch((*name).to_owned(), cli.timeout.unwrap_or(60.0)).await {
             fails.push((*name, None));
         }
         for loader in *loaders {
-            set_terminal(cli.verbose);
             println!("(Loader: {loader:?})");
             attempt(
                 ql_mod_manager::loaders::install_specified_loader(
@@ -88,13 +87,11 @@ async fn main() {
             );
 
             println!("Done");
-            set_terminal(cli.verbose);
             if !launch::launch((*name).to_owned(), cli.timeout.unwrap_or(60.0)).await {
                 fails.push((*name, Some(*loader)));
             }
-            set_terminal(false);
-            attempt(ql_mod_manager::loaders::uninstall_loader(instance.clone()).await);
             set_terminal(cli.verbose);
+            attempt(ql_mod_manager::loaders::uninstall_loader(instance.clone()).await);
         }
     }
 

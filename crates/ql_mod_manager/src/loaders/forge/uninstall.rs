@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use ql_core::{
-    find_forge_shim_file, json::InstanceConfigJson, InstanceSelection, IntoIoError,
+    err, find_forge_shim_file, json::InstanceConfigJson, InstanceSelection, IntoIoError,
     IntoStringError, LAUNCHER_DIR,
 };
 
@@ -21,10 +21,13 @@ async fn uninstall_client(instance: &str) -> Result<(), String> {
 
     let forge_dir = instance_dir.join("forge");
     if forge_dir.is_dir() {
-        tokio::fs::remove_dir_all(&forge_dir)
+        if let Err(err) = tokio::fs::remove_dir_all(&forge_dir)
             .await
             .path(forge_dir)
-            .strerr()?;
+            .strerr()
+        {
+            err!("While uninstalling forge: {err}");
+        }
     }
 
     let mut config = InstanceConfigJson::read_from_dir(&instance_dir)

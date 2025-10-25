@@ -51,7 +51,15 @@ pub static LAUNCHER_DIR: LazyLock<PathBuf> = LazyLock::new(|| get_launcher_dir()
 #[allow(clippy::doc_markdown)]
 pub fn get_launcher_dir() -> Result<PathBuf, IoError> {
     let launcher_directory = if let Ok(n) = std::env::var("QL_DIR") {
-        if let (false, Ok(n)) = (cfg!(target_os = "windows"), std::fs::canonicalize(&n)) {
+        #[allow(unused_mut)]
+        if let Ok(mut n) = std::fs::canonicalize(&n) {
+            #[cfg(target_os = "windows")]
+            {
+                let s = n.to_string_lossy();
+                if let Some(s) = s.strip_prefix("\\\\?\\") {
+                    n = PathBuf::from(s);
+                }
+            }
             n
         } else {
             PathBuf::from(n)
