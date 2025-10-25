@@ -186,6 +186,23 @@ impl VersionDetails {
         }
     }
 
+    pub fn is_after_or_eq(&self, release_time: &str) -> bool {
+        match (
+            DateTime::parse_from_rfc3339(&self.releaseTime),
+            DateTime::parse_from_rfc3339(release_time),
+        ) {
+            (Ok(dt), Ok(rt)) => dt >= rt,
+            (Err(err), Ok(_)) | (Ok(_), Err(err)) => {
+                err!("Could not parse date/time: {err}");
+                false
+            }
+            (Err(err1), Err(err2)) => {
+                err!("Could not parse date/time\n(1): {err1}\n(2): {err2}");
+                false
+            }
+        }
+    }
+
     #[must_use]
     pub fn is_legacy_version(&self) -> bool {
         self.is_before_or_eq(V_1_5_2)

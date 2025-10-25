@@ -1,8 +1,9 @@
 use std::fmt::Display;
 
 use ql_core::{
-    file_utils, json::VersionDetails, pt, InstanceSelection, IntoJsonError, JsonDownloadError,
-    RequestError,
+    file_utils, info,
+    json::{VersionDetails, V_OFFICIAL_FABRIC_SUPPORT},
+    pt, InstanceSelection, IntoJsonError, JsonDownloadError, RequestError,
 };
 use serde::Deserialize;
 
@@ -184,14 +185,14 @@ pub async fn get_list_of_versions(
     instance: InstanceSelection,
     is_quilt: bool,
 ) -> Result<FabricVersionList, FabricInstallError> {
+    info!("Loading fabric version list...");
     let is_server = instance.is_server();
     let version_json = VersionDetails::load(&instance).await?;
-    let version = version_json.get_id();
 
-    let mut result = get_list_of_versions_inner(version, is_quilt, is_server).await;
+    let mut result = get_list_of_versions_inner(&version_json, is_quilt, is_server).await;
     if result.is_err() {
         for _ in 0..5 {
-            result = get_list_of_versions_inner(version, is_quilt, is_server).await;
+            result = get_list_of_versions_inner(&version_json, is_quilt, is_server).await;
             match &result {
                 Ok(_) => break,
                 Err(JsonDownloadError::RequestError(RequestError::DownloadError {
@@ -260,12 +261,15 @@ pub async fn get_list_of_versions_from_backend(
 }
 
 async fn get_list_of_versions_inner(
-    version: &str,
+    version_json: &VersionDetails,
     is_quilt: bool,
     is_server: bool,
 ) -> Result<FabricVersionList, JsonDownloadError> {
+    let version = version_json.get_id();
     if is_quilt {
-        let (versions, should_try_ornithe) =
+        let (versions, should_try_ornithe) = if version_json
+            .is_after_or_eq(V_OFFICIAL_FABRIC_SUPPORT)
+        {
             match get_list_of_versions_from_backend(version, BackendType::Quilt, is_server).await {
                 // If the list is empty or an error 404
                 // then try OrnitheMC backend, otherwise
@@ -278,7 +282,10 @@ async fn get_list_of_versions_inner(
                     code, ..
                 })) if code.as_u16() == 404 => (Vec::new(), true),
                 Err(err) => Err(err)?,
-            };
+            }
+        } else {
+            (Vec::new(), true)
+        };
 
         return Ok(if should_try_ornithe {
             let versions =

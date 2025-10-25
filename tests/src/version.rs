@@ -6,7 +6,7 @@ const fn ver(name: &'static str) -> Version {
     Version(name, &[])
 }
 
-const MODERN: [Loader; 3] = [Loader::Forge, Loader::Fabric, Loader::Quilt];
+const MODERN: [Loader; 2] = [Loader::Forge, Loader::Quilt];
 
 pub const VERSIONS_LWJGL2: &[Version] = &[
     // last version of classic, should represent most early versions
@@ -14,7 +14,7 @@ pub const VERSIONS_LWJGL2: &[Version] = &[
     ver("a1.1.2_01"), // one of the most popular alpha versions
     ver("b1.7.3"),    // most popular beta version
     // last based on old launcher system
-    Version("1.5.2", &[Loader::Fabric, Loader::Quilt]),
+    Version("1.5.2", &[Loader::Quilt]),
     // after migration to new launcher system
     Version("1.7.10", &MODERN),
     // one of the most popular release versions
@@ -30,23 +30,7 @@ pub const VERSIONS_LWJGL3: &[Version] = &[
     // after migration to Java 17, OpenGL 3.x, engine rewrites
     Version("1.18.2", &MODERN),
     // last launchwrapper version
-    Version(
-        "1.21.5",
-        &[
-            Loader::Forge,
-            Loader::Fabric,
-            Loader::Quilt,
-            Loader::Neoforge,
-        ],
-    ),
+    Version("1.21.5", &[Loader::Forge, Loader::Quilt, Loader::Neoforge]),
     // latest
-    Version(
-        "1.21.10",
-        &[
-            Loader::Forge,
-            Loader::Fabric,
-            Loader::Quilt,
-            Loader::Neoforge,
-        ],
-    ),
+    Version("1.21.10", &[Loader::Forge, Loader::Quilt, Loader::Neoforge]),
 ];

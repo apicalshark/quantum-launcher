@@ -7,7 +7,6 @@ use crate::{attempt, set_terminal};
 pub async fn launch(name: String, timeout: f32) -> bool {
     print!("Testing {name} ");
     _ = std::io::stdout().flush();
-    set_terminal(false);
     let child = attempt(
         ql_instances::launch(
             name.clone(),
@@ -46,32 +45,8 @@ pub async fn launch(name: String, timeout: f32) -> bool {
 
         #[cfg(all(target_family = "unix", not(target_os = "macos")))]
         {
-            match duct::cmd("xdotool", &["search", "--pid", pid.to_string().as_str()])
-                .stdout_capture()
-                .run()
-            {
-                Ok(n) => {
-                    if kill_proc(pid, &sys, n) {
-                        println!();
-                        return true;
-                    }
-                }
-
-                Err(_) => match duct::cmd("xdotool", ["search", "--classname", "Minecraft*"])
-                    .stdout_capture()
-                    .run()
-                {
-                    Ok(n) => {
-                        if kill_proc(pid, &sys, n) {
-                            println!();
-                            return true;
-                        }
-                    }
-                    Err(err) if err.to_string().contains("exited with code") => {}
-                    Err(err) => {
-                        err!("{err:?}");
-                    }
-                },
+            if search_for_window_unix(pid, &sys) {
+                return true;
             }
         }
 
@@ -80,6 +55,37 @@ pub async fn launch(name: String, timeout: f32) -> bool {
     }
 
     err!("{name}: No window found after waiting");
+    false
+}
+
+fn search_for_window_unix(pid: u32, sys: &sysinfo::System) -> bool {
+    match duct::cmd("xdotool", &["search", "--pid", pid.to_string().as_str()])
+        .stdout_capture()
+        .run()
+    {
+        Ok(n) => {
+            if kill_proc(pid, sys, n) {
+                println!();
+                return true;
+            }
+        }
+
+        Err(_) => match duct::cmd("xdotool", ["search", "--classname", "Minecraft*"])
+            .stdout_capture()
+            .run()
+        {
+            Ok(n) => {
+                if kill_proc(pid, sys, n) {
+                    println!();
+                    return true;
+                }
+            }
+            Err(err) if err.to_string().contains("exited with code") => {}
+            Err(err) => {
+                err!("{err:?}");
+            }
+        },
+    }
     false
 }
 

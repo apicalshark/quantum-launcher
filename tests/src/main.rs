@@ -22,8 +22,10 @@ struct Cli {
         help = "Only tests legacy LWJGL2-based versions (1.12.2 and below)"
     )]
     skip_lwjgl3: bool,
-    #[arg()]
+    #[arg(long)]
     timeout: Option<f32>,
+    #[arg(short, long)]
+    verbose: bool,
 }
 
 impl Cli {
@@ -63,11 +65,41 @@ async fn main() {
         );
     }
 
+    let mut fails = Vec::new();
+
     for Version(name, loaders) in cli.get_versions() {
         let instance = InstanceSelection::new(name, false);
         attempt(ql_mod_manager::loaders::uninstall_loader(instance.clone()).await);
 
-        launch::launch((*name).to_owned(), cli.timeout.unwrap_or(60.0)).await;
+        if !launch::launch((*name).to_owned(), cli.timeout.unwrap_or(60.0)).await {
+            fails.push((*name, None));
+        }
+        for loader in *loaders {
+            set_terminal(cli.verbose);
+            println!("(Loader: {loader:?})");
+            attempt(
+                ql_mod_manager::loaders::install_specified_loader(
+                    instance.clone(),
+                    *loader,
+                    None,
+                    None,
+                )
+                .await,
+            );
+
+            println!("Done");
+            set_terminal(cli.verbose);
+            if !launch::launch((*name).to_owned(), cli.timeout.unwrap_or(60.0)).await {
+                fails.push((*name, Some(*loader)));
+            }
+            set_terminal(false);
+            attempt(ql_mod_manager::loaders::uninstall_loader(instance.clone()).await);
+            set_terminal(cli.verbose);
+        }
+    }
+
+    if !fails.is_empty() {
+        println!("{fails:#?}");
     }
 }
 
