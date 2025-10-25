@@ -7,6 +7,7 @@ use ql_instances::DownloadError;
 use crate::version::{Version, VERSIONS_LWJGL2, VERSIONS_LWJGL3};
 
 mod launch;
+mod search;
 mod version;
 
 #[derive(clap::Parser)]
@@ -96,7 +97,14 @@ async fn main() {
     }
 
     if !fails.is_empty() {
-        println!("{fails:#?}");
+        println!("\nTEST FAILURES:");
+        for (name, loader) in fails {
+            if let Some(loader) = loader {
+                println!("{name}: {loader:?}");
+            } else {
+                println!("{name} (vanilla)");
+            }
+        }
     }
 }
 
