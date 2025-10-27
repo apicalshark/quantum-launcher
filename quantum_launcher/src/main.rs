@@ -32,6 +32,7 @@ use state::{get_entries, Launcher, Message};
 use ql_core::{
     constants::OS_NAME, err, err_no_log, file_utils, info_no_log, IntoStringError, JsonFileError,
 };
+use ql_core::info;
 
 use crate::state::CustomJarState;
 
